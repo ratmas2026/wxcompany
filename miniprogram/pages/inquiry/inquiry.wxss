@@ -1,0 +1,245 @@
+.page-container {
+  min-height: 100vh;
+  padding-bottom: 160rpx;
+}
+
+/* Hero */
+.hero-section {
+  position: relative;
+  height: 320rpx;
+  display: flex;
+  align-items: flex-end;
+  padding: 48rpx;
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.4;
+}
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+.hero-label {
+  display: block;
+  font-size: 22rpx;
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 4rpx;
+  margin-bottom: 8rpx;
+}
+.hero-title {
+  font-size: 48rpx;
+  font-weight: 800;
+  color: #ffffff;
+}
+.hero-quote {
+  position: absolute;
+  top: 48rpx;
+  right: 48rpx;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+.hero-quote text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+}
+
+.content-layout {
+  padding: 32rpx;
+}
+
+/* Sidebar */
+.sidebar {
+  margin-bottom: 32rpx;
+}
+.sidebar-card {
+  background: #f1f4f6;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+}
+.sidebar-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #3a5f94;
+  margin-bottom: 24rpx;
+}
+.sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.sidebar-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  font-size: 24rpx;
+  color: #586064;
+}
+.sidebar-icon {
+  flex-shrink: 0;
+  margin-top: 2rpx;
+}
+.cache-hint {
+  background: rgba(58, 95, 148, 0.06);
+  border: 1rpx solid rgba(58, 95, 148, 0.1);
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
+.cache-title {
+  display: block;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #3a5f94;
+  letter-spacing: 2rpx;
+  margin-bottom: 8rpx;
+}
+.cache-text {
+  font-size: 22rpx;
+  color: rgba(58, 95, 148, 0.6);
+}
+
+/* Form */
+.form-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 40rpx 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.04);
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+}
+.form-group {
+  margin-bottom: 32rpx;
+}
+.form-label {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #586064;
+  margin-bottom: 12rpx;
+}
+.required {
+  color: #9f403d;
+}
+.form-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 32rpx;
+  background: #f1f4f6;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  line-height: 88rpx;
+  box-sizing: border-box;
+}
+.form-input-placeholder {
+  font-size: 28rpx;
+  line-height: 88rpx;
+  color: #a0aec0;
+}
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 24rpx;
+  background: #f1f4f6;
+  border-radius: 16rpx;
+}
+.checkbox-item text {
+  font-size: 26rpx;
+  color: #2b3437;
+  font-weight: 500;
+}
+
+/* Submit */
+.submit-btn {
+  width: 100%;
+  padding: 28rpx;
+  background: #3a5f94;
+  color: #ffffff;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  border: none;
+  margin-bottom: 16rpx;
+}
+.privacy-text {
+  display: block;
+  text-align: center;
+  font-size: 20rpx;
+  color: rgba(88, 96, 100, 0.7);
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+}
+.modal-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(43, 52, 55, 0.2);
+  backdrop-filter: blur(8px);
+}
+.modal-content {
+  position: relative;
+  background: #ffffff;
+  border-radius: 32rpx;
+  padding: 56rpx 48rpx;
+  max-width: 560rpx;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24rpx 64rpx rgba(0, 0, 0, 0.1);
+}
+.success-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+.success-title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #2b3437;
+  margin-bottom: 16rpx;
+}
+.success-desc {
+  display: block;
+  font-size: 26rpx;
+  color: #586064;
+  margin-bottom: 32rpx;
+}
+.dismiss-btn {
+  width: 100%;
+  padding: 24rpx;
+  background: #f1f4f6;
+  color: #3a5f94;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  border: none;
+}

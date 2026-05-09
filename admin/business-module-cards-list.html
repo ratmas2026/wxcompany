@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>业务卡片管理 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('business-module')
+  await DataStore.init()
+
+  const params = new URLSearchParams(window.location.search)
+  const moduleId = params.get('id') ? parseInt(params.get('id')) : null
+
+  if (!moduleId) {
+    Admin.setPageContent('<div class="empty-state"><p>缺少模块ID参数</p><button class="btn btn-secondary" onclick="window.location.href=\'business-module.html\'">← 返回</button></div>')
+    return
+  }
+
+  let moduleData = DataStore.getBusinessModule(moduleId)
+  if (!moduleData) {
+    Admin.setPageContent('<div class="empty-state"><p>模块不存在</p><button class="btn btn-secondary" onclick="window.location.href=\'business-module.html\'">← 返回</button></div>')
+    return
+  }
+
+  let cards = []
+
+  const layoutLabels = {
+    'carousel': '🔄 轮播',
+    'grid-4': '🔲 四宫格',
+    'grid-6-2x3': '📐 六宫格 2×3',
+    'grid-6-3x2': '📐 六宫格 3×2',
+    'single': '📄 单张展示',
+    'hero': '📋 顶部栏',
+    'tab': '📑 Tab标签页'
+  }
+
+  function render() {
+    // Refresh module data
+    moduleData = DataStore.getBusinessModule(moduleId) || moduleData
+    cards = (moduleData.cards || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    if (!moduleData.sections) moduleData.sections = []
+
+    const cardGrid = cards.map(c => `
+      <div class="media-card">
+        <div class="media-thumb" style="background:linear-gradient(135deg,#e8edf5,#dce3ef);">
+          ${c.cover && c.cover.backgroundImage
+            ? `<img src="${c.cover.backgroundImage}" style="width:100%;height:100%;object-fit:cover" alt="${escapeHtml(c.title)}">`
+            : `<span style="font-size:48px">📄</span>`}
+        </div>
+        <div class="media-body">
+          <div class="media-title">${escapeHtml(c.title || '未命名')}</div>
+          <div class="media-meta">
+            <span>📅 ${c.createdAt || ''}</span>
+            <span>🔢 排序: ${c.sortOrder || '-'}</span>
+            ${c.detail ? `<span>${c.detail.detailEntry ? '🔗 可跳转' : '🚫 无跳转'}</span>` : ''}
+          </div>
+          <div class="media-actions">
+            <button class="btn btn-outline btn-sm" onclick="window.location.href='business-module-cards.html?moduleId=${moduleId}&cardId=${c.id}'">✏️ 编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="window.deleteCard(${c.id})">🗑 删除</button>
+          </div>
+        </div>
+      </div>
+    `).join('')
+
+    // Build sections table
+    var circledDigits = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩']
+    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    // Pre-compute layout counts for duplicate suffix
+    var layoutCounts = {}
+    sections.forEach(function(sec) {
+      if (sec.displayLayout !== 'hero') {
+        layoutCounts[sec.displayLayout] = (layoutCounts[sec.displayLayout] || 0) + 1
+      }
+    })
+    var layoutSuffix = {}
+    Object.keys(layoutCounts).forEach(function(k) { if (layoutCounts[k] > 1) layoutSuffix[k] = 0 })
+    var nonHeroCount = 0
+
+    var sectionRows = sections.map(function(sec, idx) {
+      var isHero = sec.displayLayout === 'hero'
+      if (!isHero) nonHeroCount++
+      var layoutName = layoutLabels[sec.displayLayout] || sec.displayLayout
+      if (!isHero && layoutSuffix[sec.displayLayout] !== undefined) {
+        layoutSuffix[sec.displayLayout]++
+        layoutName += layoutSuffix[sec.displayLayout]
+      }
+      var cardNames = (sec.selectedIds || []).map(function(id) {
+        var c = cards.find(function(c) { return c.id === id })
+        return c ? escapeHtml(c.title) : ''
+      }).filter(Boolean).join('、') || '无'
+      var orderBadge = isHero
+        ? '<span style="font-size:13px;color:#3a5f94;font-weight:700">📌</span>'
+        : '<span style="font-size:14px;color:#3a5f94;font-weight:700">' + (circledDigits[nonHeroCount - 1] || nonHeroCount) + '</span>'
+      var dragHandle = isHero
+        ? ''
+        : '<span style="cursor:grab;color:#a0aec0;font-size:16px;user-select:none;margin-right:6px" title="拖动排序">⠿</span>'
+      var dragAttrs = isHero
+        ? ''
+        : 'draggable="true" ondragstart="window.onSectionDragStart(event,' + idx + ')" ondragover="window.onSectionDragOver(event)" ondrop="window.onSectionDrop(event,' + idx + ')" ondragend="window.onSectionDragEnd(event)"'
+      var statusOn = sec.status !== false
+      return '<tr class="section-row" ' + dragAttrs + ' data-idx="' + idx + '" style="' + (isHero ? '' : 'cursor:grab') + '">' +
+        '<td style="white-space:nowrap">' + dragHandle + orderBadge + '</td>' +
+        '<td style="font-weight:700;font-size:14px">' + layoutName + '</td>' +
+        '<td style="font-size:13px;color:#4a5568">' + cardNames + '</td>' +
+        '<td style="text-align:right">' +
+          '<label class="switch">' +
+            '<input type="checkbox" ' + (statusOn ? 'checked' : '') + ' onchange="window.toggleSection(' + idx + ')">' +
+            '<span class="switch-slider"></span>' +
+          '</label>' +
+        '</td>' +
+        '<td style="text-align:center;white-space:nowrap">' +
+          '<button class="btn btn-outline btn-sm" onclick="window.editSection(' + idx + ')">编辑</button> ' +
+          '<button class="btn btn-danger btn-sm" onclick="window.deleteSection(' + idx + ')">删除</button>' +
+        '</td>' +
+      '</tr>'
+    }).join('')
+
+    var sectionsHTML = sections.length > 0 ? '<div class="card" style="margin-top:24px;padding:20px 24px"><h3 style="margin:0 0 16px 0;font-size:16px">已保存的展示方案</h3><div class="table-wrap"><table><thead><tr><th style="width:60px">位置</th><th>方案名称</th><th>包含卡片</th><th style="text-align:right;width:60px">状态</th><th style="text-align:center;width:140px">操作</th></tr></thead><tbody>' + sectionRows + '</tbody></table></div></div>' : ''
+
+    const html = `
+      <div class="page-header">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <h1><span style="color:#a0aec0;font-weight:400">核心业务 &gt; ${escapeHtml(moduleData.name || '未命名模块')}</span></h1>
+          <button class="btn btn-outline btn-sm" onclick="window.editModuleTitle()" title="编辑标题">✏️</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('moduleCoverInput').click()" title="上传封面">🖼</button>
+          ${moduleData.coverImage ? '<span style="font-size:12px;color:#10b981">已设封面</span>' : ''}
+          <button class="btn btn-outline btn-sm" onclick="window.previewModuleCover()" title="预览封面">👁</button>
+          <button class="btn btn-outline btn-sm" onclick="window.toggleModuleAspectRatio()" title="切换比例">${(moduleData.coverAspectRatio || '16:9')} ▼</button>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="window.location.href='business-module.html'">← 返回</button>
+          <button class="btn btn-secondary" onclick="window.showLayoutConfig()">⚙️ 展示设置</button>
+          <button class="btn btn-primary" onclick="window.location.href='business-module-cards.html?moduleId=${moduleId}'">+ 新增卡片</button>
+        </div>
+      </div>
+
+      <input type="file" id="moduleCoverInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="window.onModuleCoverSelected(this)">
+
+      <div class="card-grid">
+        ${cardGrid || '<div class="empty-state"><div class="empty-icon">📄</div><p>暂无内容卡片</p><p style="font-size:13px;color:#a0aec0;margin-top:8px;">点击右上角「新增卡片」按钮添加第一张卡片</p></div>'}
+      </div>
+
+      ${sectionsHTML}
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  window.deleteCard = function(cardId) {
+    const card = cards.find(c => c.id === cardId)
+    Admin.confirmDelete(`确定要删除卡片 <strong>${escapeHtml(card?.title || '此项')}</strong> 吗？`, async () => {
+      await DataStore.deleteBusinessModuleCard(moduleId, cardId)
+      Admin.showToast('删除成功', 'success')
+      render()
+    })
+  }
+
+  // ===== 展示设置（多Section系统） =====
+  if (!moduleData.sections) moduleData.sections = []
+  var draggedIdx = null
+
+  window.showLayoutConfig = function() {
+    showLayoutConfigForEdit([], null)
+  }
+
+  function showLayoutConfigForEdit(preSelected, preLayout, preSection) {
+    var sorted = [...cards]
+    var selectionOrder = [...(preSelected || [])]
+
+    // 收集已被其他分区使用的卡片 ID（编辑模式下排除自身）
+    var allSections = moduleData.sections || []
+    var usedIds = []
+    allSections.forEach(function(sec) {
+      if (preSection && sec.id === preSection.id) return
+      usedIds.push.apply(usedIds, sec.selectedIds || [])
+    })
+
+    function showCardSelect() {
+      var cardList = sorted.map(function(c) {
+        var isUsed = usedIds.includes(c.id)
+        var checked = selectionOrder.includes(c.id) ? 'checked' : ''
+        var orderNum = selectionOrder.indexOf(c.id)
+        var orderBadge = orderNum >= 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;margin-left:8px">' + (orderNum + 1) + '</span>' : ''
+        var disabledAttr = isUsed ? 'disabled' : ''
+        var usedLabel = isUsed ? '<span style="font-size:11px;color:#e53e3e;margin-left:8px">已使用</span>' : ''
+        var cursorStyle = isUsed ? 'cursor:not-allowed' : 'cursor:pointer'
+        var opacityStyle = isUsed ? 'opacity:0.5' : ''
+        var borderColor = checked ? 'var(--primary)' : (isUsed ? '#fed7d7' : '#e2e8f0')
+        var bgColor = checked ? '#e8f0fe' : (isUsed ? '#fff5f5' : '#f8f9fa')
+        return '<label style="display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:8px;border-radius:8px;' + cursorStyle + ';border:2px solid ' + borderColor + ';background:' + bgColor + ';' + opacityStyle + '">' +
+          '<input type="checkbox" value="' + c.id + '" class="card-select-cb" ' + checked + ' ' + disabledAttr + ' onchange="window.onCardSelect(' + c.id + ', this.checked)" style="width:18px;height:18px;cursor:pointer">' +
+          '<div style="flex:1">' +
+            '<div style="font-weight:600;font-size:14px;display:flex;align-items:center">' + escapeHtml(c.title || '未命名') + orderBadge + usedLabel + '</div>' +
+            '<div style="font-size:11px;color:#718096">排序: ' + (c.sortOrder || '-') + ' | ' + (c.createdAt || '') + '</div>' +
+          '</div></label>'
+      }).join('')
+
+      Admin.showModal('选择展示卡片',
+        '<p style="font-size:13px;color:#718096;margin-bottom:16px">勾选卡片并按先后顺序排列（最多6张），先选的排在前面</p>' +
+        '<div style="max-height:400px;overflow-y:auto">' + cardList + '</div>',
+        function() {
+          if (!selectionOrder.length) { Admin.showToast('请至少选择一张卡片', 'info'); return }
+          if (preLayout === 'tab') {
+            setTimeout(function() { showTabConfig(preSection) }, 100)
+          } else if (selectionOrder.length === 1) {
+            setTimeout(function() { showLayoutChooseSingle() }, 100)
+          } else if (selectionOrder.length <= 4) {
+            setTimeout(function() { showLayoutChoose() }, 100)
+          } else {
+            setTimeout(function() { showLayoutChooseGrid6() }, 100)
+          }
+        }, '下一步'
+      )
+    }
+
+    async function saveSection(layout, tabConfig) {
+      try {
+      // Reorder selected cards
+      var orders = []
+      selectionOrder.forEach(function(id, idx) { orders.push({ id: id, sortOrder: idx + 1 }) })
+      var nextSort = selectionOrder.length + 1
+      sorted.forEach(function(c) {
+        if (!selectionOrder.includes(c.id)) orders.push({ id: c.id, sortOrder: nextSort++ })
+      })
+      await DataStore.reorderBusinessModuleCards(moduleId, orders)
+
+      // Refresh module data
+      moduleData = DataStore.getBusinessModule(moduleId) || moduleData
+      cards = (moduleData.cards || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+
+      // Remove selected cards from all existing sections (skip preSection if editing)
+      var srcSections = moduleData.sections || []
+      if (preSection) {
+        srcSections = srcSections.filter(function(sec) { return sec.id !== preSection.id })
+      }
+      var sections = srcSections.map(function(sec) {
+        return {
+          id: sec.id,
+          displayLayout: sec.displayLayout,
+          selectedIds: sec.selectedIds.filter(function(id) { return !selectionOrder.includes(id) }),
+          sortOrder: sec.sortOrder,
+          status: sec.status
+        }
+      })
+
+      // Collect orphaned single cards from multi-card sections down to 1
+      var orphanSingleIds = []
+      sections = sections.filter(function(sec) {
+        if (sec.selectedIds.length === 0) return false
+        if ((sec.displayLayout === 'carousel' || sec.displayLayout === 'grid-4' || sec.displayLayout === 'grid-6-2x3' || sec.displayLayout === 'grid-6-3x2' || sec.displayLayout === 'tab') && sec.selectedIds.length === 1) {
+          orphanSingleIds.push(sec.selectedIds[0])
+          return false
+        }
+        return true
+      })
+
+      // If editing, pool any cards from the old section not in the new selection
+      if (preSection) {
+        (preSection.selectedIds || []).forEach(function(id) {
+          if (!selectionOrder.includes(id) && !orphanSingleIds.includes(id)) {
+            orphanSingleIds.push(id)
+          }
+        })
+      }
+
+      // Merge all single cards into one pool
+      var existingSingle = sections.find(function(sec) { return sec.displayLayout === 'single' })
+      sections = sections.filter(function(sec) { return sec.displayLayout !== 'single' })
+      var singlePool = (existingSingle ? existingSingle.selectedIds : []).concat(orphanSingleIds)
+
+      // Determine next sortOrder for the new section
+      var maxOrder = sections.reduce(function(max, s) { return Math.max(max, s.sortOrder || 0) }, 10)
+
+      // Add new section(s)
+      if (layout === 'hero') {
+        sections.push({ id: 's' + Date.now(), displayLayout: 'hero', selectedIds: selectionOrder.slice(), sortOrder: 0, status: true })
+        singlePool.forEach(function(id, i) {
+          sections.push({ id: 's' + Date.now() + '_' + i, displayLayout: 'single', selectedIds: [id], sortOrder: maxOrder + 10 + i * 10, status: true })
+        })
+      } else if (layout === 'single') {
+        selectionOrder.forEach(function(id, i) {
+          sections.push({ id: 's' + Date.now() + '_' + i, displayLayout: 'single', selectedIds: [id], sortOrder: maxOrder + 10 + i * 10, status: true })
+        })
+        singlePool.forEach(function(id, i) {
+          sections.push({ id: 's' + Date.now() + '_s' + i, displayLayout: 'single', selectedIds: [id], sortOrder: maxOrder + 10 + (selectionOrder.length + i) * 10, status: true })
+        })
+      } else if (layout === 'tab') {
+        var tc = tabConfig || {}
+        sections.push({
+          id: 's' + Date.now(),
+          displayLayout: 'tab',
+          selectedIds: selectionOrder.slice(),
+          sortOrder: maxOrder + 10,
+          status: true,
+          tabLayout: tc.tabLayout || 'scroll',
+          tabPerPage: tc.tabPerPage || 1,
+          tabTitleSource: tc.tabTitleSource || 'card',
+          tabLabels: tc.tabLabels || []
+        })
+        singlePool.forEach(function(id, i) {
+          sections.push({ id: 's' + Date.now() + '_' + i, displayLayout: 'single', selectedIds: [id], sortOrder: maxOrder + 20 + i * 10, status: true })
+        })
+      } else {
+        sections.push({ id: 's' + Date.now(), displayLayout: layout, selectedIds: selectionOrder.slice(), sortOrder: maxOrder + 10, status: true })
+        singlePool.forEach(function(id, i) {
+          sections.push({ id: 's' + Date.now() + '_' + i, displayLayout: 'single', selectedIds: [id], sortOrder: maxOrder + 20 + i * 10, status: true })
+        })
+      }
+
+      moduleData.sections = sections
+      await DataStore.saveBusinessModule({
+        id: moduleData.id,
+        name: moduleData.name,
+        coverImage: moduleData.coverImage,
+        coverAspectRatio: moduleData.coverAspectRatio,
+        layoutType: moduleData.layoutType,
+        sortOrder: moduleData.sortOrder,
+        status: moduleData.status,
+        cards: moduleData.cards,
+        sections: moduleData.sections
+      })
+      Admin.showToast('展示方案已保存', 'success')
+      render()
+      } catch (e) {
+        console.error('Save section error:', e)
+        Admin.showToast('保存失败: ' + (e.message || '未知错误'), 'error')
+        render()
+      }
+    }
+
+    function showLayoutChoose() {
+      var sel = preLayout || 'carousel'
+      var isSelected = function(v) { return v === sel ? 'checked' : '' }
+      var isBorder = function(v) { return v === sel ? '2px solid var(--primary)' : '2px solid #e2e8f0' }
+      var showTabOption = selectionOrder.length > 2
+      Admin.showModal('选择展示布局',
+        '<div class="form-group">' +
+          '<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap" id="layoutOptions">' +
+            '<label class="layout-option" data-value="carousel" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('carousel') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="carousel" ' + isSelected('carousel') + ' style="display:none">' +
+              '<span style="font-weight:600">🔄 左右滑动轮播</span></label>' +
+            '<label class="layout-option" data-value="grid-4" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('grid-4') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="grid-4" ' + isSelected('grid-4') + ' style="display:none">' +
+              '<span style="font-weight:600">🔲 四宫格 (2×2)</span></label>' +
+            (showTabOption ?
+            '<label class="layout-option" data-value="tab" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('tab') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="tab" ' + isSelected('tab') + ' style="display:none">' +
+              '<span style="font-weight:600">📑 Tab标签页</span></label>'
+            : '') +
+          '</div>' +
+        '</div>',
+        async function() {
+          var selectedLayout = document.querySelector('input[name="layout"]:checked')
+          var layout = selectedLayout ? selectedLayout.value : 'carousel'
+          if (layout === 'tab') {
+            setTimeout(function() { showTabConfig(null) }, 100)
+          } else {
+            await saveSection(layout)
+          }
+        }, '保存'
+      )
+    }
+
+    function showLayoutChooseGrid6() {
+      // Map old grid-6 to a concrete variant for edit pre-selection
+      var effectiveLayout = preLayout
+      if (preLayout === 'grid-6') { effectiveLayout = 'grid-6-2x3' }
+      var sel = effectiveLayout || 'carousel'
+      var isSelected = function(v) { return v === sel ? 'checked' : '' }
+      var isBorder = function(v) { return v === sel ? '2px solid var(--primary)' : '2px solid #e2e8f0' }
+      Admin.showModal('选择展示布局',
+        '<div class="form-group">' +
+          '<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap" id="layoutOptions">' +
+            '<label class="layout-option" data-value="carousel" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('carousel') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="carousel" ' + isSelected('carousel') + ' style="display:none">' +
+              '<span style="font-weight:600">🔄 左右滑动轮播</span></label>' +
+            '<label class="layout-option" data-value="grid-6-2x3" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('grid-6-2x3') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="grid-6-2x3" ' + isSelected('grid-6-2x3') + ' style="display:none">' +
+              '<span style="font-weight:600">📐 六宫格 2×3（2列3行）</span></label>' +
+            '<label class="layout-option" data-value="grid-6-3x2" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('grid-6-3x2') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="grid-6-3x2" ' + isSelected('grid-6-3x2') + ' style="display:none">' +
+              '<span style="font-weight:600">📐 六宫格 3×2（3列2行）</span></label>' +
+            '<label class="layout-option" data-value="tab" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('tab') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="tab" ' + isSelected('tab') + ' style="display:none">' +
+              '<span style="font-weight:600">📑 Tab标签页</span></label>' +
+          '</div>' +
+        '</div>',
+        async function() {
+          var selectedLayout = document.querySelector('input[name="layout"]:checked')
+          var layout = selectedLayout ? selectedLayout.value : 'carousel'
+          if (layout === 'tab') {
+            setTimeout(function() { showTabConfig(null) }, 100)
+          } else {
+            await saveSection(layout)
+          }
+        }, '保存'
+      )
+    }
+
+    function showTabConfig(preSection) {
+      var existing = preSection || {}
+      var tabLayout = existing.tabLayout || 'scroll'
+      var tabTitleSource = existing.tabTitleSource || 'card'
+      var existingLabels = existing.tabLabels || []
+
+      function renderTabConfig() {
+        var selLayout = function(v) { return v === tabLayout ? 'checked' : '' }
+        var selSource = function(v) { return v === tabTitleSource ? 'checked' : '' }
+        var tabCount = selectionOrder.length
+        var customLabelsHTML = ''
+        if (tabTitleSource === 'custom') {
+          for (var i = 0; i < tabCount; i++) {
+            var card = sorted.find(function(p) { return p.id === selectionOrder[i] })
+            var defaultLabel = existingLabels[i] || (card ? card.title : '')
+            customLabelsHTML += '<div class="form-group"><label>标签' + (i + 1) + '名称</label>' +
+              '<input class="form-input tab-custom-label" value="' + escapeHtml(defaultLabel) + '" placeholder="请输入标签名称"></div>'
+          }
+        }
+        return '' +
+          '<div class="form-group">' +
+            '<label style="font-weight:700;margin-bottom:8px;display:block">Tab布局方式</label>' +
+            '<div style="display:flex;gap:12px">' +
+              '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid ' + (tabLayout === 'scroll' ? 'var(--primary)' : '#e2e8f0') + ';border-radius:8px;flex:1" onclick="window.selectTabConfigRadio(this,\'tabLayout\',\'scroll\')">' +
+                '<input type="radio" name="tabLayout" value="scroll" ' + selLayout('scroll') + ' style="display:none">' +
+                '<span style="font-weight:600">↔ 横向滚动</span></label>' +
+              '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid ' + (tabLayout === 'fixed' ? 'var(--primary)' : '#e2e8f0') + ';border-radius:8px;flex:1" onclick="window.selectTabConfigRadio(this,\'tabLayout\',\'fixed\')">' +
+                '<input type="radio" name="tabLayout" value="fixed" ' + selLayout('fixed') + ' style="display:none">' +
+                '<span style="font-weight:600">📐 固定分页</span></label>' +
+            '</div>' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label style="font-weight:700;margin-bottom:8px;display:block">Tab标题来源</label>' +
+            '<div style="display:flex;gap:12px">' +
+              '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid ' + (tabTitleSource === 'card' ? 'var(--primary)' : '#e2e8f0') + ';border-radius:8px;flex:1" onclick="window.selectTabConfigRadio(this,\'tabTitleSource\',\'card\')">' +
+                '<input type="radio" name="tabTitleSource" value="card" ' + selSource('card') + ' style="display:none">' +
+                '<span style="font-weight:600">🃏 卡片标题</span></label>' +
+              '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid ' + (tabTitleSource === 'custom' ? 'var(--primary)' : '#e2e8f0') + ';border-radius:8px;flex:1" onclick="window.selectTabConfigRadio(this,\'tabTitleSource\',\'custom\')">' +
+                '<input type="radio" name="tabTitleSource" value="custom" ' + selSource('custom') + ' style="display:none">' +
+                '<span style="font-weight:600">✏️ 自定义分类</span></label>' +
+            '</div>' +
+          '</div>' +
+          '<div id="tabCustomLabelContainer" style="display:' + (tabTitleSource === 'custom' ? 'block' : 'none') + '">' +
+            customLabelsHTML +
+          '</div>'
+      }
+
+      Admin.showModal('Tab标签页配置', renderTabConfig(), async function() {
+        var layoutEl = document.querySelector('input[name="tabLayout"]:checked')
+        var sourceEl = document.querySelector('input[name="tabTitleSource"]:checked')
+        var tc = {
+          tabLayout: layoutEl ? layoutEl.value : 'scroll',
+          tabPerPage: 1,
+          tabTitleSource: sourceEl ? sourceEl.value : 'card',
+          tabLabels: []
+        }
+        if (tc.tabTitleSource === 'custom') {
+          var labelInputs = document.querySelectorAll('.tab-custom-label')
+          labelInputs.forEach(function(inp) { tc.tabLabels.push(inp.value || '') })
+        }
+        await saveSection('tab', tc)
+      }, '保存')
+    }
+
+    window.selectTabConfigRadio = function(el, name, value) {
+      var container = el.closest('.form-group')
+      if (container) {
+        container.querySelectorAll('label').forEach(function(lbl) {
+          lbl.style.border = '2px solid #e2e8f0'
+          var radio = lbl.querySelector('input')
+          if (radio) radio.checked = false
+        })
+      }
+      el.style.border = '2px solid var(--primary)'
+      var radio = el.querySelector('input')
+      if (radio) radio.checked = true
+
+      if (name === 'tabTitleSource') {
+        var labelContainer = document.getElementById('tabCustomLabelContainer')
+        if (labelContainer) {
+          labelContainer.style.display = value === 'custom' ? 'block' : 'none'
+          if (value === 'custom' && !labelContainer.innerHTML.trim()) {
+            var tabCount = selectionOrder.length
+            var html = ''
+            for (var i = 0; i < tabCount; i++) {
+              var card = sorted.find(function(p) { return p.id === selectionOrder[i] })
+              var defaultLabel = card ? card.title : ''
+              html += '<div class="form-group"><label>标签' + (i + 1) + '名称</label>' +
+                '<input class="form-input tab-custom-label" value="' + escapeHtml(defaultLabel) + '" placeholder="请输入标签名称"></div>'
+            }
+            labelContainer.innerHTML = html
+          }
+        }
+      }
+    }
+
+    function showLayoutChooseSingle() {
+      var sel = preLayout || 'single'
+      var isSelected = function(v) { return v === sel ? 'checked' : '' }
+      var isBorder = function(v) { return v === sel ? '2px solid var(--primary)' : '2px solid #e2e8f0' }
+      Admin.showModal('选择展示布局',
+        '<div class="form-group">' +
+          '<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap" id="layoutOptions">' +
+            '<label class="layout-option" data-value="single" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('single') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="single" ' + isSelected('single') + ' style="display:none">' +
+              '<span style="font-weight:600">📄 单张展示</span></label>' +
+            '<label class="layout-option" data-value="hero" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('hero') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="hero" ' + isSelected('hero') + ' style="display:none">' +
+              '<span style="font-weight:600">📋 顶部栏</span></label>' +
+          '</div>' +
+        '</div>',
+        async function() {
+          var selectedLayout = document.querySelector('input[name="layout"]:checked')
+          var layout = selectedLayout ? selectedLayout.value : 'single'
+          await saveSection(layout)
+        }, '保存'
+      )
+    }
+
+    window.selectLayout = function(el) {
+      var options = document.querySelectorAll('.layout-option')
+      options.forEach(function(opt) {
+        opt.style.border = '2px solid #e2e8f0'
+        opt.querySelector('input').checked = false
+      })
+      el.style.border = '2px solid var(--primary)'
+      el.querySelector('input').checked = true
+    }
+
+    window.onCardSelect = function(id, checked) {
+      if (checked && usedIds.includes(id)) {
+        Admin.showToast('该卡片已在其他方案中使用', 'info')
+        var modal = document.querySelector('.modal')
+        if (modal) {
+          var cb = modal.querySelector('.card-select-cb[value="' + id + '"]')
+          if (cb) cb.checked = false
+        }
+        return
+      }
+      if (checked) {
+        if (selectionOrder.length >= 6) {
+          Admin.showToast('最多选择6张卡片', 'info')
+          var modal = document.querySelector('.modal')
+          if (modal) {
+            var cb = modal.querySelector('.card-select-cb[value="' + id + '"]')
+            if (cb) cb.checked = false
+          }
+          return
+        }
+        selectionOrder.push(id)
+      } else {
+        selectionOrder = selectionOrder.filter(function(x) { return x !== id })
+      }
+      var modal = document.querySelector('.modal')
+      if (modal) {
+        var atLimit = selectionOrder.length >= 6
+        modal.querySelectorAll('.card-select-cb').forEach(function(cb) {
+          var pid = parseInt(cb.value)
+          var label = cb.closest('label')
+          var isChecked = cb.checked
+          label.style.border = isChecked ? '2px solid var(--primary)' : '2px solid #e2e8f0'
+          label.style.background = isChecked ? '#e8f0fe' : '#f8f9fa'
+          if (!isChecked && atLimit) {
+            cb.disabled = true
+            label.style.opacity = '0.4'
+          } else {
+            cb.disabled = false
+            label.style.opacity = '1'
+          }
+          var orderIdx = selectionOrder.indexOf(pid)
+          var badge = label.querySelector('.order-badge')
+          if (orderIdx >= 0) {
+            if (!badge) {
+              badge = document.createElement('span')
+              badge.className = 'order-badge'
+              badge.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;margin-left:8px'
+              label.querySelector('div > div').appendChild(badge)
+            }
+            badge.textContent = orderIdx + 1
+          } else if (badge) {
+            badge.remove()
+          }
+        })
+      }
+    }
+
+    showCardSelect()
+  }
+
+  window.editSection = async function(idx) {
+    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sec = sections[idx]
+    if (!sec) return
+    // Don't remove the section upfront — let saveSection handle the merge.
+    // Pass the existing section so it can be replaced atomically.
+    showLayoutConfigForEdit(sec.selectedIds || [], sec.displayLayout, sec)
+  }
+
+  window.deleteSection = function(idx) {
+    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sec = sections[idx]
+    if (!sec) { Admin.showToast('方案不存在', 'error'); return }
+    var selectedNames = (sec.selectedIds || []).map(function(id) {
+      var c = cards.find(function(c) { return c.id === id })
+      return c ? c.title : ''
+    }).filter(Boolean).join('、')
+    Admin.confirmDelete('确定要删除展示方案 <strong>' + escapeHtml(selectedNames || '此项') + '</strong> 吗？', async function() {
+      try {
+        sections.splice(idx, 1)
+        moduleData.sections = sections
+        await DataStore.saveBusinessModule({
+          id: moduleData.id, name: moduleData.name, coverImage: moduleData.coverImage,
+          coverAspectRatio: moduleData.coverAspectRatio,
+          layoutType: moduleData.layoutType, sortOrder: moduleData.sortOrder, status: moduleData.status,
+          cards: moduleData.cards, sections: moduleData.sections
+        })
+        Admin.showToast('方案已删除', 'success')
+        render()
+      } catch (e) {
+        console.error('Delete section error:', e)
+        Admin.showToast('删除失败: ' + (e.message || '未知错误'), 'error')
+        render()
+      }
+    })
+  }
+
+  window.toggleSection = async function(idx) {
+    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sec = sections[idx]
+    sec.status = sec.status === false ? true : false
+    moduleData.sections = sections
+    await DataStore.saveBusinessModule({
+      id: moduleData.id, name: moduleData.name, coverImage: moduleData.coverImage,
+      coverAspectRatio: moduleData.coverAspectRatio,
+      layoutType: moduleData.layoutType, sortOrder: moduleData.sortOrder, status: moduleData.status,
+      cards: moduleData.cards, sections: moduleData.sections
+    })
+    Admin.showToast('状态已更新', 'success')
+    render()
+  }
+
+  window.onSectionDragStart = function(event, idx) {
+    draggedIdx = idx
+    event.target.style.opacity = '0.4'
+    event.dataTransfer.effectAllowed = 'move'
+  }
+
+  window.onSectionDragOver = function(event) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    document.querySelectorAll('.section-row').forEach(function(r) { r.style.borderTop = '' })
+    var row = event.target.closest('.section-row')
+    if (row) { row.style.borderTop = '3px solid #3a5f94' }
+  }
+
+  window.onSectionDrop = async function(event, targetIdx) {
+    event.preventDefault()
+    document.querySelectorAll('.section-row').forEach(function(r) { r.style.borderTop = '' })
+    if (draggedIdx === null || draggedIdx === targetIdx) { draggedIdx = null; return }
+
+    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    if (sections[targetIdx].displayLayout === 'hero') { draggedIdx = null; return }
+    if (sections[draggedIdx].displayLayout === 'hero') { draggedIdx = null; return }
+
+    var moved = sections.splice(draggedIdx, 1)[0]
+    sections.splice(targetIdx, 0, moved)
+
+    var order = 10
+    sections.forEach(function(sec) {
+      if (sec.displayLayout !== 'hero') { sec.sortOrder = order; order += 10 }
+    })
+
+    moduleData.sections = sections
+    await DataStore.saveBusinessModule({
+      id: moduleData.id, name: moduleData.name, coverImage: moduleData.coverImage,
+      coverAspectRatio: moduleData.coverAspectRatio,
+      layoutType: moduleData.layoutType, sortOrder: moduleData.sortOrder, status: moduleData.status,
+      cards: moduleData.cards, sections: moduleData.sections
+    })
+    draggedIdx = null
+    render()
+  }
+
+  window.onSectionDragEnd = function(event) {
+    event.target.style.opacity = ''
+    document.querySelectorAll('.section-row').forEach(function(r) { r.style.borderTop = '' })
+    draggedIdx = null
+  }
+
+  window.editModuleTitle = function() {
+    Admin.showModal('编辑模块标题',
+      '<div class="form-group"><input class="form-input" id="editTitleInput" value="' + escapeHtml(moduleData.name || '') + '" placeholder="请输入模块名称"></div>',
+      function() {
+        var inp = document.getElementById('editTitleInput')
+        var newName = inp ? inp.value.trim() : ''
+        if (!newName) { Admin.showToast('名称不能为空', 'error'); return }
+        moduleData.name = newName
+        DataStore.saveBusinessModule({
+          id: moduleData.id, name: moduleData.name, coverImage: moduleData.coverImage,
+          coverAspectRatio: moduleData.coverAspectRatio,
+          layoutType: moduleData.layoutType, sortOrder: moduleData.sortOrder, status: moduleData.status,
+          cards: moduleData.cards, sections: moduleData.sections
+        })
+        Admin.showToast('标题已更新', 'success')
+        render()
+      }, '确定'
+    )
+    setTimeout(function() {
+      var inp = document.getElementById('editTitleInput')
+      if (inp) { inp.focus(); inp.select() }
+    }, 100)
+  }
+
+  window.previewModuleCover = function() {
+    if (!moduleData.coverImage) { Admin.showToast('未设置封面', 'info'); return }
+    Admin.showModal('封面预览',
+      '<div style="text-align:center">' +
+        '<img src="' + escapeHtml(moduleData.coverImage) + '" style="max-width:100%;max-height:70vh;aspect-ratio:' + (moduleData.coverAspectRatio === '4:3' ? '4/3' : '16/9') + ';object-fit:cover;border-radius:8px" alt="' + escapeHtml(moduleData.name || '') + '">' +
+      '</div>',
+      function() {}, '关闭'
+    )
+  }
+
+  window.toggleModuleAspectRatio = async function() {
+    var current = moduleData.coverAspectRatio || '16:9'
+    var next = current === '16:9' ? '4:3' : '16:9'
+    moduleData.coverAspectRatio = next
+    await DataStore.saveBusinessModule({
+      id: moduleData.id, name: moduleData.name, coverImage: moduleData.coverImage,
+      coverAspectRatio: moduleData.coverAspectRatio,
+      layoutType: moduleData.layoutType, sortOrder: moduleData.sortOrder, status: moduleData.status,
+      cards: moduleData.cards, sections: moduleData.sections
+    })
+    Admin.showToast('封面比例已切换为 ' + next, 'success')
+    render()
+  }
+
+  window.onModuleCoverSelected = async function(input) {
+    var file = input.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { Admin.showToast('图片不能超过 5MB', 'error'); input.value = ''; return }
+    Admin.showToast('正在上传封面...', 'info')
+    try {
+      moduleData.coverImage = await DataStore.uploadBusinessModuleImage(file)
+      input.value = ''
+      await DataStore.saveBusinessModule({
+        id: moduleData.id, name: moduleData.name, coverImage: moduleData.coverImage,
+        coverAspectRatio: moduleData.coverAspectRatio,
+        layoutType: moduleData.layoutType, sortOrder: moduleData.sortOrder, status: moduleData.status,
+        cards: moduleData.cards, sections: moduleData.sections
+      })
+      Admin.showToast('封面上传成功', 'success')
+      render()
+    } catch (e) { Admin.showToast('上传失败: ' + e.message, 'error') }
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+
+<style>
+</style>
+</body>
+</html>

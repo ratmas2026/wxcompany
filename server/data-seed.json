@@ -1,0 +1,667 @@
+{
+  "cards": [
+    {
+      "id": 1,
+      "name": "张明远",
+      "title": "首席执行官",
+      "company": "执行官组合",
+      "phone": "13888888888",
+      "email": "zhangmy@zhixingguan.com",
+      "department": "管理层",
+      "status": true,
+      "avatar": "/uploads/avatars/avatar_1777733314043_260.png",
+      "createdAt": "2024-01-15",
+      "bio": ""
+    },
+    {
+      "id": 2,
+      "name": "李芳华",
+      "title": "首席技术官",
+      "company": "执行官组合",
+      "phone": "13999999999",
+      "email": "lifh@zhixingguan.com",
+      "department": "技术部",
+      "status": true,
+      "avatar": "",
+      "createdAt": "2024-01-20"
+    },
+    {
+      "id": 3,
+      "name": "王建国",
+      "title": "项目总监",
+      "company": "执行官组合",
+      "phone": "13777777777",
+      "email": "wangjg@zhixingguan.com",
+      "department": "项目部",
+      "status": true,
+      "avatar": "",
+      "createdAt": "2024-02-01"
+    },
+    {
+      "id": 4,
+      "name": "陈思雨",
+      "title": "设计总监",
+      "company": "执行官组合",
+      "phone": "13666666666",
+      "email": "chensy@zhixingguan.com",
+      "department": "设计部",
+      "status": false,
+      "avatar": "",
+      "createdAt": "2024-02-10"
+    },
+    {
+      "id": 5,
+      "name": "赵志远",
+      "title": "运营总监",
+      "company": "执行官组合",
+      "phone": "13555555555",
+      "email": "zhaozy@zhixingguan.com",
+      "department": "运营部",
+      "status": true,
+      "avatar": "",
+      "createdAt": "2024-03-01"
+    },
+    {
+      "id": 6,
+      "name": "刘明辉",
+      "title": "高级工程师",
+      "company": "执行官组合",
+      "phone": "13444444444",
+      "email": "liumh@zhixingguan.com",
+      "department": "技术部",
+      "status": true,
+      "avatar": "",
+      "createdAt": "2024-03-15"
+    },
+    {
+      "id": 7,
+      "name": "孙晓婷",
+      "title": "市场经理",
+      "company": "执行官组合",
+      "phone": "13333333333",
+      "email": "sunxt@zhixingguan.com",
+      "department": "市场部",
+      "status": true,
+      "avatar": "",
+      "createdAt": "2024-04-01"
+    },
+    {
+      "id": 8,
+      "name": "周文博",
+      "title": "产品经理",
+      "company": "执行官组合",
+      "phone": "13222222222",
+      "email": "zhouwb@zhixingguan.com",
+      "department": "产品部",
+      "status": false,
+      "avatar": "",
+      "createdAt": "2024-04-20"
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "name": "张伟",
+      "phone": "13800000001",
+      "company": "伟创科技",
+      "title": "CEO",
+      "areas": "数字设计,智能施工",
+      "status": "new",
+      "remark": "",
+      "createdAt": "2025-04-25 09:30"
+    },
+    {
+      "id": 2,
+      "name": "李明",
+      "phone": "13900000002",
+      "company": "明达集团",
+      "title": "副总裁",
+      "areas": "智能生产",
+      "status": "contacted",
+      "remark": "已电话沟通",
+      "createdAt": "2025-04-24 14:20"
+    },
+    {
+      "id": 3,
+      "name": "王芳",
+      "phone": "13700000003",
+      "company": "芳华建设",
+      "title": "总经理",
+      "areas": "智能运维",
+      "status": "converted",
+      "remark": "已签合同",
+      "createdAt": "2025-04-23 11:15"
+    }
+  ],
+  "positions": [
+    {
+      "id": 1,
+      "name": "首席执行官",
+      "sort": 1,
+      "desc": "公司最高决策者",
+      "count": 1
+    },
+    {
+      "id": 2,
+      "name": "首席技术官",
+      "sort": 2,
+      "desc": "技术战略负责人",
+      "count": 1
+    },
+    {
+      "id": 3,
+      "name": "项目总监",
+      "sort": 3,
+      "desc": "项目管理部门负责人",
+      "count": 1
+    },
+    {
+      "id": 4,
+      "name": "设计总监",
+      "sort": 4,
+      "desc": "设计部门负责人",
+      "count": 1
+    },
+    {
+      "id": 5,
+      "name": "运营总监",
+      "sort": 5,
+      "desc": "运营管理部门负责人",
+      "count": 1
+    },
+    {
+      "id": 6,
+      "name": "高级工程师",
+      "sort": 6,
+      "desc": "核心技术岗位",
+      "count": 1
+    },
+    {
+      "id": 7,
+      "name": "市场经理",
+      "sort": 7,
+      "desc": "市场推广负责人",
+      "count": 1
+    },
+    {
+      "id": 8,
+      "name": "产品经理",
+      "sort": 8,
+      "desc": "产品规划负责人",
+      "count": 1
+    }
+  ],
+  "videos": [
+    {
+      "id": 1,
+      "title": "企业宣传片",
+      "cover": "/uploads/covers/cover_1777733683875_763.png",
+      "url": "/uploads/videos/video_1777730303461_364.mp4",
+      "category": "promo",
+      "status": "published",
+      "duration": "3:45",
+      "views": 1280,
+      "createdAt": "2024-06-01",
+      "description": ""
+    },
+    {
+      "id": 2,
+      "title": "深圳湾智能科技大厦项目纪实",
+      "cover": "",
+      "url": "",
+      "category": "project",
+      "status": "published",
+      "duration": "8:20",
+      "views": 856,
+      "createdAt": "2024-07-15"
+    },
+    {
+      "id": 7,
+      "title": "企业使命",
+      "category": "mission",
+      "duration": "",
+      "status": "published",
+      "description": "",
+      "cover": "/uploads/covers/cover_1777730303479_397.jpg",
+      "url": "/uploads/videos/video_1777731331047_830.mp4",
+      "createdAt": "2026-05-02",
+      "views": 0
+    }
+  ],
+  "splashImages": [
+    { "id": 1, "url": "", "sort": 1 },
+    { "id": 2, "url": "", "sort": 2 },
+    { "id": 3, "url": "", "sort": 3 }
+  ],
+  "companyProfiles": [],
+  "companyProfileConfig": { "sections": [] },
+  "nextId": {
+    "cards": 9,
+    "messages": 4,
+    "positions": 9,
+    "videos": 8,
+    "business": 1,
+    "honors": 1,
+    "projects": 3,
+    "sites": 9,
+    "splashImages": 4,
+    "companyProfiles": 1
+  },
+  "companyInfo": {
+    "name": "执行官组合",
+    "since": 2015,
+    "headquarters": "中国，深圳",
+    "description": "自2015年成立以来，执行官组合深耕智能建造与数字化领域，业务涵盖数字设计、智能生产、智能施工与智能运维四大板块，致力于为建筑行业提供全生命周期智能化解决方案。",
+    "stats": {
+      "years": 10,
+      "centers": 8,
+      "patents": 120,
+      "retention": "95%"
+    },
+    "leaderQuote": "我们不仅仅是建造结构；我们是在为未来的智能建筑和人机协作设计数字化底座。",
+    "leaderName": "张明远",
+    "leaderTitle": "首席执行官",
+    "leaderAvatar": "/images/avatar-ceo.jpg",
+    "phone": "4008888888",
+    "email": "contact@zhixingguan.com",
+    "address": "深圳市南山区科技园南路88号智能大厦38层"
+  },
+  "business": [
+    {
+      "id": 1,
+      "name": "数字设计",
+      "icon": "📐",
+      "desc": "全专业BIM协同设计，实现建筑、结构、机电多专业数字化交付",
+      "images": [],
+      "advantages": [
+        {
+          "icon": "🎨",
+          "title": "BIM全专业协同",
+          "desc": "建筑、结构、机电多专业协同设计，减少碰撞冲突"
+        },
+        {
+          "icon": "🌐",
+          "title": "数字化交付标准",
+          "desc": "符合国家BIM交付标准，实现设计到施工无缝对接"
+        },
+        {
+          "icon": "⚡",
+          "title": "快速方案迭代",
+          "desc": "参数化设计工具，支持方案快速比选与优化"
+        }
+      ],
+      "process": [
+        {
+          "title": "需求分析",
+          "desc": "深入了解项目定位与功能需求"
+        },
+        {
+          "title": "概念设计",
+          "desc": "输出多方案比选与效果图"
+        },
+        {
+          "title": "深化设计",
+          "desc": "施工图设计与节点大样"
+        },
+        {
+          "title": "设计交底",
+          "desc": "向施工方进行技术交底"
+        }
+      ],
+      "pricing": [
+        {
+          "name": "基础方案",
+          "price": "¥50",
+          "unit": "/㎡起",
+          "features": [
+            "BIM建模",
+            "碰撞检测",
+            "施工图输出",
+            "基础漫游动画"
+          ]
+        },
+        {
+          "name": "专业方案",
+          "price": "¥100",
+          "unit": "/㎡起",
+          "features": [
+            "全专业BIM协同",
+            "管线综合优化",
+            "4D施工模拟",
+            "工程量统计",
+            "VR漫游"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "智能生产",
+      "icon": "⚙️",
+      "desc": "预制构件数字化工厂管理，精准物流配送体系",
+      "images": [],
+      "advantages": [
+        {
+          "icon": "🏭",
+          "title": "数字化工厂",
+          "desc": "预制构件智能排产，工厂数字化管理"
+        },
+        {
+          "icon": "🔍",
+          "title": "质量追溯体系",
+          "desc": "每件构件可追溯原料批次与生产记录"
+        },
+        {
+          "icon": "📦",
+          "title": "精准物流配送",
+          "desc": "构件编码管理，按施工顺序精准配送"
+        }
+      ],
+      "process": [
+        {
+          "title": "深化设计",
+          "desc": "构件拆分与节点深化"
+        },
+        {
+          "title": "模具制作",
+          "desc": "高精度模具设计与加工"
+        },
+        {
+          "title": "构件生产",
+          "desc": "流水线生产与养护"
+        },
+        {
+          "title": "物流配送",
+          "desc": "按序配送至施工现场"
+        }
+      ],
+      "pricing": [
+        {
+          "name": "标准构件",
+          "price": "¥2000",
+          "unit": "/m³起",
+          "features": [
+            "预制墙板",
+            "叠合楼板",
+            "预制楼梯",
+            "常规运输"
+          ]
+        },
+        {
+          "name": "定制构件",
+          "price": "¥3500",
+          "unit": "/m³起",
+          "features": [
+            "异形构件",
+            "装饰一体化",
+            "保温一体化",
+            "特种运输"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "智能施工",
+      "icon": "🏗️",
+      "desc": "机器人砌筑、AI安全预警、移动端现场管控平台",
+      "images": [],
+      "advantages": [
+        {
+          "icon": "🤖",
+          "title": "智能装备集群",
+          "desc": "机器人砌筑、焊接、喷涂等智能装备应用"
+        },
+        {
+          "icon": "📱",
+          "title": "现场管控平台",
+          "desc": "移动端实时查看进度、质量、安全数据"
+        },
+        {
+          "icon": "🛡️",
+          "title": "安全智能预警",
+          "desc": "AI视觉识别安全隐患，主动预警通知"
+        }
+      ],
+      "process": [
+        {
+          "title": "施工策划",
+          "desc": "场地布置与施工组织设计"
+        },
+        {
+          "title": "基础施工",
+          "desc": "土方开挖与基础工程"
+        },
+        {
+          "title": "主体施工",
+          "desc": "主体结构施工与验收"
+        },
+        {
+          "title": "竣工交付",
+          "desc": "竣工验收与资料移交"
+        }
+      ],
+      "pricing": [
+        {
+          "name": "总承包管理",
+          "price": "面议",
+          "unit": "",
+          "features": [
+            "施工总承包",
+            "进度管理",
+            "质量管理",
+            "安全管理",
+            "资料管理"
+          ]
+        },
+        {
+          "name": "专业分包",
+          "price": "面议",
+          "unit": "",
+          "features": [
+            "专项施工方案",
+            "专业队伍",
+            "设备租赁",
+            "劳务管理"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "智能运维",
+      "icon": "📊",
+      "desc": "数字孪生平台，AI驱动节能优化15%-30%",
+      "images": [],
+      "advantages": [
+        {
+          "icon": "📈",
+          "title": "数字孪生平台",
+          "desc": "建筑实时运行数据映射到三维模型"
+        },
+        {
+          "icon": "🔋",
+          "title": "节能优化算法",
+          "desc": "AI驱动暖通空调系统节能15%-30%"
+        },
+        {
+          "icon": "🔔",
+          "title": "预测性维护",
+          "desc": "设备状态监测，故障提前预警"
+        }
+      ],
+      "process": [
+        {
+          "title": "数据接入",
+          "desc": "设备系统数据联网采集"
+        },
+        {
+          "title": "平台部署",
+          "desc": "数字孪生平台搭建"
+        },
+        {
+          "title": "运营优化",
+          "desc": "持续节能与运维优化"
+        },
+        {
+          "title": "定期报告",
+          "desc": "月度运维分析报告"
+        }
+      ],
+      "pricing": [
+        {
+          "name": "基础运维",
+          "price": "¥5",
+          "unit": "/㎡/月起",
+          "features": [
+            "设备巡检",
+            "报修响应",
+            "能耗统计",
+            "月度报告"
+          ]
+        },
+        {
+          "name": "智能运维",
+          "price": "¥12",
+          "unit": "/㎡/月起",
+          "features": [
+            "数字孪生",
+            "AI节能",
+            "预测维护",
+            "实时告警",
+            "专项优化"
+          ]
+        }
+      ]
+    }
+  ],
+  "honors": [],
+  "projects": [
+    {
+      "id": 1,
+      "name": "Nexus 绿色天篷",
+      "location": "新加坡",
+      "year": 2023,
+      "desc": "一个集成了40,000种原生植物的高密度住宅垂直森林。通过自然蒸腾作用将冷却成本降低了40%。",
+      "tags": [
+        "亲生物设计",
+        "能源等级 A+",
+        "城市更新"
+      ],
+      "image": "/images/project-1.jpg",
+      "images": [
+        "/images/hero-bg.jpg",
+        "/images/office-bg.jpg",
+        "/images/hero-bg.jpg",
+        "/images/office-bg.jpg"
+      ],
+      "address": "新加坡滨海湾花园路88号",
+      "scale": "总建筑面积 85,000㎡，地上45层，地下3层",
+      "period": "2021年6月 - 2023年12月",
+      "investment": "约 12.8 亿新加坡元",
+      "highlights": [
+        "全球首个超高层垂直森林住宅项目",
+        "集成40,000种原生植物，自然蒸腾降温40%",
+        "获新加坡Green Mark铂金认证",
+        "亲生物设计理念引领城市更新潮流"
+      ],
+      "detail": "Nexus 绿色天篷是公司在新加坡承建的标杆性超高层生态建筑项目。项目采用亲生物设计理念，将40,000种原生植物融入建筑结构，形成独特的垂直森林生态系统。\n\n通过自然蒸腾作用，项目实现了被动降温，冷却成本降低40%。同时集成智能灌溉系统和植物健康监测平台，确保绿植墙体的可持续养护。\n\n项目获新加坡Green Mark铂金认证，成为城市更新与生态建筑融合的全球典范。",
+      "detailImages": [
+        "/images/hero-bg.jpg",
+        "/images/office-bg.jpg"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "AeroFlow 4号航站楼",
+      "location": "迪拜",
+      "year": 2022,
+      "desc": "通过算法人群管理和非接触式生物识别通道重新定义旅客流量。专为5000万年客流量设计。",
+      "tags": [
+        "基础设施",
+        "AI 驱动",
+        "出行"
+      ],
+      "image": "/images/project-2.jpg",
+      "images": [
+        "/images/hero-bg.jpg",
+        "/images/office-bg.jpg",
+        "/images/hero-bg.jpg",
+        "/images/office-bg.jpg"
+      ],
+      "address": "迪拜阿勒马克图姆国际机场区",
+      "scale": "总建筑面积 680,000㎡，年客流量5000万",
+      "period": "2020年1月 - 2022年9月",
+      "investment": "约 42 亿迪拉姆",
+      "highlights": [
+        "全球首个全AI驱动的旅客流程管理系统",
+        "非接触式生物识别通道覆盖全航站楼",
+        "算法人群管理提升旅客通行效率35%",
+        "获国际机场协会最佳创新奖"
+      ],
+      "detail": "AeroFlow 4号航站楼是迪拜新一代智慧机场的旗舰项目。项目全面应用AI人群管理算法和非接触式生物识别技术，重新定义了旅客出行体验。\n\n航站楼部署超过5,000个AI传感器节点，实时分析旅客流量并动态调整安检和通关资源。非接触式生物识别通道实现\"无感通行\"，从值机到登机全程无需出示证件。\n\n项目专为5000万年客流量设计，实际运营首年旅客满意度提升28%。",
+      "detailImages": [
+        "/images/hero-bg.jpg",
+        "/images/office-bg.jpg"
+      ]
+    }
+  ],
+  "sites": [
+    {
+      "id": 1,
+      "projectName": "深圳湾智能科技大厦",
+      "stage": "主体结构施工中",
+      "stageValue": "structure",
+      "image": "/images/hero-bg.jpg"
+    },
+    {
+      "id": 2,
+      "projectName": "上海浦东金融中心",
+      "stage": "基础施工",
+      "stageValue": "foundation",
+      "image": "/images/office-bg.jpg"
+    },
+    {
+      "id": 3,
+      "projectName": "广州知识城创新园",
+      "stage": "装饰装修",
+      "stageValue": "decoration",
+      "image": "/images/hero-bg.jpg"
+    },
+    {
+      "id": 4,
+      "projectName": "成都天府科技园",
+      "stage": "主体结构施工中",
+      "stageValue": "structure",
+      "image": "/images/office-bg.jpg"
+    },
+    {
+      "id": 5,
+      "projectName": "北京中关村总部基地",
+      "stage": "竣工交付",
+      "stageValue": "complete",
+      "image": "/images/hero-bg.jpg"
+    },
+    {
+      "id": 6,
+      "projectName": "杭州云栖数据中心",
+      "stage": "主体结构施工中",
+      "stageValue": "structure",
+      "image": "/images/office-bg.jpg"
+    },
+    {
+      "id": 7,
+      "projectName": "武汉光谷研发中心",
+      "stage": "基础施工",
+      "stageValue": "foundation",
+      "image": "/images/hero-bg.jpg"
+    },
+    {
+      "id": 8,
+      "projectName": "南京江北新区医院",
+      "stage": "装饰装修",
+      "stageValue": "decoration",
+      "image": "/images/office-bg.jpg"
+    }
+  ]
+}

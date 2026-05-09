@@ -1,0 +1,194 @@
+<import src="../company/company.wxml" />
+
+<view class="page-container">
+  <top-bar title="{{moduleName || '业务模块'}}" showBack="{{true}}" titleAlign="center" />
+
+  <!-- Hero 卡片 -->
+  <view wx:if="{{heroCard}}" class="hero-section" style="height:{{heroCard._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#e2e8f0" bindtap="onCardTap" data-card="{{heroCard}}">
+    <image wx:if="{{heroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{heroCard.cover.backgroundImage}}" mode="aspectFill" />
+    <view class="hero-content">
+      <block wx:for="{{heroCard.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+        <template is="textBox" data="{{tb}}" />
+      </block>
+      <view class="hero-card-middle">
+        <block wx:for="{{heroCard.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+          <template is="textBox" data="{{tb}}" />
+        </block>
+      </view>
+      <block wx:for="{{heroCard.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+        <template is="textBox" data="{{tb}}" />
+      </block>
+      <rich-text wx:if="{{heroCard.cover.body}}" nodes="{{heroCard.cover.body}}" class="cover-body-rich"></rich-text>
+      <view wx:if="{{heroCard.cover.video}}" class="hero-video-btn" data-card="{{heroCard}}" catchtap="onCoverVideoTap">
+        <text class="profile-card-play-icon">▶</text>
+      </view>
+      <view wx:if="{{heroCard.detail.detailEntry}}" class="profile-card-entry">
+        <text>查看详情 →</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 非 Hero Sections -->
+  <block wx:if="{{sections.length > 0}}">
+    <view wx:for="{{sections}}" wx:key="id" class="profile-section">
+      <view wx:if="{{sections.length > 1}}" class="profile-section-divider">
+        <view class="profile-section-line"></view>
+      </view>
+
+      <!-- 单张 -->
+      <view wx:if="{{item.displayLayout === 'single'}}" class="profile-single">
+        <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
+          class="profile-card profile-card-single" style="height:{{card._height}}rpx"
+          data-card="{{card}}" bindtap="onCardTap">
+          <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+          <view class="profile-card-overlay">
+            <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+              <template is="textBox" data="{{tb}}" />
+            </block>
+            <view class="profile-card-middle">
+              <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+            </view>
+            <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+              <template is="textBox" data="{{tb}}" />
+            </block>
+            <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+            <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-card="{{card}}" catchtap="onCoverVideoTap">
+              <text class="profile-card-play-icon">▶</text>
+            </view>
+          </view>
+          <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
+            <text>查看详情 →</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 轮播 -->
+      <swiper wx:if="{{item.displayLayout === 'horizontal-scroll'}}"
+        class="profile-swiper"
+        indicator-dots="{{item.cards.length > 1}}"
+        indicator-color="rgba(255,255,255,0.4)"
+        indicator-active-color="#fff"
+        autoplay circular
+        style="height:{{item.cards[0]._height}}rpx">
+        <swiper-item wx:for="{{item.cards}}" wx:for-item="card" wx:key="id">
+          <view class="profile-card profile-card-swiper" style="height:{{card._height}}rpx"
+            data-card="{{card}}" bindtap="onCardTap">
+            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <view class="profile-card-overlay">
+              <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <view class="profile-card-middle">
+                <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+              </view>
+              <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-card="{{card}}" catchtap="onCoverVideoTap">
+                <text class="profile-card-play-icon">▶</text>
+              </view>
+            </view>
+            <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
+              <text>查看详情 →</text>
+            </view>
+          </view>
+        </swiper-item>
+      </swiper>
+
+      <!-- 宫格 -->
+      <view wx:if="{{item.displayLayout === 'grid'}}" class="profile-grid g-active" style="display:grid;grid-template-columns:repeat({{item.gridCols}},1fr);gap:{{item.gridCols === 3 ? '16' : '20'}}rpx">
+        <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
+          class="profile-card profile-card-grid" style="height:{{card._height}}rpx"
+          data-card="{{card}}" bindtap="onCardTap">
+          <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+          <view class="profile-card-overlay">
+            <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+              <template is="textBox" data="{{tb}}" />
+            </block>
+            <view class="profile-card-middle">
+              <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+            </view>
+            <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+              <template is="textBox" data="{{tb}}" />
+            </block>
+            <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+            <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-card="{{card}}" catchtap="onCoverVideoTap">
+              <text class="profile-card-play-icon">▶</text>
+            </view>
+          </view>
+          <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
+            <text>查看详情 →</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- Tab标签页 -->
+      <view wx:if="{{item.displayLayout === 'tab'}}" class="tab-section">
+        <scroll-view wx:if="{{item.tabLayout === 'scroll'}}" scroll-x class="tab-headers-scroll" enable-flex>
+          <view class="tab-headers-inner">
+            <view wx:for="{{item.tabs}}" wx:for-item="tab" wx:for-index="tabIdx" wx:key="title"
+              class="tab-header {{item.activeTab === tabIdx ? 'tab-header-active' : ''}}"
+              data-section-id="{{item.id}}" data-tab-index="{{tabIdx}}" bindtap="onTabSwitch">
+              <text>{{tab.title}}</text>
+            </view>
+          </view>
+        </scroll-view>
+        <view wx:else class="tab-headers-fixed">
+          <view wx:for="{{item.tabs}}" wx:for-item="tab" wx:for-index="tabIdx" wx:key="title"
+            class="tab-header {{item.activeTab === tabIdx ? 'tab-header-active' : ''}}"
+            data-section-id="{{item.id}}" data-tab-index="{{tabIdx}}" bindtap="onTabSwitch">
+            <text>{{tab.title}}</text>
+          </view>
+        </view>
+        <view class="profile-grid">
+          <view wx:for="{{item.currentTabCards}}" wx:for-item="card" wx:key="id"
+            class="profile-card profile-card-grid" style="height:{{card._height}}rpx"
+            data-card="{{card}}" bindtap="onCardTap">
+            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <view class="profile-card-overlay">
+              <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <view class="profile-card-middle">
+                <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+              </view>
+              <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-card="{{card}}" catchtap="onCoverVideoTap">
+                <text class="profile-card-play-icon">▶</text>
+              </view>
+            </view>
+            <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
+              <text>查看详情 →</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 暂无卡片 -->
+  <block wx:else>
+    <view class="intro-card card">
+      <text class="section-title">暂无卡片</text>
+      <text class="section-desc">该模块下暂无已启用展示方案</text>
+    </view>
+  </block>
+
+  <!-- 视频播放遮罩 -->
+  <view wx:if="{{currentVideo}}" class="video-player-overlay" bindtap="closeVideo">
+    <video class="video-player" src="{{currentVideo.url}}" controls autoplay show-center-play-btn object-fit="contain" />
+    <view class="video-close" bindtap="closeVideo">✕</view>
+  </view>
+</view>

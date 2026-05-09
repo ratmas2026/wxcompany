@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>视频库管理 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('video')
+  await DataStore.init()
+
+  let activeTab = 'all'
+  let videos = []
+
+  const tabs = [
+    { value: 'all', label: '所有视频' },
+    { value: 'published', label: '已发布' },
+    { value: 'draft', label: '草稿' },
+    { value: 'disabled', label: '已禁用' }
+  ]
+
+  function render() {
+    videos = DataStore.getVideos()
+    const filtered = activeTab === 'all' ? videos : videos.filter(v => v.status === activeTab)
+
+    const statusBadge = (s) => {
+      const map = {
+        published: '<span class="badge badge-success">已发布</span>',
+        draft: '<span class="badge badge-warning">草稿</span>',
+        disabled: '<span class="badge badge-danger">已禁用</span>'
+      }
+      return map[s] || ''
+    }
+
+    const cards = filtered.map(v => `
+      <div class="media-card">
+        <div class="media-thumb" style="background:linear-gradient(135deg,var(--surface-container),var(--surface-container-low));${v.cover ? '' : ''}">
+          ${v.cover ? `<img src="${v.cover}" style="width:100%;height:100%;object-fit:cover" alt="${v.title}">` : `<span style="font-size:48px">🎬</span>`}
+          ${v.duration ? `<span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">${v.duration}</span>` : ''}
+        </div>
+        <div class="media-body">
+          <div class="media-title">${v.title}</div>
+          <div class="media-meta">
+            ${statusBadge(v.status)}
+            <span style="margin-left:12px">👁 ${v.views || 0} 次</span>
+            <span style="margin-left:12px">📅 ${v.createdAt}</span>
+          </div>
+          <div class="media-actions">
+            <button class="btn btn-outline btn-sm" onclick="window.editVideo(${v.id})">✏️ 编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="window.deleteVideo(${v.id})">🗑 删除</button>
+          </div>
+        </div>
+      </div>
+    `).join('')
+
+    const tabHTML = tabs.map(t => `
+      <button class="tab ${activeTab === t.value ? 'active' : ''}" onclick="window.setTab('${t.value}')">${t.label}</button>
+    `).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>视频库管理</h1>
+        <button class="btn btn-primary" onclick="window.location.href='video-edit.html'">+ 上传视频</button>
+      </div>
+
+      <div class="tab-bar">${tabHTML}</div>
+
+      <div class="card-grid">
+        ${cards || '<div class="empty-state"><div class="empty-icon">🎬</div><p>暂无视频</p></div>'}
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  window.setTab = function(tab) {
+    activeTab = tab
+    render()
+  }
+
+  window.editVideo = function(id) {
+    window.location.href = `video-edit.html?id=${id}`
+  }
+
+  window.deleteVideo = function(id) {
+    const v = videos.find(v => v.id === id)
+    Admin.confirmDelete(`确定要删除视频 <strong>${v?.title || '此项'}</strong> 吗？`, () => {
+      DataStore.deleteVideos([id])
+      Admin.showToast('删除成功', 'success')
+      render()
+    })
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+</body>
+</html>

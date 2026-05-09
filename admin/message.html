@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>留言管理 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('message')
+  await DataStore.init()
+
+  const pageSize = 20
+  let currentPage = 1
+  let searchQuery = ''
+  let statusFilter = 'all'
+  let messages = []
+
+  const statusOptions = [
+    { value: 'new', label: '新咨询' },
+    { value: 'contacted', label: '已联系' },
+    { value: 'converted', label: '已转化' },
+    { value: 'invalid', label: '无效' }
+  ]
+
+  function statusBadgeClass(status) {
+    const map = { new: 'badge-info', contacted: 'badge-warning', converted: 'badge-success', invalid: 'badge-danger' }
+    return map[status] || 'badge-neutral'
+  }
+
+  function statusLabelText(status) {
+    const map = { new: '新咨询', contacted: '已联系', converted: '已转化', invalid: '无效' }
+    return map[status] || status
+  }
+
+  function render() {
+    messages = DataStore.getMessages()
+
+    if (statusFilter !== 'all') {
+      messages = messages.filter(m => m.status === statusFilter)
+    }
+    if (searchQuery) {
+      messages = messages.filter(m =>
+        m.name.includes(searchQuery) ||
+        m.company.includes(searchQuery) ||
+        m.phone.includes(searchQuery) ||
+        m.areas.includes(searchQuery)
+      )
+    }
+
+    const total = messages.length
+    const start = (currentPage - 1) * pageSize
+    const paged = messages.slice(start, start + pageSize)
+
+    const tabs = [
+      { value: 'all', label: '全部' },
+      { value: 'new', label: '新咨询' },
+      { value: 'contacted', label: '已联系' },
+      { value: 'converted', label: '已转化' },
+      { value: 'invalid', label: '无效' }
+    ]
+
+    const tabHTML = tabs.map(t => `
+      <button class="tab ${statusFilter === t.value ? 'active' : ''}" onclick="window.setFilter('${t.value}')">${t.label}</button>
+    `).join('')
+
+    const rows = paged.map(m => `
+      <tr>
+        <td class="checkbox-cell"><input type="checkbox" value="${m.id}" class="row-check"></td>
+        <td style="font-weight:600">${m.name}</td>
+        <td>
+          <div style="font-weight:600">${m.company || '<span style="color:var(--outline)">-</span>'}</div>
+          <div style="font-size:11px;color:var(--on-surface-variant)">${m.title || '<span style="color:var(--outline)">-</span>'}</div>
+        </td>
+        <td>${m.phone}</td>
+        <td>${m.areas}</td>
+        <td style="text-align:center">
+          <span class="badge ${statusBadgeClass(m.status)}" style="cursor:pointer"
+                onclick="window.cycleStatus(${m.id}, '${m.status}')" title="点击切换状态">
+            ${statusLabelText(m.status)}
+          </span>
+        </td>
+        <td style="cursor:pointer;color:var(--primary);font-weight:500"
+            onclick="window.editRemark(${m.id}, '${(m.remark || '').replace(/'/g, "\\'")}')"
+            title="点击编辑备注">
+          ${m.remark ? m.remark : '<span style="color:var(--outline)">点击添加备注</span>'}
+        </td>
+        <td>${m.createdAt}</td>
+        <td style="text-align:center">
+          <button class="btn btn-danger btn-sm" onclick="window.deleteMsg(${m.id})">删除</button>
+        </td>
+      </tr>
+    `).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>留言管理</h1>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="window.exportMessages()">📥 导出Excel</button>
+        </div>
+      </div>
+
+      <div class="tab-bar">${tabHTML}</div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input type="text" class="form-input" id="searchInput" placeholder="搜索姓名/公司/职称/电话/合作方面..." style="width:280px" value="${searchQuery}">
+            <button class="btn btn-danger btn-sm" onclick="window.batchDeleteMsg()">🗑 批量删除</button>
+          </div>
+          <div class="toolbar-right">
+            <span style="font-size:13px;color:var(--on-surface-variant)">共 ${total} 条</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="checkbox-cell"><input type="checkbox" id="selectAll" onchange="window.toggleSelectAll(this)"></th>
+                <th>姓名</th>
+                <th>公司/职称</th>
+                <th>电话</th>
+                <th>合作方面</th>
+                <th style="text-align:center">状态</th>
+                <th>备注</th>
+                <th>提交时间</th>
+                <th style="text-align:center">操作</th>
+              </tr>
+            </thead>
+            <tbody>${rows || '<tr><td colspan="9"><div class="empty-state"><p>暂无留言数据</p></div></td></tr>'}</tbody>
+          </table>
+        </div>
+
+        ${Admin.renderPagination(total, currentPage, pageSize, (p) => { currentPage = p; render() })}
+      </div>
+    `
+
+    Admin.setPageContent(html)
+
+    const searchEl = document.getElementById('searchInput')
+    if (searchEl) {
+      searchEl.addEventListener('input', (e) => {
+        searchQuery = e.target.value
+        currentPage = 1
+        render()
+      })
+    }
+  }
+
+  window.toggleSelectAll = function(el) {
+    document.querySelectorAll('.row-check').forEach(cb => { cb.checked = el.checked })
+  }
+
+  window.setFilter = function(f) {
+    statusFilter = f
+    currentPage = 1
+    render()
+  }
+
+  window.editRemark = function(id, current) {
+    Admin.showModal('编辑备注',
+      `<div class="form-group">
+        <label class="form-label">备注内容</label>
+        <textarea class="form-textarea" id="remarkInput">${current}</textarea>
+      </div>`,
+      () => {
+        const val = document.getElementById('remarkInput').value
+        DataStore.updateMessage(id, { remark: val })
+        Admin.showToast('备注已保存', 'success')
+        render()
+      }, '保存'
+    )
+  }
+
+  window.cycleStatus = function(id, currentStatus) {
+    var order = ['new', 'contacted', 'converted', 'invalid']
+    var idx = order.indexOf(currentStatus)
+    var next = order[(idx + 1) % order.length]
+    DataStore.updateMessage(id, { status: next })
+    Admin.showToast('状态已更新', 'success')
+    render()
+  }
+
+  window.deleteMsg = function(id) {
+    const msg = messages.find(m => m.id === id)
+    Admin.confirmDelete(`确定要删除 <strong>${msg?.name || '此项'}</strong> 的留言吗？`, () => {
+      DataStore.deleteMessages([id])
+      Admin.showToast('删除成功', 'success')
+      render()
+    })
+  }
+
+  window.batchDeleteMsg = function() {
+    const ids = [...document.querySelectorAll('.row-check:checked')].map(cb => parseInt(cb.value))
+    if (!ids.length) { Admin.showToast('请先选择', 'info'); return }
+    Admin.confirmDelete(`确定要删除选中的 <strong>${ids.length}</strong> 条留言吗？`, () => {
+      DataStore.deleteMessages(ids)
+      Admin.showToast(`已删除 ${ids.length} 条`, 'success')
+      render()
+    })
+  }
+
+  window.exportMessages = function() {
+    const data = messages.map(({ id, ...rest }) => rest)
+    Admin.exportCSV(data, '留言信息')
+    Admin.showToast('导出成功', 'success')
+  }
+
+  window.onGlobalSearch = function(query) {
+    searchQuery = query
+    currentPage = 1
+    render()
+  }
+
+  render()
+})()
+</script>
+</body>
+</html>

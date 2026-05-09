@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>编辑业务模块 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('business-module')
+  await DataStore.init()
+
+  const params = new URLSearchParams(window.location.search)
+  const editId = params.get('id') ? parseInt(params.get('id')) : null
+  const isEdit = !!editId
+
+  let moduleData = {
+    id: null, name: '', coverImage: '', coverAspectRatio: '16:9', layoutType: 'carousel',
+    sortOrder: 0, status: true, cards: []
+  }
+  let pendingCoverImage = ''
+
+  if (isEdit) {
+    const existing = DataStore.getBusinessModule(editId)
+    if (existing) {
+      moduleData = { ...moduleData, ...existing }
+      moduleData.cards = [...(existing.cards || [])]
+    }
+  }
+  pendingCoverImage = moduleData.coverImage || ''
+
+
+  function render() {
+    const html = `
+      <div class="page-header">
+        <h1>${isEdit ? '编辑业务模块' : '新增业务模块'}</h1>
+        <button class="btn btn-secondary" onclick="window.location.href='business-module.html'">← 返回</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>模块信息</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">模块名称 <span style="color:#e53e3e;">*</span></label>
+            <input class="form-input" id="field_name" value="${escapeHtml(moduleData.name)}" placeholder="请输入模块名称">
+          </div>
+          <div class="form-group">
+            <label class="form-label">封面图片</label>
+            ${pendingCoverImage ? `<div class="media-preview-sm" style="width:160px;height:90px"><img src="${escapeHtml(pendingCoverImage)}" class="media-preview-img"><button class="media-remove-btn" onclick="window.removeCover()">✕</button></div>` : ''}
+            <div class="media-upload-row" style="margin-top:8px">
+              ${pendingCoverImage ? '<span class="media-status">已上传</span>' : '<span class="media-empty">未设置</span>'}
+              <button class="btn btn-outline btn-sm" onclick="document.getElementById('coverInput').click()">${pendingCoverImage ? '更换' : '上传'}</button>
+            </div>
+            <input type="file" id="coverInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="window.onCoverSelected(this)">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:32px;display:flex;gap:12px;justify-content:center;">
+        <button class="btn btn-secondary" onclick="window.location.href='business-module.html'">取消</button>
+        <button class="btn btn-primary btn-lg" onclick="window.saveModule()">保存</button>
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  function collectData() {
+    const nameEl = document.getElementById('field_name')
+    return {
+      id: moduleData.id,
+      name: nameEl ? nameEl.value.trim() : moduleData.name,
+      coverImage: pendingCoverImage,
+      coverAspectRatio: moduleData.coverAspectRatio,
+      sortOrder: moduleData.sortOrder,
+      status: moduleData.status,
+      cards: moduleData.cards
+    }
+  }
+
+  window.onCoverSelected = async function(input) {
+    const file = input.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { Admin.showToast('图片不能超过 5MB', 'error'); input.value = ''; return }
+    Admin.showToast('正在上传封面...', 'info')
+    try {
+      const nameEl = document.getElementById('field_name')
+      if (nameEl) moduleData.name = nameEl.value.trim()
+      pendingCoverImage = await DataStore.uploadBusinessModuleImage(file)
+      input.value = ''
+      render()
+    } catch (e) { Admin.showToast('上传失败: ' + e.message, 'error') }
+  }
+
+  window.removeCover = function() {
+    const nameEl = document.getElementById('field_name')
+    if (nameEl) moduleData.name = nameEl.value.trim()
+    pendingCoverImage = ''
+    render()
+  }
+
+  window.saveModule = async function() {
+    const data = collectData()
+    if (!data.name) { Admin.showToast('请输入模块名称', 'error'); return }
+
+    try {
+      await DataStore.saveBusinessModule(data)
+      Admin.showToast(isEdit ? '已更新' : '已创建', 'success')
+      const targetId = data.id
+      if (!targetId) {
+        const modules = DataStore.getBusinessModules()
+        const newest = modules.reduce((max, m) => (m.id > (max ? max.id : 0) ? m : max), null)
+        if (newest) {
+          setTimeout(() => { window.location.href = 'business-module-cards-list.html?id=' + newest.id }, 800)
+          return
+        }
+      }
+      setTimeout(() => { window.location.href = 'business-module-cards-list.html?id=' + targetId }, 800)
+    } catch (e) {
+      Admin.showToast('保存失败: ' + e.message, 'error')
+    }
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+
+<style>
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.card-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a202c;
+}
+.card-body { }
+.form-group { margin-bottom: 20px; }
+.form-label { display: block; font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 8px; }
+.form-input { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; color: #1a202c; background: #fff; box-sizing: border-box; }
+.form-input:focus { outline: none; border-color: #3a5f94; box-shadow: 0 0 0 3px rgba(58,95,148,0.1); }
+.form-select { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; color: #1a202c; background: #fff; box-sizing: border-box; }
+.media-upload-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.media-preview-sm { position: relative; width: 80px; height: 56px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; }
+.media-preview-img { width: 100%; height: 100%; object-fit: cover; }
+.media-remove-btn { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.media-empty { color: #a0aec0; font-size: 14px; }
+.media-status { color: #1e8e3e; font-size: 14px; font-weight: 600; }
+.btn-lg { padding: 14px 48px; font-size: 16px; font-weight: 600; }
+</style>
+</body>
+</html>

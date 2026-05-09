@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>核心业务 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('business-module')
+  await DataStore.init()
+
+  let modules = []
+  let draggedIdx = null
+
+  const layoutLabels = {
+    'carousel': '🔄 轮播',
+    'grid-4': '🔲 四宫格',
+    'grid-6-2x3': '📐 六宫格 2×3',
+    'grid-6-3x2': '📐 六宫格 3×2',
+    'single': '📄 单张展示',
+    'hero': '📋 顶部栏'
+  }
+
+  function render() {
+    modules = DataStore.getBusinessModules()
+    var config = DataStore.getBusinessModulePageConfig()
+    var configSections = (config.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+
+    const cards = modules.map(m => `
+      <div class="media-card" style="cursor:pointer" onclick="window.location.href='business-module-cards-list.html?id=${m.id}'">
+        <div class="media-thumb" style="background:linear-gradient(135deg,#e8edf5,#dce3ef);">
+          ${m.coverImage
+            ? `<img src="${m.coverImage}" style="width:100%;height:100%;object-fit:cover" alt="${escapeHtml(m.name)}">`
+            : `<span style="font-size:48px">📊</span>`}
+        </div>
+        <div class="media-body">
+          <div class="media-title">${escapeHtml(m.name || '未命名模块')}</div>
+          <div class="media-meta">
+            <span>${layoutLabels[m.layoutType] || m.layoutType}</span>
+            <span>📇 ${(m.cards || []).length} 张卡片</span>
+          </div>
+          <div class="media-actions">
+            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();window.location.href='business-module-cards-list.html?id=${m.id}'">✏️ 编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();window.deleteModule(${m.id})">🗑 删除</button>
+          </div>
+        </div>
+      </div>
+    `).join('')
+
+    // Build sections table
+    var circledDigits = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩']
+    var layoutCounts = {}
+    configSections.forEach(function(sec) {
+      if (sec.displayLayout !== 'hero') {
+        layoutCounts[sec.displayLayout] = (layoutCounts[sec.displayLayout] || 0) + 1
+      }
+    })
+    var layoutSuffix = {}
+    Object.keys(layoutCounts).forEach(function(k) { if (layoutCounts[k] > 1) layoutSuffix[k] = 0 })
+    var nonHeroCount = 0
+
+    var sectionRows = configSections.map(function(sec, idx) {
+      var selectedModules = sec.selectedIds.map(function(id) { return modules.find(function(m) { return m.id === id }) }).filter(Boolean)
+      var isHero = sec.displayLayout === 'hero'
+      if (!isHero) nonHeroCount++
+      var orderBadge = isHero
+        ? '<span style="font-size:13px;color:#3a5f94;font-weight:700">📌</span>'
+        : '<span style="font-size:14px;color:#3a5f94;font-weight:700">' + (circledDigits[nonHeroCount - 1] || nonHeroCount) + '</span>'
+      var dragHandle = isHero
+        ? ''
+        : '<span style="cursor:grab;color:#a0aec0;font-size:16px;user-select:none;margin-right:6px" title="拖动排序">⠿</span>'
+      var dragAttrs = isHero
+        ? ''
+        : 'draggable="true" ondragstart="window.onSectionDragStart(event,' + idx + ')" ondragover="window.onSectionDragOver(event)" ondrop="window.onSectionDrop(event,' + idx + ')" ondragend="window.onSectionDragEnd(event)"'
+      var moduleNames = selectedModules.map(function(m) { return escapeHtml(m.name) }).join('、') || '无'
+      var statusOn = sec.status !== false
+      var layoutName = layoutLabels[sec.displayLayout] || sec.displayLayout
+      if (!isHero && layoutSuffix[sec.displayLayout] !== undefined) {
+        layoutSuffix[sec.displayLayout]++
+        layoutName += layoutSuffix[sec.displayLayout]
+      }
+      return '<tr class="section-row" ' + dragAttrs + ' data-idx="' + idx + '" style="' + (isHero ? '' : 'cursor:grab') + '">' +
+        '<td style="white-space:nowrap">' + dragHandle + orderBadge + '</td>' +
+        '<td style="font-weight:700;font-size:14px">' + layoutName + '</td>' +
+        '<td style="font-size:13px;color:#4a5568">' + moduleNames + '</td>' +
+        '<td style="text-align:right">' +
+          '<label class="switch">' +
+            '<input type="checkbox" ' + (statusOn ? 'checked' : '') + ' onchange="window.toggleSection(' + idx + ')">' +
+            '<span class="switch-slider"></span>' +
+          '</label>' +
+        '</td>' +
+        '<td style="text-align:center;white-space:nowrap">' +
+          '<button class="btn btn-outline btn-sm" onclick="window.editSection(' + idx + ')">编辑</button> ' +
+          '<button class="btn btn-danger btn-sm" onclick="window.deleteSection(' + idx + ')">删除</button>' +
+        '</td>' +
+      '</tr>'
+    }).join('')
+
+    var sectionsHTML = configSections.length > 0 ? '<div class="card" style="margin-top:24px;padding:20px 24px"><h3 style="margin:0 0 16px 0;font-size:16px">已保存的展示方案</h3><div class="table-wrap"><table><thead><tr><th style="width:60px">位置</th><th>方案名称</th><th>包含模块</th><th style="text-align:right;width:60px">状态</th><th style="text-align:center;width:140px">操作</th></tr></thead><tbody>' + sectionRows + '</tbody></table></div></div>' : ''
+
+    const html = `
+      <div class="page-header">
+        <h1>核心业务</h1>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="window.showLayoutConfig()">⚙️ 展示设置</button>
+          <button class="btn btn-primary" onclick="window.showCreateModuleModal()">+ 新增业务</button>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        ${cards || '<div class="empty-state"><div class="empty-icon">📊</div><p>暂无业务模块</p><p style="font-size:13px;color:#a0aec0;margin-top:8px;">点击右上角「新增模块」按钮添加</p></div>'}
+      </div>
+
+      ${sectionsHTML}
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  window.deleteModule = function(id) {
+    const m = modules.find(m => m.id === id)
+    Admin.confirmDelete(`确定要删除模块 <strong>${escapeHtml(m?.name || '此项')}</strong> 吗？<br><small>模块下的所有卡片也将被删除</small>`, async () => {
+      await DataStore.deleteBusinessModule(id)
+      Admin.showToast('删除成功', 'success')
+      render()
+    })
+  }
+
+  // ===== 新增模块弹窗流程 =====
+  window._createModuleId = null
+  window._pendingCreateCoverUrl = ''
+  window._pendingCreateAspectRatio = '16:9'
+
+  window.showCreateModuleModal = function() {
+    Admin.showModal('编辑模块名称',
+      '<div class="form-group"><input class="form-input" id="createModuleNameInput" placeholder="请输入模块名称"></div>',
+      async function() {
+        var inp = document.getElementById('createModuleNameInput')
+        var name = inp ? inp.value.trim() : ''
+        if (!name) { Admin.showToast('名称不能为空', 'error'); return }
+        try {
+          await DataStore.saveBusinessModule({
+            name: name,
+            coverImage: '',
+            coverAspectRatio: '16:9',
+            layoutType: 'carousel',
+            sortOrder: 0,
+            status: true,
+            cards: []
+          })
+          var modules = DataStore.getBusinessModules()
+          var newest = modules.reduce(function(max, m) { return (m.id > (max ? max.id : 0) ? m : max) }, null)
+          var newId = newest ? newest.id : null
+          Admin.showToast('模块已创建', 'success')
+          setTimeout(function() { window.showCreateCoverModal(newId) }, 200)
+        } catch (e) {
+          Admin.showToast('创建失败: ' + e.message, 'error')
+        }
+      }, '下一步'
+    )
+    setTimeout(function() {
+      var inp = document.getElementById('createModuleNameInput')
+      if (inp) { inp.focus(); inp.select() }
+    }, 100)
+  }
+
+  window.showCreateCoverModal = function(moduleId) {
+    window._createModuleId = moduleId
+    window._pendingCreateCoverUrl = ''
+    window._pendingCreateAspectRatio = '16:9'
+
+    var bodyHTML =
+      '<div class="form-group">' +
+        '<label class="form-label">模块封面</label>' +
+        '<div id="createCoverPreviewArea">' +
+          '<div class="media-upload-row">' +
+            '<span class="media-empty">未设置</span>' +
+            '<button class="btn btn-outline btn-sm" onclick="document.getElementById(\'createCoverFileInput\').click()">上传</button>' +
+          '</div>' +
+        '</div>' +
+        '<input type="file" id="createCoverFileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="window.onCreateCoverSelected(this)">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label">封面比例</label>' +
+        '<div style="display:flex;gap:12px">' +
+          '<label class="create-ar-option" data-value="16:9" onclick="window.onSelectCreateAspectRatio(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid var(--primary);border-radius:8px">' +
+            '<input type="radio" name="createAspectRatio" value="16:9" checked style="display:none">' +
+            '<span style="font-weight:600">16:9</span>' +
+          '</label>' +
+          '<label class="create-ar-option" data-value="4:3" onclick="window.onSelectCreateAspectRatio(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #e2e8f0;border-radius:8px">' +
+            '<input type="radio" name="createAspectRatio" value="4:3" style="display:none">' +
+            '<span style="font-weight:600">4:3</span>' +
+          '</label>' +
+        '</div>' +
+      '</div>'
+
+    Admin.showModal('设置模块封面', bodyHTML, async function() {
+      if (!window._createModuleId) return
+      var mod = DataStore.getBusinessModule(window._createModuleId)
+      if (mod) {
+        if (window._pendingCreateCoverUrl) {
+          mod.coverImage = window._pendingCreateCoverUrl
+        }
+        mod.coverAspectRatio = window._pendingCreateAspectRatio
+        await DataStore.saveBusinessModule(mod)
+      }
+      Admin.showToast('模块创建完成', 'success')
+      var targetId = window._createModuleId
+      window._createModuleId = null
+      setTimeout(function() {
+        window.location.href = 'business-module-cards-list.html?id=' + targetId
+      }, 500)
+    }, '完成')
+  }
+
+  window.onCreateCoverSelected = async function(input) {
+    var file = input.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { Admin.showToast('图片不能超过 5MB', 'error'); input.value = ''; return }
+    Admin.showToast('正在上传封面...', 'info')
+    try {
+      var url = await DataStore.uploadBusinessModuleImage(file)
+      input.value = ''
+      window._pendingCreateCoverUrl = url
+      var previewArea = document.getElementById('createCoverPreviewArea')
+      if (previewArea) {
+        previewArea.innerHTML =
+          '<div class="media-upload-row">' +
+            '<span class="media-status">已上传</span>' +
+            '<button class="btn btn-outline btn-sm" onclick="document.getElementById(\'createCoverFileInput\').click()">更换</button>' +
+          '</div>'
+      }
+      Admin.showToast('封面上传成功', 'success')
+    } catch (e) { Admin.showToast('上传失败: ' + e.message, 'error') }
+  }
+
+  window.onRemoveCreateCover = function() {
+    window._pendingCreateCoverUrl = ''
+    var previewArea = document.getElementById('createCoverPreviewArea')
+    if (previewArea) {
+      previewArea.innerHTML =
+        '<div class="media-upload-row">' +
+          '<span class="media-empty">未设置</span>' +
+          '<button class="btn btn-outline btn-sm" onclick="document.getElementById(\'createCoverFileInput\').click()">上传</button>' +
+        '</div>'
+    }
+  }
+
+  window.onSelectCreateAspectRatio = function(el) {
+    var options = document.querySelectorAll('.create-ar-option')
+    options.forEach(function(opt) {
+      opt.style.border = '2px solid #e2e8f0'
+      opt.querySelector('input').checked = false
+    })
+    el.style.border = '2px solid var(--primary)'
+    el.querySelector('input').checked = true
+    window._pendingCreateAspectRatio = el.dataset.value
+  }
+
+  // ===== 展示设置（多Section系统） =====
+  window.showLayoutConfig = function() {
+    showLayoutConfigForEdit([], null)
+  }
+
+  function showLayoutConfigForEdit(preSelected, preLayout, preSection) {
+    var sorted = [...modules]
+    var selectionOrder = [...(preSelected || [])]
+
+    // 收集已被其他分区使用的模块 ID（编辑模式下排除自身）
+    var pageConfig = DataStore.getBusinessModulePageConfig()
+    var allSections = (pageConfig && pageConfig.sections) ? pageConfig.sections : []
+    var usedIds = []
+    allSections.forEach(function(sec) {
+      if (preSection && sec.id === preSection.id) return
+      usedIds.push.apply(usedIds, sec.selectedIds || [])
+    })
+
+    function showCardSelect() {
+      var cardList = sorted.map(function(m) {
+        var isUsed = usedIds.includes(m.id)
+        var checked = selectionOrder.includes(m.id) ? 'checked' : ''
+        var orderNum = selectionOrder.indexOf(m.id)
+        var orderBadge = orderNum >= 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;margin-left:8px">' + (orderNum + 1) + '</span>' : ''
+        var disabledAttr = isUsed ? 'disabled' : ''
+        var usedLabel = isUsed ? '<span style="font-size:11px;color:#e53e3e;margin-left:8px">已使用</span>' : ''
+        var cursorStyle = isUsed ? 'cursor:not-allowed' : 'cursor:pointer'
+        var opacityStyle = isUsed ? 'opacity:0.5' : ''
+        var borderColor = checked ? 'var(--primary)' : (isUsed ? '#fed7d7' : '#e2e8f0')
+        var bgColor = checked ? '#e8f0fe' : (isUsed ? '#fff5f5' : '#f8f9fa')
+        return '<label style="display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:8px;border-radius:8px;' + cursorStyle + ';border:2px solid ' + borderColor + ';background:' + bgColor + ';' + opacityStyle + '">' +
+          '<input type="checkbox" value="' + m.id + '" class="card-select-cb" ' + checked + ' ' + disabledAttr + ' onchange="window.onCardSelect(' + m.id + ', this.checked)" style="width:18px;height:18px;cursor:pointer">' +
+          '<div style="flex:1">' +
+            '<div style="font-weight:600;font-size:14px;display:flex;align-items:center">' + escapeHtml(m.name || '未命名') + orderBadge + usedLabel + '</div>' +
+            '<div style="font-size:11px;color:#718096">卡片: ' + ((m.cards || []).length) + ' 张</div>' +
+          '</div></label>'
+      }).join('')
+
+      Admin.showModal('选择展示模块',
+        '<p style="font-size:13px;color:#718096;margin-bottom:16px">勾选模块并按先后顺序排列（最多6个），先选的排在前面</p>' +
+        '<div style="max-height:400px;overflow-y:auto">' + cardList + '</div>',
+        function() {
+          if (!selectionOrder.length) { Admin.showToast('请至少选择一个模块', 'info'); return }
+          if (selectionOrder.length === 1) {
+            setTimeout(function() { showLayoutChooseSingle() }, 100)
+          } else if (selectionOrder.length <= 4) {
+            setTimeout(function() { showLayoutChoose() }, 100)
+          } else {
+            setTimeout(function() { showLayoutChooseGrid6() }, 100)
+          }
+        }, '下一步'
+      )
+    }
+
+    async function saveSection(layout) {
+      try {
+      // Reorder selected modules
+      var orders = []
+      selectionOrder.forEach(function(id, idx) { orders.push({ id: id, sortOrder: idx + 1 }) })
+      var nextSort = selectionOrder.length + 1
+      sorted.forEach(function(m) {
+        if (!selectionOrder.includes(m.id)) orders.push({ id: m.id, sortOrder: nextSort++ })
+      })
+      for (var i = 0; i < orders.length; i++) {
+        var mod = modules.find(function(m) { return m.id === orders[i].id })
+        if (mod) {
+          mod.sortOrder = orders[i].sortOrder
+          await DataStore.saveBusinessModule({
+            id: mod.id, name: mod.name, coverImage: mod.coverImage,
+            coverAspectRatio: mod.coverAspectRatio,
+            layoutType: mod.layoutType, sortOrder: mod.sortOrder, status: mod.status,
+            cards: mod.cards, sections: mod.sections
+          })
+        }
+      }
+
+      // Refresh modules
+      modules = DataStore.getBusinessModules()
+
+      // Remove selected modules from all existing sections (skip preSection if editing)
+      var config = DataStore.getBusinessModulePageConfig()
+      var srcSections = config.sections || []
+      if (preSection) {
+        srcSections = srcSections.filter(function(sec) { return sec.id !== preSection.id })
+      }
+      var sections = srcSections.map(function(sec) {
+        return {
+          id: sec.id,
+          displayLayout: sec.displayLayout,
+          selectedIds: sec.selectedIds.filter(function(id) { return !selectionOrder.includes(id) }),
+          sortOrder: sec.sortOrder,
+          status: sec.status
+        }
+      })
+
+      // Collect orphaned modules from multi-module sections down to 1
+      var orphanSingleIds = []
+      sections = sections.filter(function(sec) {
+        if (sec.selectedIds.length === 0) return false
+        if ((sec.displayLayout === 'carousel' || sec.displayLayout === 'grid-4' || sec.displayLayout === 'grid-6-2x3' || sec.displayLayout === 'grid-6-3x2') && sec.selectedIds.length === 1) {
+          orphanSingleIds.push(sec.selectedIds[0])
+          return false
+        }
+        return true
+      })
+
+      // If editing, pool any modules from the old section not in the new selection
+      if (preSection) {
+        (preSection.selectedIds || []).forEach(function(id) {
+          if (!selectionOrder.includes(id) && !orphanSingleIds.includes(id)) {
+            orphanSingleIds.push(id)
+          }
+        })
+      }
+
+      // Merge all singles into one pool
+      var existingSingle = sections.find(function(sec) { return sec.displayLayout === 'single' })
+      sections = sections.filter(function(sec) { return sec.displayLayout !== 'single' })
+      var singlePool = (existingSingle ? existingSingle.selectedIds : []).concat(orphanSingleIds)
+
+      // Determine next sortOrder
+      var maxOrder = sections.reduce(function(max, s) { return Math.max(max, s.sortOrder || 0) }, 10)
+
+      // Add new section(s)
+      if (layout === 'hero') {
+        sections.push({ id: 's' + Date.now(), displayLayout: 'hero', selectedIds: selectionOrder.slice(), sortOrder: 0, status: true })
+        singlePool.forEach(function(id, i) {
+          sections.push({ id: 's' + Date.now() + '_' + i, displayLayout: 'single', selectedIds: [id], sortOrder: maxOrder + 10 + i * 10, status: true })
+        })
+      } else if (layout === 'single') {
+        selectionOrder.forEach(function(id, i) {
+          sections.push({ id: 's' + Date.now() + '_' + i, displayLayout: 'single', selectedIds: [id], sortOrder: maxOrder + 10 + i * 10, status: true })
+        })
+        singlePool.forEach(function(id, i) {
+          sections.push({ id: 's' + Date.now() + '_s' + i, displayLayout: 'single', selectedIds: [id], sortOrder: maxOrder + 10 + (selectionOrder.length + i) * 10, status: true })
+        })
+      } else {
+        sections.push({ id: 's' + Date.now(), displayLayout: layout, selectedIds: selectionOrder.slice(), sortOrder: maxOrder + 10, status: true })
+        singlePool.forEach(function(id, i) {
+          sections.push({ id: 's' + Date.now() + '_' + i, displayLayout: 'single', selectedIds: [id], sortOrder: maxOrder + 20 + i * 10, status: true })
+        })
+      }
+
+      await DataStore.updateBusinessModulePageConfig({ sections: sections })
+      Admin.showToast('展示方案已保存', 'success')
+      render()
+      } catch (e) {
+        console.error('Save section error:', e)
+        Admin.showToast('保存失败: ' + (e.message || '未知错误'), 'error')
+        render()
+      }
+    }
+
+    function showLayoutChoose() {
+      var sel = preLayout || 'carousel'
+      var isSelected = function(v) { return v === sel ? 'checked' : '' }
+      var isBorder = function(v) { return v === sel ? '2px solid var(--primary)' : '2px solid #e2e8f0' }
+      Admin.showModal('选择展示布局',
+        '<div class="form-group">' +
+          '<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap" id="layoutOptions">' +
+            '<label class="layout-option" data-value="carousel" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('carousel') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="carousel" ' + isSelected('carousel') + ' style="display:none">' +
+              '<span style="font-weight:600">🔄 左右滑动轮播</span></label>' +
+            '<label class="layout-option" data-value="grid-4" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('grid-4') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="grid-4" ' + isSelected('grid-4') + ' style="display:none">' +
+              '<span style="font-weight:600">🔲 四宫格 (2×2)</span></label>' +
+          '</div>' +
+        '</div>',
+        async function() {
+          var selectedLayout = document.querySelector('input[name="layout"]:checked')
+          var layout = selectedLayout ? selectedLayout.value : 'carousel'
+          await saveSection(layout)
+        }, '保存'
+      )
+    }
+
+    function showLayoutChooseGrid6() {
+      // Map old grid-6 to a concrete variant for edit pre-selection
+      var effectiveLayout = preLayout
+      if (preLayout === 'grid-6') { effectiveLayout = 'grid-6-2x3' }
+      var sel = effectiveLayout || 'carousel'
+      var isSelected = function(v) { return v === sel ? 'checked' : '' }
+      var isBorder = function(v) { return v === sel ? '2px solid var(--primary)' : '2px solid #e2e8f0' }
+      Admin.showModal('选择展示布局',
+        '<div class="form-group">' +
+          '<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap" id="layoutOptions">' +
+            '<label class="layout-option" data-value="carousel" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('carousel') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="carousel" ' + isSelected('carousel') + ' style="display:none">' +
+              '<span style="font-weight:600">🔄 左右滑动轮播</span></label>' +
+            '<label class="layout-option" data-value="grid-6-2x3" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('grid-6-2x3') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="grid-6-2x3" ' + isSelected('grid-6-2x3') + ' style="display:none">' +
+              '<span style="font-weight:600">📐 六宫格 2×3（2列3行）</span></label>' +
+            '<label class="layout-option" data-value="grid-6-3x2" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('grid-6-3x2') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="grid-6-3x2" ' + isSelected('grid-6-3x2') + ' style="display:none">' +
+              '<span style="font-weight:600">📐 六宫格 3×2（3列2行）</span></label>' +
+          '</div>' +
+        '</div>',
+        async function() {
+          var selectedLayout = document.querySelector('input[name="layout"]:checked')
+          var layout = selectedLayout ? selectedLayout.value : 'carousel'
+          await saveSection(layout)
+        }, '保存'
+      )
+    }
+
+    function showLayoutChooseSingle() {
+      var sel = preLayout || 'single'
+      var isSelected = function(v) { return v === sel ? 'checked' : '' }
+      var isBorder = function(v) { return v === sel ? '2px solid var(--primary)' : '2px solid #e2e8f0' }
+      Admin.showModal('选择展示布局',
+        '<div class="form-group">' +
+          '<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap" id="layoutOptions">' +
+            '<label class="layout-option" data-value="single" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('single') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="single" ' + isSelected('single') + ' style="display:none">' +
+              '<span style="font-weight:600">📄 单张展示</span></label>' +
+            '<label class="layout-option" data-value="hero" onclick="window.selectLayout(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:12px 16px;border:' + isBorder('hero') + ';border-radius:8px;flex:1;min-width:140px">' +
+              '<input type="radio" name="layout" value="hero" ' + isSelected('hero') + ' style="display:none">' +
+              '<span style="font-weight:600">📋 顶部栏</span></label>' +
+          '</div>' +
+        '</div>',
+        async function() {
+          var selectedLayout = document.querySelector('input[name="layout"]:checked')
+          var layout = selectedLayout ? selectedLayout.value : 'single'
+          await saveSection(layout)
+        }, '保存'
+      )
+    }
+
+    window.selectLayout = function(el) {
+      var options = document.querySelectorAll('.layout-option')
+      options.forEach(function(opt) {
+        opt.style.border = '2px solid #e2e8f0'
+        opt.querySelector('input').checked = false
+      })
+      el.style.border = '2px solid var(--primary)'
+      el.querySelector('input').checked = true
+    }
+
+    window.onCardSelect = function(id, checked) {
+      if (checked && usedIds.includes(id)) {
+        Admin.showToast('该模块已在其他方案中使用', 'info')
+        var modal = document.querySelector('.modal')
+        if (modal) {
+          var cb = modal.querySelector('.card-select-cb[value="' + id + '"]')
+          if (cb) cb.checked = false
+        }
+        return
+      }
+      if (checked) {
+        if (selectionOrder.length >= 6) {
+          Admin.showToast('最多选择6个模块', 'info')
+          var modal = document.querySelector('.modal')
+          if (modal) {
+            var cb = modal.querySelector('.card-select-cb[value="' + id + '"]')
+            if (cb) cb.checked = false
+          }
+          return
+        }
+        selectionOrder.push(id)
+      } else {
+        selectionOrder = selectionOrder.filter(function(x) { return x !== id })
+      }
+      var modal = document.querySelector('.modal')
+      if (modal) {
+        var atLimit = selectionOrder.length >= 6
+        modal.querySelectorAll('.card-select-cb').forEach(function(cb) {
+          var pid = parseInt(cb.value)
+          var label = cb.closest('label')
+          var isChecked = cb.checked
+          label.style.border = isChecked ? '2px solid var(--primary)' : '2px solid #e2e8f0'
+          label.style.background = isChecked ? '#e8f0fe' : '#f8f9fa'
+          if (!isChecked && atLimit) {
+            cb.disabled = true
+            label.style.opacity = '0.4'
+          } else {
+            cb.disabled = false
+            label.style.opacity = '1'
+          }
+          var orderIdx = selectionOrder.indexOf(pid)
+          var badge = label.querySelector('.order-badge')
+          if (orderIdx >= 0) {
+            if (!badge) {
+              badge = document.createElement('span')
+              badge.className = 'order-badge'
+              badge.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;margin-left:8px'
+              label.querySelector('div > div').appendChild(badge)
+            }
+            badge.textContent = orderIdx + 1
+          } else if (badge) {
+            badge.remove()
+          }
+        })
+      }
+    }
+
+    showCardSelect()
+  }
+
+  window.editSection = async function(idx) {
+    var config = DataStore.getBusinessModulePageConfig()
+    var sections = (config.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sec = sections[idx]
+    if (!sec) return
+    // Don't remove the section upfront — let saveSection handle the merge.
+    showLayoutConfigForEdit(sec.selectedIds || [], sec.displayLayout, sec)
+  }
+
+  window.deleteSection = function(idx) {
+    var config = DataStore.getBusinessModulePageConfig()
+    var sections = (config.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sec = sections[idx]
+    if (!sec) { Admin.showToast('方案不存在', 'error'); return }
+    var selectedNames = (sec.selectedIds || []).map(function(id) {
+      var m = modules.find(function(m) { return m.id === id })
+      return m ? m.name : ''
+    }).filter(Boolean).join('、')
+    Admin.confirmDelete('确定要删除展示方案 <strong>' + escapeHtml(selectedNames || '此项') + '</strong> 吗？', async function() {
+      try {
+        sections.splice(idx, 1)
+        await DataStore.updateBusinessModulePageConfig({ sections: sections })
+        Admin.showToast('方案已删除', 'success')
+        render()
+      } catch (e) {
+        console.error('Delete section error:', e)
+        Admin.showToast('删除失败: ' + (e.message || '未知错误'), 'error')
+        render()
+      }
+    })
+  }
+
+  window.toggleSection = async function(idx) {
+    var config = DataStore.getBusinessModulePageConfig()
+    var sections = (config.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sec = sections[idx]
+    sec.status = sec.status === false ? true : false
+    await DataStore.updateBusinessModulePageConfig({ sections: sections })
+    Admin.showToast('状态已更新', 'success')
+    render()
+  }
+
+  window.onSectionDragStart = function(event, idx) {
+    draggedIdx = idx
+    event.target.style.opacity = '0.4'
+    event.dataTransfer.effectAllowed = 'move'
+  }
+
+  window.onSectionDragOver = function(event) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    document.querySelectorAll('.section-row').forEach(function(r) { r.style.borderTop = '' })
+    var row = event.target.closest('.section-row')
+    if (row) { row.style.borderTop = '3px solid #3a5f94' }
+  }
+
+  window.onSectionDrop = async function(event, targetIdx) {
+    event.preventDefault()
+    document.querySelectorAll('.section-row').forEach(function(r) { r.style.borderTop = '' })
+    if (draggedIdx === null || draggedIdx === targetIdx) { draggedIdx = null; return }
+
+    var config = DataStore.getBusinessModulePageConfig()
+    var sections = (config.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    if (sections[targetIdx].displayLayout === 'hero') { draggedIdx = null; return }
+    if (sections[draggedIdx].displayLayout === 'hero') { draggedIdx = null; return }
+
+    var moved = sections.splice(draggedIdx, 1)[0]
+    sections.splice(targetIdx, 0, moved)
+
+    var order = 10
+    sections.forEach(function(sec) {
+      if (sec.displayLayout !== 'hero') { sec.sortOrder = order; order += 10 }
+    })
+
+    await DataStore.updateBusinessModulePageConfig({ sections: sections })
+    draggedIdx = null
+    render()
+  }
+
+  window.onSectionDragEnd = function(event) {
+    event.target.style.opacity = ''
+    document.querySelectorAll('.section-row').forEach(function(r) { r.style.borderTop = '' })
+    draggedIdx = null
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+</body>
+</html>

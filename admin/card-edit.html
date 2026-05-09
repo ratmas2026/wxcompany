@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>新增/编辑名片 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('index')
+  await DataStore.init()
+
+  const params = new URLSearchParams(window.location.search)
+  const editId = params.get('id')
+  const isEdit = !!editId
+
+  // 从企业动态获取默认公司名称和地址
+  const profiles = DataStore.getCompanyProfiles()
+  const defaultProfile = (profiles && profiles.length > 0) ? profiles[0] : null
+  const defaultCompany = defaultProfile ? (defaultProfile.title || '执行官组合') : '执行官组合'
+  const defaultAddress = defaultProfile ? (defaultProfile.address || '') : ''
+
+  let card = { id: null, name: '', title: '', company: defaultCompany, phone: '', email: '', department: '', avatar: '', bio: '', address: defaultAddress }
+  let selectedAvatarFile = null       // File object for upload
+  let selectedAvatarPreviewUrl = null // Object URL or server URL for preview
+
+  if (isEdit) {
+    const existing = DataStore.getCards().find(c => c.id === parseInt(editId))
+    if (existing) {
+      card = { ...card, ...existing }
+      if (existing.avatar) selectedAvatarPreviewUrl = existing.avatar
+    }
+  }
+
+  const departments = ['管理层', '技术部', '设计部', '项目部', '运营部', '市场部', '产品部']
+  const positions = DataStore.getPositions()
+
+  function render() {
+    const deptOptions = departments.map(d =>
+      `<option value="${d}" ${card.department === d ? 'selected' : ''}>${d}</option>`
+    ).join('')
+
+    const posOptions = positions.map(p =>
+      `<option value="${p.name}" ${card.title === p.name ? 'selected' : ''}>${p.name}</option>`
+    ).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>${isEdit ? '编辑名片' : '新增名片'}</h1>
+        <button class="btn btn-secondary" onclick="window.history.back()">← 返回</button>
+      </div>
+
+      <div class="card">
+        <form id="cardForm" onsubmit="window.saveCard(event)">
+          <!-- Avatar -->
+          <div class="form-group" style="display:flex;align-items:center;gap:20px;margin-bottom:32px">
+            <div id="avatarPreview" style="width:80px;height:80px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--primary);font-weight:700;cursor:pointer;overflow:hidden" onclick="document.getElementById('avatarFileInput').click()" title="点击上传头像">
+              ${selectedAvatarPreviewUrl ? `<img src="${selectedAvatarPreviewUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : (card.name ? card.name[0] : '?')}
+            </div>
+            <div>
+              <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('avatarFileInput').click()">上传头像</button>
+              ${selectedAvatarPreviewUrl ? '<button type="button" class="btn btn-outline btn-sm" onclick="window.removeAvatar()" style="margin-left:8px;color:var(--error)">移除</button>' : ''}
+              <p class="form-hint" style="margin-top:4px">支持 JPG/PNG，不超过 1MB</p>
+            </div>
+            <input type="file" id="avatarFileInput" accept="image/jpeg,image/png" style="display:none" onchange="window.onAvatarSelected(this)">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">姓名 *</label>
+              <input class="form-input" id="cardName" value="${card.name}" placeholder="请输入姓名" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">联系电话 *</label>
+              <input class="form-input" id="cardPhone" value="${card.phone || ''}" placeholder="请输入手机号" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">职位/职级 *</label>
+              <select class="form-select" id="cardTitle">
+                <option value="">请选择职位</option>
+                ${posOptions}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">所属部门</label>
+              <select class="form-select" id="cardDept">
+                <option value="">请选择部门</option>
+                ${deptOptions}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">公司名称</label>
+              <input class="form-input" id="cardCompany" value="${card.company}" placeholder="请输入公司名称">
+            </div>
+            <div class="form-group">
+              <label class="form-label">邮箱</label>
+              <input class="form-input" id="cardEmail" value="${card.email || ''}" type="email" placeholder="请输入邮箱">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">联系地址</label>
+            <input class="form-input" id="cardAddress" value="${card.address || ''}" placeholder="请输入联系地址">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">个人简介</label>
+            <textarea class="form-textarea" id="cardBio" placeholder="请输入个人简介">${card.bio || ''}</textarea>
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:32px">
+            <button type="button" class="btn btn-secondary" onclick="window.history.back()">取消</button>
+            <button type="submit" class="btn btn-primary btn-lg">${isEdit ? '保存修改' : '创建名片'}</button>
+          </div>
+        </form>
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  window.onAvatarSelected = function(input) {
+    const file = input.files[0]
+    if (!file) return
+
+    if (file.size > 1 * 1048576) {
+      Admin.showToast('头像大小不能超过 1MB', 'error')
+      input.value = ''
+      return
+    }
+
+    selectedAvatarFile = file
+    // Create object URL for preview
+    if (selectedAvatarPreviewUrl && selectedAvatarPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(selectedAvatarPreviewUrl)
+    }
+    selectedAvatarPreviewUrl = URL.createObjectURL(file)
+    render()
+  }
+
+  window.removeAvatar = function() {
+    selectedAvatarFile = null
+    if (selectedAvatarPreviewUrl && selectedAvatarPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(selectedAvatarPreviewUrl)
+    }
+    selectedAvatarPreviewUrl = null
+    card.avatar = ''
+    render()
+  }
+
+  window.saveCard = async function(e) {
+    e.preventDefault()
+
+    const nameVal = document.getElementById('cardName').value.trim()
+    const phoneVal = document.getElementById('cardPhone').value.trim()
+    const titleVal = document.getElementById('cardTitle').value
+    const deptVal = document.getElementById('cardDept').value
+    const companyVal = document.getElementById('cardCompany').value.trim()
+    const emailVal = document.getElementById('cardEmail').value.trim()
+    const addressVal = document.getElementById('cardAddress').value.trim()
+    const bioVal = document.getElementById('cardBio').value.trim()
+
+    if (!nameVal) { Admin.showToast('请输入姓名', 'error'); return }
+    if (!titleVal) { Admin.showToast('请选择职位', 'error'); return }
+    if (!phoneVal) { Admin.showToast('请输入联系电话', 'error'); return }
+    if (!/^1\d{10}$/.test(phoneVal)) { Admin.showToast('请输入正确的11位手机号', 'error'); return }
+
+    let avatarUrl = card.avatar || ''
+    if (selectedAvatarFile) {
+      Admin.showToast('正在上传头像...', 'info')
+      try {
+        avatarUrl = await DataStore.uploadAvatar(selectedAvatarFile)
+        selectedAvatarFile = null
+        if (selectedAvatarPreviewUrl && selectedAvatarPreviewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(selectedAvatarPreviewUrl)
+        }
+        selectedAvatarPreviewUrl = avatarUrl
+      } catch (err) {
+        Admin.showToast('头像上传失败: ' + err.message, 'error')
+        return
+      }
+    } else if (selectedAvatarPreviewUrl === null) {
+      avatarUrl = ''
+    }
+
+    const data = {
+      id: card.id,
+      name: nameVal,
+      phone: phoneVal,
+      title: titleVal,
+      department: deptVal,
+      company: companyVal,
+      email: emailVal,
+      address: addressVal,
+      bio: bioVal,
+      avatar: avatarUrl,
+      status: card.status !== undefined ? card.status : true
+    }
+
+    await DataStore.saveCard(data)
+    Admin.showToast(isEdit ? '名片已更新' : '名片已创建', 'success')
+
+    setTimeout(() => {
+      window.location.href = 'index.html'
+    }, 800)
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+</body>
+</html>

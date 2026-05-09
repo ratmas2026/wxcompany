@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>新增/编辑视频 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+<style>
+  .upload-preview { margin-top: 12px; }
+  .video-preview-box {
+    width: 100%; height: 200px; background: var(--surface-container);
+    border-radius: var(--radius-lg); display: flex; align-items: center;
+    justify-content: center; overflow: hidden; position: relative;
+  }
+  .video-preview-box video { width: 100%; height: 100%; object-fit: cover; }
+  .cover-preview-box {
+    width: 200px; height: 120px; background: var(--surface-container);
+    border-radius: var(--radius-md); display: flex; align-items: center;
+    justify-content: center; overflow: hidden;
+  }
+  .cover-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+  .file-info { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--on-surface-variant); }
+  .file-info .file-name { font-weight: 600; color: var(--on-surface); }
+  .file-remove { color: var(--error); cursor: pointer; font-size: 12px; font-weight: 600; }
+  .file-remove:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('video')
+  await DataStore.init()
+
+  const params = new URLSearchParams(window.location.search)
+  const editId = params.get('id')
+  const isEdit = !!editId
+  let video = { id: null, title: '', cover: '', url: '', category: 'promo', status: 'draft', duration: '', description: '' }
+  let selectedVideoFile = null
+  let selectedCoverFile = null
+  let coverPreviewUrl = null  // object URL for rendering, or existing server URL
+
+  if (isEdit) {
+    const existing = DataStore.getVideos().find(v => v.id === parseInt(editId))
+    if (existing) {
+      video = { ...video, ...existing }
+      if (existing.cover) coverPreviewUrl = existing.cover
+    }
+  }
+
+  const categories = [
+    { value: 'promo', label: '企业宣传' },
+    { value: 'mission', label: '企业使命' },
+    { value: 'strategy', label: '战略项目' },
+    { value: 'project', label: '项目纪实' },
+    { value: 'tech', label: '技术展示' },
+    { value: 'solution', label: '解决方案' },
+    { value: 'event', label: '活动记录' },
+    { value: 'training', label: '培训资料' }
+  ]
+
+  const statuses = [
+    { value: 'published', label: '发布' },
+    { value: 'draft', label: '草稿' },
+    { value: 'disabled', label: '禁用' }
+  ]
+
+  function formatFileSize(bytes) {
+    if (!bytes) return ''
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / 1048576).toFixed(1) + ' MB'
+  }
+
+  function render() {
+    const catOptions = categories.map(c =>
+      `<option value="${c.value}" ${video.category === c.value ? 'selected' : ''}>${c.label}</option>`
+    ).join('')
+
+    const statusOptions = statuses.map(s =>
+      `<option value="${s.value}" ${video.status === s.value ? 'selected' : ''}>${s.label}</option>`
+    ).join('')
+
+    // Video upload section
+    const hasVideo = selectedVideoFile || video.url
+    const videoUploadHTML = hasVideo
+      ? `<div class="video-preview-box">
+          ${selectedVideoFile
+            ? `<video src="${URL.createObjectURL(selectedVideoFile)}" controls></video>`
+            : `<div style="text-align:center;color:var(--on-surface-variant)">🎬<br>已上传: ${video.url}</div>`
+          }
+        </div>
+        <div class="file-info">
+          <span>📁</span>
+          <span class="file-name">${selectedVideoFile ? selectedVideoFile.name : video.url}</span>
+          ${selectedVideoFile ? `<span>(${formatFileSize(selectedVideoFile.size)})</span>` : ''}
+          <span class="file-remove" onclick="window.removeVideo()">✕ 移除</span>
+        </div>
+        <input type="file" id="videoFileInput" accept="video/mp4,video/avi,video/mov,video/quicktime" style="display:none" onchange="window.onVideoSelected(this)">`
+      : `<div class="upload-zone" style="margin-bottom:0">
+          <div class="upload-icon">🎬</div>
+          <p style="font-weight:600;margin-bottom:4px">点击上传视频文件</p>
+          <p style="font-size:12px">支持 MP4, AVI, MOV 格式，最大 50MB</p>
+        </div>
+        <input type="file" id="videoFileInput" accept="video/mp4,video/avi,video/mov,video/quicktime" style="display:none" onchange="window.onVideoSelected(this)">`
+
+    // Cover upload section
+    const hasCover = coverPreviewUrl
+    const coverUploadHTML = hasCover
+      ? `<div class="cover-preview-box" style="margin-bottom:8px">
+          <img src="${coverPreviewUrl}" alt="封面预览">
+        </div>
+        <div class="file-info">
+          <span>🖼️</span>
+          <span class="file-name">${selectedCoverFile ? selectedCoverFile.name : '封面已设置'}</span>
+          <span class="file-remove" onclick="window.removeCover()">✕ 移除</span>
+        </div>
+        <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="window.onCoverSelected(this)">`
+      : `<div class="upload-zone" onclick="document.getElementById('coverFileInput').click()" style="padding:32px">
+          <div class="upload-icon">🖼️</div>
+          <p>点击上传封面图片</p>
+          <p style="font-size:12px;color:var(--outline);margin-top:4px">支持 JPG/PNG/GIF/WebP，最大 5MB</p>
+        </div>
+        <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="window.onCoverSelected(this)">`
+
+    const html = `
+      <div class="page-header">
+        <h1>${isEdit ? '编辑视频' : '上传视频'}</h1>
+        <button class="btn btn-secondary" onclick="window.history.back()">← 返回</button>
+      </div>
+
+      <div class="card">
+        <form id="videoForm" onsubmit="window.saveVideo(event)">
+          <div class="form-group">
+            <label class="form-label">视频文件 *</label>
+            <div onclick="${hasVideo ? '' : "document.getElementById('videoFileInput').click()"}" style="${hasVideo ? '' : 'cursor:pointer'}">
+              ${videoUploadHTML}
+            </div>
+            ${hasVideo ? `<button type="button" class="btn btn-outline btn-sm" style="margin-top:12px" onclick="document.getElementById('videoFileInput').click()">📁 重新选择文件</button>` : ''}
+          </div>
+
+          <div class="form-row" style="margin-top:32px">
+            <div class="form-group">
+              <label class="form-label">视频标题 *</label>
+              <input class="form-input" id="vidTitle" value="${video.title}" placeholder="请输入视频标题" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">分类</label>
+              <select class="form-select" id="vidCategory">${catOptions}</select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">视频时长</label>
+              <input class="form-input" id="vidDuration" value="${video.duration || ''}" placeholder="如: 3:45">
+            </div>
+            <div class="form-group">
+              <label class="form-label">发布状态</label>
+              <select class="form-select" id="vidStatus">${statusOptions}</select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">视频描述</label>
+            <textarea class="form-textarea" id="vidDesc" placeholder="请输入视频描述">${video.description || ''}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">封面图片</label>
+            ${coverUploadHTML}
+            ${hasCover ? `<button type="button" class="btn btn-outline btn-sm" style="margin-top:12px" onclick="document.getElementById('coverFileInput').click()">📁 重新选择封面</button>` : ''}
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:32px">
+            <button type="button" class="btn btn-secondary" onclick="window.history.back()">取消</button>
+            <button type="submit" class="btn btn-primary btn-lg">${isEdit ? '保存修改' : '发布视频'}</button>
+          </div>
+        </form>
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  window.onVideoSelected = function(input) {
+    const file = input.files[0]
+    if (!file) return
+
+    const maxSize = 50 * 1048576
+    if (file.size > maxSize) {
+      Admin.showToast('视频文件大小不能超过 50MB', 'error')
+      input.value = ''
+      return
+    }
+
+    selectedVideoFile = file
+    render()
+  }
+
+  window.removeVideo = function() {
+    selectedVideoFile = null
+    video.url = ''
+    const input = document.getElementById('videoFileInput')
+    if (input) input.value = ''
+    render()
+  }
+
+  window.onCoverSelected = function(input) {
+    const file = input.files[0]
+    if (!file) return
+
+    if (file.size > 5 * 1048576) {
+      Admin.showToast('封面图片大小不能超过 5MB', 'error')
+      input.value = ''
+      return
+    }
+
+    selectedCoverFile = file
+    coverPreviewUrl = URL.createObjectURL(file)
+    render()
+  }
+
+  window.removeCover = function() {
+    selectedCoverFile = null
+    coverPreviewUrl = null
+    video.cover = ''
+    const input = document.getElementById('coverFileInput')
+    if (input) input.value = ''
+    render()
+  }
+
+  window.saveVideo = async function(e) {
+    e.preventDefault()
+
+    if (!selectedVideoFile && !video.url) {
+      Admin.showToast('请先上传视频文件', 'error')
+      return
+    }
+
+    const title = document.getElementById('vidTitle').value.trim()
+    if (!title) {
+      Admin.showToast('请输入视频标题', 'error')
+      return
+    }
+
+    Admin.showToast('正在上传...', 'info')
+
+    try {
+      let videoUrl = video.url
+      let coverUrl = video.cover || ''
+
+      // Upload video file if newly selected
+      if (selectedVideoFile) {
+        videoUrl = await DataStore.uploadVideo(selectedVideoFile)
+      }
+
+      // Upload cover file if newly selected
+      if (selectedCoverFile) {
+        coverUrl = await DataStore.uploadCover(selectedCoverFile)
+      } else if (selectedCoverFile === null && coverPreviewUrl === null) {
+        coverUrl = ''
+      }
+
+      const data = {
+        id: video.id,
+        title,
+        category: document.getElementById('vidCategory').value,
+        duration: document.getElementById('vidDuration').value.trim(),
+        status: document.getElementById('vidStatus').value,
+        description: document.getElementById('vidDesc').value.trim(),
+        cover: coverUrl,
+        url: videoUrl
+      }
+
+      await DataStore.saveVideo(data)
+      Admin.showToast(isEdit ? '视频已更新' : '视频已创建', 'success')
+
+      setTimeout(() => {
+        window.location.href = 'video.html'
+      }, 800)
+    } catch (err) {
+      Admin.showToast('上传失败: ' + err.message, 'error')
+    }
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+</body>
+</html>

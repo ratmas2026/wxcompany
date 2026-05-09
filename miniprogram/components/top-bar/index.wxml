@@ -1,0 +1,24 @@
+<view class="top-bar" style="padding-top: {{statusBarHeight}}px;">
+  <view class="top-bar-inner">
+    <!-- Back Button -->
+    <view class="top-bar-left" bindtap="onBack" wx:if="{{showBack}}">
+      <text class="back-icon">❮</text>
+    </view>
+
+    <!-- Title: centered mode (absolute positioning, avoids capsule overlap) -->
+    <view wx:if="{{titleAlign === 'center'}}" class="top-bar-center-absolute">
+      <text class="top-title top-title-centered">{{title}}</text>
+    </view>
+
+    <!-- Title: left-aligned mode (default, with optional icon) -->
+    <view wx:else class="top-bar-center">
+      <text wx:if="{{icon}}" class="top-icon">{{icon}}</text>
+      <text class="top-title">{{title}}</text>
+    </view>
+
+    <!-- Right Action -->
+    <view class="top-bar-right" wx:if="{{showBack}}">
+      <slot name="right"></slot>
+    </view>
+  </view>
+</view>

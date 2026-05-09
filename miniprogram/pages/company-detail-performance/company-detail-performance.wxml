@@ -1,0 +1,70 @@
+<view class="page-container">
+  <top-bar title="" icon="" showBack="{{true}}" />
+
+  <view wx:if="{{profile && profile.detail}}" class="detail-content">
+    <!-- 视频 -->
+    <view wx:if="{{profile.detail.video}}" class="detail-video" bindtap="onPlayVideo">
+      <image class="detail-video-thumb" src="{{profile.cover.backgroundImage || '/images/company-video.jpg'}}" mode="aspectFill" />
+      <view class="detail-video-overlay">
+        <view class="detail-play-btn">
+          <text class="detail-play-icon">▶</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 标题 -->
+    <view class="detail-header">
+      <text class="detail-title">{{profile.detail.title || profile.title || ''}}</text>
+    </view>
+
+    <!-- 正文（富文本） -->
+    <view wx:if="{{bodyNodes}}" class="detail-body">
+      <rich-text nodes="{{bodyNodes}}" class="detail-body-rich"></rich-text>
+    </view>
+
+    <!-- 视频嵌入卡片（从正文提取） -->
+    <view wx:if="{{bodyVideos.length > 0}}" class="detail-body-videos">
+      <view wx:for="{{bodyVideos}}" wx:key="videoId" class="video-embed-card" data-url="{{item.url}}" bindtap="onOpenVideoUrl">
+        <view class="video-embed-card-icon">▶</view>
+        <view class="video-embed-card-info">
+          <text class="video-embed-card-platform">{{item.platform === 'bilibili' ? 'Bilibili' : item.platform === 'youtube' ? 'YouTube' : '视频'}}</text>
+          <text class="video-embed-card-id">{{item.videoId}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 图片网格 -->
+    <view wx:if="{{profile.detail.images.length > 0}}" class="detail-images">
+      <text class="detail-section-label">图片展示</text>
+      <view class="detail-images-grid">
+        <image
+          wx:for="{{profile.detail.images}}"
+          wx:key="*this"
+          class="detail-image-item"
+          src="{{item}}"
+          mode="aspectFill"
+          data-url="{{item}}"
+          bindtap="onPreviewImage"
+        />
+      </view>
+    </view>
+
+    <!-- 兜底 -->
+    <view wx:if="{{!bodyNodes && !bodyVideos.length && !profile.detail.images.length && !profile.detail.video}}" class="detail-empty">
+      <text>暂无详情内容</text>
+    </view>
+  </view>
+
+  <!-- 视频播放遮罩 -->
+  <view wx:if="{{currentVideo}}" class="video-player-overlay" bindtap="closeVideo">
+    <video
+      class="video-player"
+      src="{{currentVideo.url}}"
+      controls
+      autoplay
+      show-center-play-btn
+      object-fit="contain"
+    />
+    <view class="video-close" bindtap="closeVideo">✕</view>
+  </view>
+</view>

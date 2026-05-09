@@ -1,0 +1,563 @@
+<template name="textBox">
+  <block wx:if="{{tb.role && tb.role.name}}">
+    <view class="profile-card-role" style="text-align:{{tb.textAlign}}">
+      <view class="profile-card-role-inner">
+        <image wx:if="{{tb.role.avatar}}" class="profile-card-role-avatar" src="{{tb.role.avatar}}" mode="aspectFill" />
+        <view class="profile-card-role-text">
+          <view class="profile-card-text" style="font-family:{{tb.fontFamily}};font-size:{{tb.fontSizeRpx}}">{{tb.role.name}}</view>
+          <view class="profile-card-role-title" style="font-family:{{tb.fontFamily}}">{{tb.role.title}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+  <view wx:else class="profile-card-text" style="font-family:{{tb.fontFamily}};font-size:{{tb.fontSizeRpx}};text-align:{{tb.textAlign}}">{{tb.text || ''}}</view>
+</template>
+
+<view class="page-container">
+  <top-bar title="案例" icon="🏗️" showBack="{{false}}" />
+
+  <!-- 骨架屏：数据加载中 -->
+  <block wx:if="{{!isDataReady}}">
+    <view class="skeleton-hero signature-gradient">
+      <view class="skeleton-line skeleton-line-short"></view>
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line skeleton-line-medium"></view>
+    </view>
+    <view class="skeleton-section">
+      <view class="skeleton-title"></view>
+      <view class="skeleton-card"></view>
+    </view>
+  </block>
+
+  <!-- 真实内容：数据就绪后渲染 -->
+  <block wx:else>
+  <!-- Hero区 - 仅企业动态启用时显示 -->
+  <block wx:if="{{hasProfiles}}">
+  <block wx:if="{{heroCard}}">
+    <view class="hero-section" style="height:{{heroCard._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#e2e8f0" bindtap="onCoverCardTap" data-profile="{{heroCard}}">
+      <image wx:if="{{heroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{heroCard.cover.backgroundImage}}" mode="aspectFill" />
+      <view class="hero-content">
+        <block wx:for="{{heroCard.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+          <template is="textBox" data="{{tb}}" />
+        </block>
+        <view class="hero-card-middle">
+          <block wx:for="{{heroCard.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+            <template is="textBox" data="{{tb}}" />
+          </block>
+        </view>
+        <block wx:for="{{heroCard.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+          <template is="textBox" data="{{tb}}" />
+        </block>
+        <rich-text wx:if="{{heroCard.cover.body}}" nodes="{{heroCard.cover.body}}" class="cover-body-rich"></rich-text>
+        <view wx:if="{{heroCard.cover.video}}" class="hero-video-btn" data-profile="{{heroCard}}" catchtap="onCoverVideoTap">
+          <text class="profile-card-play-icon">▶</text>
+        </view>
+      </view>
+    </view>
+  </block>
+  <block wx:else>
+    <view class="hero-section signature-gradient">
+      <view class="hero-glass"></view>
+      <view class="hero-content">
+        <view class="hero-badge">
+          <text>世界500强合作伙伴</text>
+        </view>
+        <text class="hero-title">{{companyInfo.name || '执行官组合'}}</text>
+        <text class="hero-desc">{{companyInfo.description || '为下一个世纪的企业卓越表现，开拓智能建造与数字化创新。'}}</text>
+        <view class="hero-hq">
+          <text class="hero-hq-label">总部</text>
+          <text class="hero-hq-value">{{companyInfo.headquarters || '中国，深圳'}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+  </block>
+
+  <!-- 企业动态 -->
+  <view wx:if="{{showProfiles}}" class="module-block">
+    <view class="section-header">
+      <text class="section-headline">{{profilesModuleName}}</text>
+    </view>
+    <block wx:if="{{sections.length > 0}}">
+      <view wx:for="{{sections}}" wx:key="id" class="profile-section">
+        <view wx:if="{{sections.length > 1}}" class="profile-section-divider">
+          <view class="profile-section-line"></view>
+        </view>
+        <!-- 单张展示 -->
+        <view wx:if="{{item.displayLayout === 'single'}}" class="profile-single">
+          <view
+            wx:for="{{item.cards}}"
+            wx:for-item="card"
+            wx:key="id"
+            class="profile-card profile-card-single"
+            style="height:{{card._height}}rpx"
+            data-profile="{{card}}"
+            bindtap="onCoverCardTap"
+          >
+            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <view class="profile-card-overlay">
+              <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <view class="profile-card-middle">
+                <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+              </view>
+              <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                <text class="profile-card-play-icon">▶</text>
+              </view>
+            </view>          </view>
+        </view>
+
+        <!-- 轮播布局 -->
+        <scroll-view wx:if="{{item.displayLayout === 'horizontal-scroll'}}" scroll-x class="profile-scroll" enable-flex>
+          <view class="profile-scroll-inner">
+            <view
+              wx:for="{{item.cards}}"
+              wx:for-item="card"
+              wx:key="id"
+              class="profile-card profile-card-hscroll"
+              style="height:{{card._height}}rpx"
+              data-profile="{{card}}"
+              bindtap="onCoverCardTap"
+            >
+              <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+              <view class="profile-card-overlay">
+                <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+                <view class="profile-card-middle">
+                  <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                    <template is="textBox" data="{{tb}}" />
+                  </block>
+                </view>
+                <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+                <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+                <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                  <text class="profile-card-play-icon">▶</text>
+                </view>
+              </view>
+              <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
+                <text>查看详情 →</text>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+
+        <!-- 宫格布局 -->
+        <view wx:if="{{item.displayLayout === 'grid'}}" class="profile-grid g-active" style="display:grid;grid-template-columns:repeat({{item.gridCols}},1fr);gap:{{item.gridCols === 3 ? '16' : '20'}}rpx">
+          <view
+            wx:for="{{item.cards}}"
+            wx:for-item="card"
+            wx:key="id"
+            class="profile-card profile-card-grid"
+            style="height:{{card._height}}rpx"
+            data-profile="{{card}}"
+            bindtap="onCoverCardTap"
+          >
+            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <view class="profile-card-overlay">
+              <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <view class="profile-card-middle">
+                <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+              </view>
+              <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                <text class="profile-card-play-icon">▶</text>
+              </view>
+            </view>          </view>
+        </view>
+
+        <!-- Tab标签页 -->
+        <view wx:if="{{item.displayLayout === 'tab'}}" class="tab-section">
+          <scroll-view wx:if="{{item.tabLayout === 'scroll'}}" scroll-x class="tab-headers-scroll" enable-flex>
+            <view class="tab-headers-inner">
+              <view wx:for="{{item.tabs}}" wx:for-item="tab" wx:for-index="tabIdx" wx:key="title"
+                class="tab-header {{item.activeTab === tabIdx ? 'tab-header-active' : ''}}"
+                data-section-id="{{item.id}}" data-tab-index="{{tabIdx}}" bindtap="onTabSwitch">
+                <text>{{tab.title}}</text>
+              </view>
+            </view>
+          </scroll-view>
+          <view wx:else class="tab-headers-fixed">
+            <view wx:for="{{item.tabs}}" wx:for-item="tab" wx:for-index="tabIdx" wx:key="title"
+              class="tab-header {{item.activeTab === tabIdx ? 'tab-header-active' : ''}}"
+              data-section-id="{{item.id}}" data-tab-index="{{tabIdx}}" bindtap="onTabSwitch">
+              <text>{{tab.title}}</text>
+            </view>
+          </view>
+          <view class="profile-grid">
+            <view wx:for="{{item.currentTabCards}}" wx:for-item="card" wx:key="id"
+              class="profile-card profile-card-grid" style="height:{{card._height}}rpx"
+              data-profile="{{card}}" bindtap="onCoverCardTap">
+              <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+              <view class="profile-card-overlay">
+                <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+                <view class="profile-card-middle">
+                  <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                    <template is="textBox" data="{{tb}}" />
+                  </block>
+                </view>
+                <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+                <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+                <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                  <text class="profile-card-play-icon">▶</text>
+                </view>
+              </view>
+              <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
+                <text>查看详情 →</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 暂无卡片时的兜底 -->
+    <block wx:else>
+      <view class="intro-card card">
+        <text class="section-title">定义现代卓越</text>
+        <text class="section-desc">自2015年成立以来，执行官组合深耕智能建造与数字化领域，业务涵盖数字设计、智能生产、智能施工与智能运维四大板块，致力于为建筑行业提供全生命周期智能化解决方案。</text>
+        <view class="stats-grid">
+          <view class="stat-item">
+            <text class="stat-number">{{companyInfo.stats.years || 10}}+</text>
+            <text class="stat-label">年行业经验</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-number">{{companyInfo.stats.centers || 8}}</text>
+            <text class="stat-label">全国中心</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-number">{{companyInfo.stats.patents || 120}}</text>
+            <text class="stat-label">持有专利</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-number">{{companyInfo.stats.retention || '95%'}}</text>
+            <text class="stat-label">客户留存率</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="quote-card">
+        <text class="quote-mark">"</text>
+        <text class="quote-title">领导力洞察</text>
+        <text class="quote-text">"{{companyInfo.leaderQuote || '我们不仅仅是建造结构；我们是在为未来的智能建筑和人机协作设计数字化底座。'}}"</text>
+        <view class="quote-author">
+          <image class="author-avatar" src="{{companyInfo.leaderAvatar || '/images/avatar-ceo.jpg'}}" mode="aspectFill" />
+          <view class="author-info">
+            <text class="author-name">{{companyInfo.leaderName || '张明远'}}</text>
+            <text class="author-role">{{companyInfo.leaderTitle || '首席执行官'}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 荣誉奖项 -->
+  <view wx:if="{{showHonors}}" class="module-block">
+    <view class="section-header">
+      <text class="section-headline">{{honorsModuleName}}</text>
+    </view>
+    <view class="honors-gallery">
+      <view wx:for="{{awards}}" wx:key="name" class="award-item {{item.offset ? 'award-offset' : ''}}">
+        <image class="award-image" src="{{item.image}}" mode="aspectFill" />
+        <view class="award-caption">
+          <text class="award-name">{{item.name}}</text>
+          <text class="award-desc">{{item.desc}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 企业项目 -->
+  <view wx:if="{{showProjects}}" class="module-block">
+    <view class="section-header">
+      <text class="section-headline">{{projectsModuleName}}</text>
+    </view>
+    <scroll-view scroll-x class="project-scroll" enable-flex>
+      <view wx:for="{{projects}}" wx:key="name" class="project-card">
+        <image class="project-image" src="{{item.image}}" mode="aspectFill" />
+        <view class="project-badge">{{item.location}}，{{item.year}}</view>
+        <view class="project-body">
+          <text class="project-name">{{item.name}}</text>
+          <text class="project-desc">{{item.desc}}</text>
+          <view class="project-tags">
+            <text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this" class="project-tag">{{tag}}</text>
+          </view>
+          <button class="project-btn">深度解析规格 →</button>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 企业业绩 -->
+  <view wx:if="{{showPerformance}}" class="module-block">
+    <view class="section-header">
+      <text class="section-headline">{{performanceModuleName}}</text>
+    </view>
+    <block wx:if="{{performanceHeroCard}}">
+      <view class="hero-section" style="height:{{performanceHeroCard._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#e2e8f0" bindtap="onPerformanceCardTap" data-profile="{{performanceHeroCard}}">
+        <image wx:if="{{performanceHeroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{performanceHeroCard.cover.backgroundImage}}" mode="aspectFill" />
+        <view class="hero-content">
+          <block wx:for="{{performanceHeroCard.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+            <template is="textBox" data="{{tb}}" />
+          </block>
+          <view class="hero-card-middle">
+            <block wx:for="{{performanceHeroCard.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+              <template is="textBox" data="{{tb}}" />
+            </block>
+          </view>
+          <block wx:for="{{performanceHeroCard.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+            <template is="textBox" data="{{tb}}" />
+          </block>
+          <rich-text wx:if="{{performanceHeroCard.cover.body}}" nodes="{{performanceHeroCard.cover.body}}" class="cover-body-rich"></rich-text>
+          <view wx:if="{{performanceHeroCard.cover.video}}" class="hero-video-btn" data-profile="{{performanceHeroCard}}" catchtap="onCoverVideoTap">
+            <text class="profile-card-play-icon">▶</text>
+          </view>
+        </view>
+      </view>
+    </block>
+    <block wx:if="{{performanceSections.length > 0}}">
+      <view wx:for="{{performanceSections}}" wx:key="id" class="profile-section">
+        <view wx:if="{{performanceSections.length > 1}}" class="profile-section-divider">
+          <view class="profile-section-line"></view>
+        </view>
+        <view wx:if="{{item.displayLayout === 'single'}}" class="profile-single">
+          <view
+            wx:for="{{item.cards}}"
+            wx:for-item="card"
+            wx:key="id"
+            class="profile-card profile-card-single"
+            style="height:{{card._height}}rpx"
+            data-profile="{{card}}"
+            bindtap="onPerformanceCardTap"
+          >
+            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <view class="profile-card-overlay">
+              <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <view class="profile-card-middle">
+                <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+              </view>
+              <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                <text class="profile-card-play-icon">▶</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <scroll-view wx:if="{{item.displayLayout === 'horizontal-scroll'}}" scroll-x class="profile-scroll" enable-flex>
+          <view class="profile-scroll-inner">
+            <view
+              wx:for="{{item.cards}}"
+              wx:for-item="card"
+              wx:key="id"
+              class="profile-card profile-card-hscroll"
+              style="height:{{card._height}}rpx"
+              data-profile="{{card}}"
+              bindtap="onPerformanceCardTap"
+            >
+              <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+              <view class="profile-card-overlay">
+                <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+                <view class="profile-card-middle">
+                  <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                    <template is="textBox" data="{{tb}}" />
+                  </block>
+                </view>
+                <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+                <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+                <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                  <text class="profile-card-play-icon">▶</text>
+                </view>
+              </view>
+              <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
+                <text>查看详情 →</text>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view wx:if="{{item.displayLayout === 'grid'}}" class="profile-grid g-active" style="display:grid;grid-template-columns:repeat({{item.gridCols}},1fr);gap:{{item.gridCols === 3 ? '16' : '20'}}rpx">
+          <view
+            wx:for="{{item.cards}}"
+            wx:for-item="card"
+            wx:key="id"
+            class="profile-card profile-card-grid"
+            style="height:{{card._height}}rpx"
+            data-profile="{{card}}"
+            bindtap="onPerformanceCardTap"
+          >
+            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <view class="profile-card-overlay">
+              <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <view class="profile-card-middle">
+                <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+              </view>
+              <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                <text class="profile-card-play-icon">▶</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="intro-card card">
+        <text class="section-title">企业业绩</text>
+        <text class="section-desc">展示企业发展历程中的重要里程碑和卓越成就。</text>
+      </view>
+    </block>
+  </view>
+
+  <!-- 核心业务 -->
+  <view wx:if="{{showBusiness}}" class="module-block">
+    <view class="section-header">
+      <text class="section-headline">{{businessModuleName}}</text>
+    </view>
+    <!-- 核心业务 Hero 卡片 -->
+    <block wx:if="{{businessHeroCards.length > 0}}">
+      <view wx:for="{{businessHeroCards}}" wx:for-item="hero" wx:key="id"
+        class="hero-section"
+        style="height:{{hero._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#e2e8f0"
+        bindtap="onBizCardTap" data-module-id="{{hero.id}}">
+        <image wx:if="{{hero.coverImage}}" class="hero-bg-image" src="{{hero.coverImage}}" mode="aspectFill" />
+        <view class="hero-content">
+          <view class="hero-card-middle">
+            <view class="profile-card-text" style="font-size:32rpx;text-align:center;color:#fff">{{hero.name}}</view>
+          </view>
+        </view>
+      </view>
+    </block>
+    <block wx:if="{{businessSections.length > 0}}">
+      <view wx:for="{{businessSections}}" wx:key="id" class="profile-section">
+        <view wx:if="{{businessSections.length > 1}}" class="profile-section-divider">
+          <view class="profile-section-line"></view>
+        </view>
+        <view wx:if="{{item.displayLayout === 'single'}}" class="profile-single">
+          <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
+            class="biz-card biz-card-single" style="height:{{card._height}}rpx"
+            bindtap="onBizCardTap" data-module-id="{{card.id}}">
+            <image wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
+            <view class="biz-card-info">
+              <text class="biz-card-name">{{card.name}}</text>
+              <text class="biz-card-count">{{card.cards ? card.cards.length : 0}} 张卡片</text>
+            </view>
+          </view>
+        </view>
+        <swiper wx:if="{{item.displayLayout === 'horizontal-scroll'}}"
+          class="profile-swiper"
+          indicator-dots="{{item.cards.length > 1}}"
+          indicator-color="rgba(255,255,255,0.4)"
+          indicator-active-color="#fff"
+          autoplay circular
+          style="height:{{item.cards[0]._height}}rpx">
+          <swiper-item wx:for="{{item.cards}}" wx:for-item="card" wx:key="id">
+            <view class="biz-card biz-card-swiper" style="height:{{card._height}}rpx"
+              bindtap="onBizCardTap" data-module-id="{{card.id}}">
+              <image wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
+              <view class="biz-card-info">
+                <text class="biz-card-name">{{card.name}}</text>
+                <text class="biz-card-count">{{card.cards ? card.cards.length : 0}} 张卡片</text>
+              </view>
+            </view>
+          </swiper-item>
+        </swiper>
+        <view wx:if="{{item.displayLayout === 'grid'}}" class="profile-grid g-active" style="display:grid;grid-template-columns:repeat({{item.gridCols}},1fr);gap:{{item.gridCols === 3 ? '16' : '20'}}rpx">
+          <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
+            class="biz-card biz-card-grid" style="height:{{card._height}}rpx"
+            bindtap="onBizCardTap" data-module-id="{{card.id}}">
+            <image wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
+            <view class="biz-card-info">
+              <text class="biz-card-name">{{card.name}}</text>
+              <text class="biz-card-count">{{card.cards ? card.cards.length : 0}} 张卡片</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="intro-card card">
+        <text class="section-title">核心业务</text>
+        <text class="section-desc">暂无业务模块数据</text>
+      </view>
+    </block>
+  </view>
+
+  <!-- 施工现场 -->
+  <view wx:if="{{showSites}}" class="module-block">
+    <view class="section-header">
+      <text class="section-headline">{{sitesModuleName}}</text>
+    </view>
+    <view wx:if="{{sitesList.length > 0}}" class="sites-gallery">
+      <view wx:for="{{sitesList}}" wx:key="id" class="site-card">
+        <image wx:if="{{item.image}}" class="site-image" src="{{item.image}}" mode="aspectFill" />
+        <view class="site-body">
+          <text class="site-name">{{item.projectName}}</text>
+          <view class="site-stage">
+            <text class="site-stage-label">{{item.stage}}</text>
+          </view>
+          <text class="site-location">{{item.location}}</text>
+          <text class="site-desc">{{item.desc}}</text>
+        </view>
+      </view>
+    </view>
+    <block wx:else>
+      <view class="intro-card card">
+        <text class="section-title">施工现场</text>
+        <text class="section-desc">暂无施工现场数据</text>
+      </view>
+    </block>
+  </view>
+
+  <!-- 视频播放遮罩 -->
+  <view wx:if="{{currentVideo}}" class="video-player-overlay" bindtap="closeVideo">
+    <video
+      class="video-player"
+      src="{{currentVideo.url}}"
+      controls
+      autoplay
+      show-center-play-btn
+      object-fit="contain"
+    />
+    <view class="video-close" bindtap="closeVideo">✕</view>
+  </view>
+  </block>
+</view>

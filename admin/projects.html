@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>企业项目 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('projects')
+  await DataStore.init()
+
+  let items = []
+
+  function render() {
+    items = DataStore.getProjectsList()
+
+    const cards = items.map(p => `
+      <div class="media-card">
+        <div class="media-thumb" style="background:linear-gradient(135deg,#e8f0fe,#d2e3fc);">
+          ${p.image
+            ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover" alt="${escapeHtml(p.name)}">`
+            : `<span style="font-size:48px">🏗️</span>`}
+        </div>
+        <div class="media-body">
+          <div class="media-title">${escapeHtml(p.name || '未命名')}</div>
+          <div class="media-meta">
+            ${p.location ? `<span style="display:block;color:#4a5568;font-size:13px;">📍 ${escapeHtml(p.location)}${p.year ? ' · ' + p.year : ''}</span>` : ''}
+            <span style="display:block;margin-top:4px;color:#4a5568;font-size:13px;line-height:1.5;">${escapeHtml((p.desc || '').substring(0, 80))}...</span>
+            ${p.tags && p.tags.length > 0 ? `<span style="display:block;margin-top:6px;">${p.tags.map(t => `<span style="display:inline-block;background:#e8f0fe;color:#1967d2;padding:2px 8px;border-radius:100px;font-size:11px;margin-right:4px;">${escapeHtml(t)}</span>`).join('')}</span>` : ''}
+          </div>
+          <div class="media-actions">
+            <button class="btn btn-outline btn-sm" onclick="window.location.href='projects-edit.html?id=${p.id}'">✏️ 编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="window.deleteItem(${p.id})">🗑 删除</button>
+          </div>
+        </div>
+      </div>
+    `).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>企业项目</h1>
+        <button class="btn btn-primary" onclick="window.location.href='projects-edit.html'">+ 新增</button>
+      </div>
+
+      <div class="card-grid">
+        ${cards || '<div class="empty-state"><div class="empty-icon">🏗️</div><p>暂无企业项目</p><p style="font-size:13px;color:#a0aec0;margin-top:8px;">点击右上角「新增」按钮添加企业项目</p></div>'}
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  window.deleteItem = function(id) {
+    const p = items.find(p => p.id === id)
+    Admin.confirmDelete(`确定要删除 <strong>${escapeHtml(p?.name || '此项')}</strong> 吗？`, async () => {
+      await DataStore.deleteProject(id)
+      Admin.showToast('删除成功', 'success')
+      render()
+    })
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+</body>
+</html>

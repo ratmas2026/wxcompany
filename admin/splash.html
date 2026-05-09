@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>启动页 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('splash')
+  await DataStore.init()
+
+  let splashImages = []
+
+  function render() {
+    splashImages = DataStore.getSplashImages()
+    if (!splashImages || splashImages.length === 0) {
+      splashImages = [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}]
+    }
+
+    const cards = splashImages.map((item, idx) => {
+      const hasImg = item.url && item.url.length > 0
+      const imgSrc = hasImg ? item.url : ''
+      const updatedText = item.updatedAt ? '更新于 ' + new Date(item.updatedAt).toLocaleString('zh-CN') : '未上传'
+
+      return `
+        <div class="splash-card">
+          <div class="splash-card-label">启动图 ${idx + 1}</div>
+          <div class="splash-preview" onclick="document.getElementById('splashInput${item.id}').click()" title="点击上传图片">
+            ${hasImg
+              ? `<img src="${imgSrc}" class="splash-preview-img" />`
+              : `<div class="splash-placeholder">
+                   <div class="splash-placeholder-icon">📷</div>
+                   <div>点击上传</div>
+                 </div>`
+            }
+          </div>
+          <div class="splash-card-info">
+            <span class="splash-status">${updatedText}</span>
+          </div>
+          <div class="splash-card-actions">
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('splashInput${item.id}').click()">
+              ${hasImg ? '更换图片' : '上传图片'}
+            </button>
+            ${hasImg ? `<button class="btn btn-outline btn-sm" onclick="window.clearSplash(${item.id})" style="margin-left:8px;color:var(--error)">移除</button>` : ''}
+          </div>
+          <input type="file" id="splashInput${item.id}" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="window.onSplashSelected(this, ${item.id})">
+        </div>
+      `
+    }).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>启动页</h1>
+        <span class="page-subtitle">管理小程序启动时的3张加载图片</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <p>上传三张启动图用于小程序开屏轮播展示。建议尺寸：750x1334px（或相同比例），每张不超过5MB。</p>
+        </div>
+        <div class="splash-grid">${cards}</div>
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  window.onSplashSelected = async function(input, slotId) {
+    const file = input.files[0]
+    if (!file) return
+
+    if (file.size > 5 * 1048576) {
+      Admin.showToast('图片不能超过 5MB', 'error')
+      input.value = ''
+      return
+    }
+
+    Admin.showToast('正在上传...', 'info')
+    try {
+      const url = await DataStore.uploadSplash(file)
+      await DataStore.saveSplashImage(slotId, { url, updatedAt: new Date().toISOString() })
+      Admin.showToast('启动图 ' + slotId + ' 上传成功', 'success')
+      input.value = ''
+      render()
+    } catch (err) {
+      Admin.showToast('上传失败: ' + err.message, 'error')
+    }
+  }
+
+  window.clearSplash = function(slotId) {
+    Admin.showModal('移除启动图', '<p>确定要移除启动图 ' + slotId + ' 吗？</p>', async () => {
+      await DataStore.saveSplashImage(slotId, { url: '', updatedAt: new Date().toISOString() })
+      Admin.showToast('已移除', 'success')
+      render()
+    }, '移除', true)
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+
+<style>
+.splash-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.splash-card {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.splash-card-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1a202c);
+  margin-bottom: 16px;
+}
+
+.splash-preview {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 360px;
+  border: 2px dashed var(--border-color, #cbd5e0);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  background: var(--bg-muted, #f7fafc);
+  transition: border-color 0.2s;
+}
+
+.splash-preview:hover {
+  border-color: var(--primary, #3a5f94);
+}
+
+.splash-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.splash-placeholder {
+  color: var(--text-muted, #a0aec0);
+  text-align: center;
+}
+
+.splash-placeholder-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.splash-card-info {
+  margin: 12px 0;
+}
+
+.splash-status {
+  font-size: 12px;
+  color: var(--text-muted, #718096);
+}
+
+.splash-card-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .splash-grid {
+    grid-template-columns: 1fr;
+  }
+  .splash-preview {
+    max-height: 240px;
+  }
+}
+</style>
+</body>
+</html>

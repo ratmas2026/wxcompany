@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>名片管理 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('index')
+  await DataStore.init()
+
+  const pageSize = 20
+  let currentPage = 1
+  let searchQuery = ''
+  let cards = []
+
+  function render() {
+    cards = DataStore.getCards()
+    if (searchQuery) {
+      cards = cards.filter(c =>
+        c.name.includes(searchQuery) ||
+        c.company.includes(searchQuery) ||
+        c.title.includes(searchQuery) ||
+        c.department.includes(searchQuery)
+      )
+    }
+
+    const total = cards.length
+    const start = (currentPage - 1) * pageSize
+    const paged = cards.slice(start, start + pageSize)
+    const allChecked = paged.length > 0 && paged.every(c => document.getElementById('selectAll')?.checked)
+
+    const rows = paged.map(c => `
+      <tr>
+        <td class="checkbox-cell"><input type="checkbox" value="${c.id}" class="row-check" ${allChecked ? 'checked' : ''}></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--primary);font-weight:700;overflow:hidden">${c.avatar ? `<img src="${c.avatar}" style="width:100%;height:100%;object-fit:cover">` : c.name[0]}</div>
+            <div>
+              <div style="font-weight:600">${c.name}</div>
+              <div style="font-size:11px;color:var(--on-surface-variant)">${String(c.id).padStart(3, '0')}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div>
+            <div style="font-weight:600">${c.department}</div>
+            <div style="font-size:11px;color:var(--on-surface-variant)">${c.title}</div>
+          </div>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:12px">📞</span>
+                <span style="font-weight:600;font-size:13px">${c.phone}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:12px">✉️</span>
+                <span style="font-size:11px;color:var(--on-surface-variant)">${c.email}</span>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td style="text-align:center">
+          <label class="switch">
+            <input type="checkbox" ${c.status ? 'checked' : ''} onchange="window.toggleCard(${c.id})">
+            <span class="switch-slider"></span>
+          </label>
+        </td>
+        <td style="text-align:center">
+          <button class="btn btn-outline btn-sm" onclick="window.editCard(${c.id})">编辑</button>
+          <button class="btn btn-danger btn-sm" onclick="window.deleteCardItem(${c.id})" style="margin-left:4px">删除</button>
+        </td>
+      </tr>
+    `).join('')
+
+    const activeCards = cards.filter(c => c.status).length
+
+    const html = `
+      <div class="page-header">
+        <h1>名片管理</h1>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e8f0fe;color:#3a5f94">📇</div>
+          <div class="stat-info">
+            <div class="stat-value">${total}</div>
+            <div class="stat-label">总名片数</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e6f4ea;color:#1e8e3e">✅</div>
+          <div class="stat-info">
+            <div class="stat-value">${activeCards}</div>
+            <div class="stat-label">使用中</div>
+          </div>
+        </div>
+        <div class="stat-card" style="justify-content:center;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="window.exportCards()">📥 导出Excel</button>
+          <button class="btn btn-secondary" onclick="window.importCards()">📤 导入Excel</button>
+          <button class="btn btn-primary" onclick="window.addCard()">+ 新增名片</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input type="text" class="form-input" id="searchInput" placeholder="搜索姓名/公司/职位/部门..." style="width:280px" value="${searchQuery}">
+            <button class="btn btn-secondary btn-sm" onclick="window.batchDelete()">🗑 批量删除</button>
+          </div>
+          <div class="toolbar-right">
+            <span style="font-size:13px;color:var(--on-surface-variant)">共 ${total} 条</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="checkbox-cell"><input type="checkbox" id="selectAll" onchange="window.toggleSelectAll(this)"></th>
+                <th>姓名/id</th>
+                <th>部门/职位</th>
+                <th>联系方式/邮箱</th>
+                <th style="text-align:center;width:60px">状态</th>
+                <th style="text-align:center;width:140px">操作</th>
+              </tr>
+            </thead>
+            <tbody>${rows || '<tr><td colspan="6"><div class="empty-state"><p>暂无数据</p></div></td></tr>'}</tbody>
+          </table>
+        </div>
+
+        ${Admin.renderPagination(total, currentPage, pageSize, (p) => { currentPage = p; render() })}
+      </div>
+    `
+
+    Admin.setPageContent(html)
+
+    // Bind search
+    const searchEl = document.getElementById('searchInput')
+    if (searchEl) {
+      searchEl.addEventListener('input', (e) => {
+        searchQuery = e.target.value
+        currentPage = 1
+        render()
+      })
+    }
+  }
+
+  // Global handlers
+  window.toggleSelectAll = function(el) {
+    document.querySelectorAll('.row-check').forEach(cb => { cb.checked = el.checked })
+  }
+
+  window.getCheckedIds = function() {
+    return [...document.querySelectorAll('.row-check:checked')].map(cb => parseInt(cb.value))
+  }
+
+  window.toggleCard = function(id) {
+    DataStore.toggleCardStatus(id)
+    Admin.showToast('状态已更新', 'success')
+    render()
+  }
+
+  window.editCard = function(id) {
+    window.location.href = `card-edit.html?id=${id}`
+  }
+
+  window.addCard = function() {
+    window.location.href = 'card-edit.html'
+  }
+
+  window.deleteCardItem = function(id) {
+    const card = cards.find(c => c.id === id)
+    Admin.confirmDelete(`确定要删除 <strong>${card?.name || '此项'}</strong> 吗？此操作不可恢复。`, () => {
+      DataStore.deleteCard(id)
+      Admin.showToast('删除成功', 'success')
+      render()
+    })
+  }
+
+  window.batchDelete = function() {
+    const ids = window.getCheckedIds()
+    if (!ids.length) { Admin.showToast('请先选择要删除的项', 'info'); return }
+    Admin.confirmDelete(`确定要删除选中的 <strong>${ids.length}</strong> 条记录吗？`, () => {
+      ids.forEach(id => DataStore.deleteCard(id))
+      Admin.showToast(`已删除 ${ids.length} 条`, 'success')
+      render()
+    })
+  }
+
+  window.exportCards = function() {
+    const data = cards.map(({ id, status, ...rest }) => rest)
+    Admin.exportCSV(data, '名片管理')
+    Admin.showToast('导出成功', 'success')
+  }
+
+  window.importCards = function() {
+    Admin.showToast('导入功能开发中，请使用Excel文件', 'info')
+  }
+
+  window.onGlobalSearch = function(query) {
+    searchQuery = query
+    currentPage = 1
+    render()
+  }
+
+  // Init
+  render()
+})()
+</script>
+<style>
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.stat-card { background: #fff; border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.stat-info { display: flex; flex-direction: column; }
+.stat-value { font-size: 28px; font-weight: 800; color: #1a202c; line-height: 1.1; }
+.stat-label { font-size: 13px; color: #718096; margin-top: 4px; }
+</style>
+</body>
+</html>

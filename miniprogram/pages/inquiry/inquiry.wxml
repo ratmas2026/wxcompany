@@ -1,0 +1,98 @@
+<view class="page-container">
+  <top-bar title="合作" icon="🤝" showBack="{{false}}" />
+  <!-- Hero -->
+  <view class="hero-section bg-primary">
+    <image class="hero-bg" src="/images/office-bg.jpg" mode="aspectFill" />
+    <view class="hero-content">
+      <text class="hero-label">合作咨询</text>
+      <text class="hero-title">商务合作咨询</text>
+    </view>
+    <view class="hero-quote">
+      <text>"共同设计智能基础设施的未来。"</text>
+    </view>
+  </view>
+
+  <view class="content-layout">
+    <!-- 侧边栏信息 -->
+    <view class="sidebar">
+      <view class="sidebar-card">
+        <text class="sidebar-title">为什么选择与我们合作？</text>
+        <view class="sidebar-list">
+          <view class="sidebar-item">
+            <text class="sidebar-icon">✅</text>
+            <text>获得优质的企业级架构框架。</text>
+          </view>
+          <view class="sidebar-item">
+            <text class="sidebar-icon">🔗</text>
+            <text>与数字设计专家进行战略联网。</text>
+          </view>
+          <view class="sidebar-item">
+            <text class="sidebar-icon">📊</text>
+            <text>数据驱动的智能运维优化服务。</text>
+          </view>
+        </view>
+      </view>
+      <view class="cache-hint">
+        <text class="cache-title">本地缓存</text>
+        <text class="cache-text">您的进度将自动保存到浏览器的本地缓存中，方便您的使用。</text>
+      </view>
+    </view>
+
+    <!-- 表单 -->
+    <view class="form-card">
+      <form bindsubmit="onSubmit">
+        <!-- 个人信息 -->
+        <view class="form-group">
+          <text class="form-label">姓名 <text class="required">*</text></text>
+          <input class="form-input" placeholder-class="form-input-placeholder" name="name" value="{{formName}}" placeholder="请输入姓名" maxlength="20" data-field="formName" bindinput="onInput" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">手机号码 <text class="required">*</text></text>
+          <input class="form-input" placeholder-class="form-input-placeholder" name="phone" value="{{formPhone}}" type="number" placeholder="请输入11位手机号" maxlength="11" data-field="formPhone" bindinput="onInput" />
+        </view>
+
+        <!-- 企业信息 -->
+        <view class="form-group">
+          <text class="form-label">企业名称 <text class="required">*</text></text>
+          <input class="form-input" placeholder-class="form-input-placeholder" name="company" value="{{formCompany}}" placeholder="请输入公司名称" maxlength="50" data-field="formCompany" bindinput="onInput" />
+        </view>
+        <view class="form-group">
+          <text class="form-label">您的职称 <text class="required">*</text></text>
+          <input class="form-input" placeholder-class="form-input-placeholder" name="title" value="{{formTitle}}" placeholder="例如：总经理" maxlength="20" data-field="formTitle" bindinput="onInput" />
+        </view>
+
+        <!-- 合作方面（多选） -->
+        <view class="form-group">
+          <text class="form-label">合作方面 <text class="required">*</text></text>
+          <checkbox-group bindchange="checkboxChange">
+            <view class="checkbox-grid">
+              <label wx:for="{{cooperationAreas}}" wx:key="value" class="checkbox-item">
+                <checkbox value="{{item.value}}" checked="{{item.checked}}" color="#3a5f94" />
+                <text>{{item.label}}</text>
+              </label>
+            </view>
+          </checkbox-group>
+        </view>
+
+        <!-- 提交 -->
+        <button class="submit-btn" form-type="submit">
+          <text>提交合作意向</text>
+          <text>📤</text>
+        </button>
+        <text class="privacy-text">提交即表示您同意我们的 B2B 通信公司隐私标准。</text>
+      </form>
+    </view>
+  </view>
+
+  <!-- 成功弹窗 -->
+  <view class="modal" wx:if="{{showSuccess}}">
+    <view class="modal-mask" bindtap="closeSuccess"></view>
+    <view class="modal-content">
+      <view class="success-icon">✅</view>
+      <text class="success-title">提交成功</text>
+      <text class="success-desc">您的合作意向已提交，我们将尽快与您联系。</text>
+      <button class="dismiss-btn" bindtap="closeSuccess">确定</button>
+    </view>
+  </view>
+
+</view>

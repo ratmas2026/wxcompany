@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>案例自定义 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('case-custom')
+  await DataStore.init()
+
+  let draggedIdx = null
+  const DEFAULT_SECTIONS = [
+    { id: 'company-profiles',    name: '企业动态', type: 'profiles',    enabled: true, sortOrder: 10 },
+    { id: 'company-performance', name: '企业业绩', type: 'performance', enabled: true, sortOrder: 20 },
+    { id: 'business-modules',    name: '核心业务', type: 'business',    enabled: true, sortOrder: 30 },
+    { id: 'honors',              name: '企业荣誉', type: 'honors',      enabled: true, sortOrder: 40 },
+    { id: 'projects',            name: '企业项目', type: 'projects',    enabled: true, sortOrder: 50 },
+    { id: 'sites',               name: '施工现场', type: 'sites',       enabled: true, sortOrder: 60 }
+  ]
+
+  function getSections() {
+    const config = DataStore.getCasePageConfig()
+    let sections = config.sections || []
+    if (!sections.length) {
+      sections = JSON.parse(JSON.stringify(DEFAULT_SECTIONS))
+    }
+    sections.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    return sections
+  }
+
+  function render() {
+    const sections = getSections()
+    const iconMap = {
+      'profiles': '🏢', 'performance': '📊', 'business': '📦',
+      'honors': '🏆', 'projects': '🏗️', 'sites': '🚧'
+    }
+
+    // Top cards: 2-column grid, compact icon + name only
+    const cards = sections.map(sec => {
+      return `
+        <div class="case-module-card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;border-radius:12px;border:1px solid #e2e8f0">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:22px">${iconMap[sec.type] || '📄'}</span>
+            <span style="font-weight:600;font-size:14px;color:#1a202c">${sec.name}</span>
+          </div>
+        </div>
+      `
+    }).join('')
+
+    // Bottom drag-sort table (100% copied from company-profile.html section rows)
+    const circledDigits = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩']
+
+    const sectionRows = sections.map((sec, idx) => {
+      const statusOn = sec.enabled !== false
+      const isFirst = idx === 0
+      const orderBadge = isFirst
+        ? '<span style="font-size:13px;color:#3a5f94;font-weight:700">📌</span>'
+        : `<span style="font-size:14px;color:#3a5f94;font-weight:700">${circledDigits[idx - 1] || idx}</span>`
+      const dragHandle = isFirst
+        ? ''
+        : '<span style="cursor:grab;color:#a0aec0;font-size:16px;user-select:none;margin-right:6px" title="拖动排序">☰</span>'
+      const dragAttrs = isFirst
+        ? ''
+        : `draggable="true" ondragstart="window.onSectionDragStart(event,${idx})" ondragover="window.onSectionDragOver(event)" ondrop="window.onSectionDrop(event,${idx})" ondragend="window.onSectionDragEnd(event)"`
+
+      return `
+        <tr class="section-row" ${dragAttrs} data-idx="${idx}" style="${isFirst ? '' : 'cursor:grab'}">
+          <td style="white-space:nowrap">${dragHandle}${orderBadge}</td>
+          <td style="font-weight:700;font-size:14px"><span style="font-size:16px;margin-right:6px">${iconMap[sec.type] || '📄'}</span>${sec.name}</td>
+          <td style="text-align:right">
+            <label class="switch">
+              <input type="checkbox" ${statusOn ? 'checked' : ''} onchange="window.toggleSection(${idx})">
+              <span class="switch-slider"></span>
+            </label>
+          </td>
+        </tr>
+      `
+    }).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>案例自定义 <span style="font-size:13px;color:#a0aec0">配置小程序"案例"Tab页的模块显隐与顺序</span></h1>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="window.showLayoutConfig()">⚙️ 展示方案</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:20px 24px">
+        <h3 style="margin:0 0 16px 0;font-size:16px">关联模块</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${cards}</div>
+      </div>
+
+      <div class="card" style="margin-top:24px;padding:20px 24px">
+        <h3 style="margin:0 0 16px 0;font-size:16px">已保存的展示方案</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:60px">位置</th>
+                <th>模块名称</th>
+                <th style="text-align:right;width:60px">状态</th>
+              </tr>
+            </thead>
+            <tbody>${sectionRows}</tbody>
+          </table>
+        </div>
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  window.toggleModule = async function(id) {
+    const sections = getSections()
+    const sec = sections.find(s => s.id === id)
+    if (!sec) return
+    sec.enabled = sec.enabled === false ? true : false
+    await DataStore.updateCasePageConfig({ sections })
+    render()
+  }
+
+  window.showLayoutConfig = function() {
+    const sections = getSections()
+    const iconMap = {
+      'profiles': '🏢', 'performance': '📊', 'business': '📦',
+      'honors': '🏆', 'projects': '🏗️', 'sites': '🚧'
+    }
+    const checkboxes = sections.map(sec => {
+      return `
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;border-bottom:1px solid #f1f4f6">
+          <input type="checkbox" value="${sec.id}" class="layout-cb" style="width:16px;height:16px">
+          <span style="font-size:18px">${iconMap[sec.type] || '📄'}</span>
+          <span style="font-weight:600;font-size:14px">${sec.name}</span>
+        </label>
+      `
+    }).join('')
+
+    Admin.showModal('选择展示模块', checkboxes, async function() {
+      const checkedIds = new Set()
+      document.querySelectorAll('.layout-cb:checked').forEach(cb => checkedIds.add(cb.value))
+      sections.forEach(sec => {
+        sec.enabled = checkedIds.has(sec.id)
+      })
+      await DataStore.updateCasePageConfig({ sections })
+      render()
+    }, '确认')
+  }
+
+  window.toggleSection = async function(idx) {
+    const sections = getSections()
+    const sec = sections[idx]
+    if (!sec) return
+    sec.enabled = sec.enabled === false ? true : false
+    await DataStore.updateCasePageConfig({ sections })
+    render()
+  }
+
+  // Drag-and-drop (100% copied from company-profile.html)
+  window.onSectionDragStart = function(event, idx) {
+    draggedIdx = idx
+    event.target.style.opacity = '0.4'
+    event.dataTransfer.effectAllowed = 'move'
+  }
+
+  window.onSectionDragOver = function(event) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    document.querySelectorAll('.section-row').forEach(r => r.style.borderTop = '')
+    const row = event.target.closest('.section-row')
+    if (row) {
+      row.style.borderTop = '3px solid #3a5f94'
+    }
+  }
+
+  window.onSectionDrop = async function(event, targetIdx) {
+    event.preventDefault()
+    document.querySelectorAll('.section-row').forEach(r => r.style.borderTop = '')
+    if (draggedIdx === null || draggedIdx === targetIdx || draggedIdx === 0 || targetIdx === 0) {
+      draggedIdx = null
+      return
+    }
+
+    const sections = getSections()
+    const [moved] = sections.splice(draggedIdx, 1)
+    sections.splice(targetIdx, 0, moved)
+
+    let order = 10
+    sections.forEach(sec => {
+      sec.sortOrder = order
+      order += 10
+    })
+
+    await DataStore.updateCasePageConfig({ sections })
+    draggedIdx = null
+    render()
+  }
+
+  window.onSectionDragEnd = function(event) {
+    event.target.style.opacity = ''
+    document.querySelectorAll('.section-row').forEach(r => r.style.borderTop = '')
+    draggedIdx = null
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+
+<style>
+.case-module-card:hover {
+  background: #f8f9fa;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e0;
+  transition: 0.2s;
+  border-radius: 24px;
+}
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+.switch input:checked + .switch-slider {
+  background-color: #3a5f94;
+}
+.switch input:checked + .switch-slider:before {
+  transform: translateX(20px);
+}
+</style>
+</body>
+</html>

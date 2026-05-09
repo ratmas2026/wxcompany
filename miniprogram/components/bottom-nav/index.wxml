@@ -1,0 +1,13 @@
+<view class="bottom-nav">
+  <view
+    wx:for="{{tabs}}"
+    wx:key="key"
+    class="tab-item {{active === item.key ? 'tab-active' : ''}}"
+    data-path="{{item.pagePath}}"
+    data-key="{{item.key}}"
+    bindtap="switchTab"
+  >
+    <text class="tab-icon">{{item.icon === 'domain' ? '🏢' : item.icon === 'handshake' ? '🤝' : item.icon === 'contact_page' ? '💳' : '👤'}}</text>
+    <text class="tab-text">{{item.text}}</text>
+  </view>
+</view>

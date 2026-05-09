@@ -1,0 +1,64 @@
+<view class="page-container">
+  <!-- Header -->
+  <view class="top-bar">
+    <text class="back-btn" bindtap="onBack">← 返回</text>
+    <text class="top-title">分享名片</text>
+    <view class="top-placeholder"></view>
+  </view>
+
+  <!-- Card Preview -->
+  <view class="preview-section">
+    <view class="mini-card signature-gradient">
+      <view class="card-glow"></view>
+      <view class="card-content">
+        <image class="card-avatar" src="/images/hero-bg.jpg" mode="aspectFill" />
+        <text class="card-name">张明远</text>
+        <text class="card-title">首席执行官</text>
+        <view class="card-divider"></view>
+        <view class="card-contact">
+          <text>📱 138-8888-8888</text>
+          <text>✉️ zhangmy@zhixingguan.com</text>
+        </view>
+        <view class="card-company">
+          <text>执行官组合</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Share Actions -->
+  <view class="share-section">
+    <text class="share-title">分享到</text>
+    <view class="share-grid">
+      <button class="share-item" open-type="share">
+        <view class="share-icon signature-gradient">
+          <text>💬</text>
+        </view>
+        <text class="share-label">微信好友</text>
+      </button>
+      <view class="share-item" bindtap="onShareToGroup">
+        <view class="share-icon" style="background: #4a9e6e;">
+          <text>👥</text>
+        </view>
+        <text class="share-label">微信群</text>
+      </view>
+      <view class="share-item" bindtap="onShareToMoment">
+        <view class="share-icon" style="background: #e07b3c;">
+          <text>🖼️</text>
+        </view>
+        <text class="share-label">朋友圈</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Poster -->
+  <view class="poster-section">
+    <text class="share-title">生成海报</text>
+    <view class="poster-preview" bindtap="onGeneratePoster">
+      <view class="poster-placeholder signature-gradient">
+        <text class="poster-icon">🎨</text>
+        <text class="poster-tip">点击生成专属海报</text>
+      </view>
+    </view>
+  </view>
+</view>

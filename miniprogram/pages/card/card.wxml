@@ -1,0 +1,126 @@
+<view class="page-container">
+  <top-bar title="名片" icon="📇" showBack="{{false}}" />
+  <!-- 名片卡片 -->
+  <view class="card-section">
+    <view class="business-card signature-gradient">
+      <view class="card-bg-blur"></view>
+      <!-- 头像 -->
+      <view class="card-avatar">
+        <image class="avatar-img" src="{{cardData.avatar || '/images/avatar-executive.jpg'}}" mode="aspectFill" />
+      </view>
+      <!-- 个人信息 -->
+      <view class="card-info">
+        <text class="card-name">{{cardData.name}}</text>
+        <text class="card-title">{{cardData.title}}</text>
+        <view class="card-badge">
+          <text>{{cardData.department || companyInfo.name || '高级管理合伙人'}}</text>
+        </view>
+      </view>
+      <!-- 联系方式 -->
+      <view class="card-contact">
+        <view class="contact-row" bindtap="callPhone">
+          <view class="contact-icon">
+            <text>📞</text>
+          </view>
+          <text>立即通话</text>
+        </view>
+        <view class="contact-row" bindtap="sendEmail">
+          <view class="contact-icon">
+            <text>📧</text>
+          </view>
+          <text>发送邮件</text>
+        </view>
+      </view>
+      <!-- 公司地址 -->
+      <view class="card-location" bindtap="openMap">
+        <text>📍</text>
+        <view class="location-info">
+          <text class="location-company">{{cardData.company}}</text>
+          <text class="location-addr">{{cardData.address || companyInfo.address || '深圳市南山区科技园南路88号智能大厦38层'}}</text>
+        </view>
+        <text class="location-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快速操作 -->
+  <view class="quick-actions">
+    <view class="action-item" bindtap="shareCard">
+      <view class="action-icon"><text>📤</text></view>
+      <text>推送</text>
+    </view>
+    <view class="action-item" bindtap="generatePoster">
+      <view class="action-icon"><text>🖼️</text></view>
+      <text>海报</text>
+    </view>
+    <view class="action-item" bindtap="collectCard">
+      <view class="action-icon"><text>❤️</text></view>
+      <text>收藏</text>
+    </view>
+  </view>
+
+  <!-- 企业使命 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-heading">企业使命</text>
+      <text class="section-chapter">章节 01</text>
+    </view>
+    <view class="video-block" bindtap="previewVideo">
+      <image class="video-cover" src="{{missionVideo.cover || '/images/company-video.jpg'}}" mode="aspectFill" />
+      <view class="video-play-btn">
+        <text>▶</text>
+      </view>
+    </view>
+    <view class="desc-card">
+      <text class="desc-text">{{missionVideo.description || '在执行官组合，我们通过智能建造与数字化创新，为建筑行业提供全生命周期解决方案。我们的方法论将BIM技术、AIoT与数据科学深度融合，为客户创造可持续增长价值。'}}</text>
+    </view>
+  </view>
+
+  <!-- 行业荣誉 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-heading">行业荣誉</text>
+      <text class="section-chapter">奖项</text>
+    </view>
+    <scroll-view scroll-x class="honor-scroll" enable-flex>
+      <view wx:for="{{honors}}" wx:key="name" class="honor-card">
+        <image wx:if="{{item.image}}" class="honor-image" src="{{item.image}}" mode="aspectFill" />
+        <text wx:else class="honor-icon">🏆</text>
+        <text class="honor-name">{{item.name}}</text>
+        <text class="honor-desc">{{item.desc}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 战略项目 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-heading">战略项目</text>
+      <text class="section-chapter">项目集</text>
+    </view>
+    <view wx:for="{{projects}}" wx:key="name" class="project-block">
+      <view class="project-image-wrap">
+        <image class="project-cover" src="{{item.image}}" mode="aspectFill" />
+        <view class="project-tag">{{item.tags ? item.tags[0] : (item.tag || '')}}</view>
+      </view>
+      <view class="project-detail">
+        <text class="proj-name">{{item.name}}</text>
+        <text class="proj-desc">{{item.desc}}</text>
+        <button class="proj-link">查看案例详情 →</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 视频播放遮罩 -->
+  <view wx:if="{{currentVideo}}" class="video-player-overlay" bindtap="closeVideo">
+    <video
+      class="video-player"
+      src="{{currentVideo.url}}"
+      controls
+      autoplay
+      show-center-play-btn
+      object-fit="contain"
+    />
+    <view class="video-close" bindtap="closeVideo">✕</view>
+  </view>
+</view>

@@ -1,0 +1,17 @@
+@import "../company/company.wxss";
+
+/* business-module-detail page-specific styles */
+
+.page-container {
+  padding-bottom: 160rpx;
+}
+
+/* Swiper (carousel) */
+.profile-swiper {
+  width: 100%;
+}
+.profile-card.profile-card-swiper {
+  width: 100%;
+}
+
+/* Grid columns inherited from company.wxss (static calc(50% - 10rpx)) */

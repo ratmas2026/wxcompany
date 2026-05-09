@@ -1,0 +1,28 @@
+<view class="splash-container">
+  <!-- 兜底渐变背景 -->
+  <view class="splash-fallback signature-gradient">
+    <text class="fallback-icon">🏢</text>
+    <text class="fallback-text">执行官组合</text>
+  </view>
+
+  <!-- 启动图 -->
+  <image
+    wx:if="{{currentImage}}"
+    class="splash-image"
+    src="{{currentImage}}"
+    mode="aspectFill"
+  />
+
+  <!-- 跳过按钮（胶囊正下方，同宽左对齐） -->
+  <button
+    class="skip-btn"
+    style="top:{{skipTop}}px; left:{{skipLeft}}px; width:{{skipWidth}}px"
+    bindtap="goHome"
+  >跳过</button>
+
+  <!-- 底部品牌标识（仅在无启动图时显示） -->
+  <view wx:if="{{!currentImage}}" class="bottom-area">
+    <text class="logo-name">执行官组合</text>
+    <text class="logo-sub">Executive Portfolio</text>
+  </view>
+</view>

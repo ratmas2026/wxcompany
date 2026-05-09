@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>企业荣誉 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('honors')
+  await DataStore.init()
+
+  let items = []
+
+  function render() {
+    items = DataStore.getHonorsList()
+
+    const cards = items.map(h => `
+      <div class="media-card">
+        <div class="media-thumb" style="background:linear-gradient(135deg,#fef9e7,#fdebd0);">
+          ${h.image
+            ? `<img src="${h.image}" style="width:100%;height:100%;object-fit:cover" alt="${escapeHtml(h.name)}">`
+            : `<span style="font-size:48px">🏆</span>`}
+        </div>
+        <div class="media-body">
+          <div class="media-title">${escapeHtml(h.name || '未命名')}</div>
+          <div class="media-meta">
+            ${h.date ? `<span style="display:block;color:#4a5568;font-size:13px;">📅 ${escapeHtml(h.date)}</span>` : ''}
+            <span style="display:block;margin-top:4px;color:#4a5568;font-size:13px;line-height:1.5;">${escapeHtml((h.desc || '').substring(0, 80))}...</span>
+          </div>
+          <div class="media-actions">
+            <button class="btn btn-outline btn-sm" onclick="window.location.href='honors-edit.html?id=${h.id}'">✏️ 编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="window.deleteItem(${h.id})">🗑 删除</button>
+          </div>
+        </div>
+      </div>
+    `).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>企业荣誉</h1>
+        <button class="btn btn-primary" onclick="window.location.href='honors-edit.html'">+ 新增</button>
+      </div>
+
+      <div class="card-grid">
+        ${cards || '<div class="empty-state"><div class="empty-icon">🏆</div><p>暂无企业荣誉</p><p style="font-size:13px;color:#a0aec0;margin-top:8px;">点击右上角「新增」按钮添加企业荣誉</p></div>'}
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  window.deleteItem = function(id) {
+    const h = items.find(h => h.id === id)
+    Admin.confirmDelete(`确定要删除 <strong>${escapeHtml(h?.name || '此项')}</strong> 吗？`, async () => {
+      await DataStore.deleteHonor(id)
+      Admin.showToast('删除成功', 'success')
+      render()
+    })
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+</body>
+</html>

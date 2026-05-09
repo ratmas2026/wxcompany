@@ -1,0 +1,67 @@
+<view class="page-container">
+  <!-- Hero -->
+  <view class="hero-section signature-gradient">
+    <view class="hero-bg"></view>
+    <view class="hero-content">
+      <text class="hero-label">联系我们</text>
+      <text class="hero-title">业务联系</text>
+      <text class="hero-desc">多种方式与我们取得联系</text>
+    </view>
+  </view>
+
+  <!-- QR Code Cards -->
+  <view class="content-area">
+    <!-- Customer Service -->
+    <view class="qr-card">
+      <view class="qr-icon-wrap">
+        <text class="qr-icon">💬</text>
+      </view>
+      <text class="qr-title">客服微信</text>
+      <text class="qr-desc">扫描二维码添加专属客服，获取一对一咨询服务</text>
+      <view class="qr-code-wrap">
+        <image class="qr-code" src="/images/hero-bg.jpg" mode="aspectFit" />
+      </view>
+      <text class="qr-tip">长按识别二维码</text>
+    </view>
+
+    <!-- Official Account -->
+    <view class="qr-card">
+      <view class="qr-icon-wrap">
+        <text class="qr-icon">📱</text>
+      </view>
+      <text class="qr-title">微信公众号</text>
+      <text class="qr-desc">关注公众号了解更多行业资讯与企业动态</text>
+      <view class="qr-code-wrap">
+        <image class="qr-code" src="/images/office-bg.jpg" mode="aspectFit" />
+      </view>
+      <text class="qr-tip">长按识别二维码</text>
+    </view>
+
+    <!-- Phone Contact -->
+    <view class="phone-card">
+      <view class="phone-icon signature-gradient">
+        <text>📞</text>
+      </view>
+      <view class="phone-info">
+        <text class="phone-label">咨询热线</text>
+        <text class="phone-number">{{companyInfo.phone || '400-888-8888'}}</text>
+        <text class="phone-hours">工作日 9:00 - 18:00</text>
+      </view>
+      <button class="call-btn" bindtap="onCallPhone">
+        <text>拨打</text>
+      </button>
+    </view>
+
+    <!-- Office Info -->
+    <view class="office-card">
+      <text class="section-title">办公地址</text>
+      <view class="office-address">
+        <text>📍 {{companyInfo.address || '深圳市南山区科技园南路88号智能大厦38层'}}</text>
+      </view>
+      <view class="office-address">
+        <text>✉️ {{companyInfo.email || 'contact@zhixingguan.com'}}</text>
+      </view>
+    </view>
+  </view>
+
+</view>

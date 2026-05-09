@@ -1,0 +1,98 @@
+<view class="page-container">
+  <!-- Image Carousel -->
+  <view class="carousel-section">
+    <swiper
+      class="project-swiper"
+      indicator-dots
+      indicator-color="rgba(255,255,255,0.4)"
+      indicator-active-color="#ffffff"
+      autoplay
+      interval="5000"
+      circular
+    >
+      <swiper-item wx:for="{{project.images}}" wx:key="index">
+        <image class="swiper-image" src="{{item}}" mode="aspectFill" />
+      </swiper-item>
+    </swiper>
+    <view class="swiper-overlay">
+      <text class="back-btn" bindtap="onBack">← 返回</text>
+      <text class="image-counter">{{currentImage + 1}} / {{project.images.length}}</text>
+    </view>
+  </view>
+
+  <!-- Project Info -->
+  <view class="content-area">
+    <view class="info-card">
+      <text class="project-name">{{project.name}}</text>
+      <view class="info-grid">
+        <view class="info-item">
+          <text class="info-label">📍 项目地址</text>
+          <text class="info-value">{{project.address}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">📏 建设规模</text>
+          <text class="info-value">{{project.scale}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">📅 建设周期</text>
+          <text class="info-value">{{project.period}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">💰 总投资</text>
+          <text class="info-value">{{project.investment}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- Highlights -->
+    <view class="highlights-card">
+      <text class="section-title">项目亮点</text>
+      <view class="highlight-list">
+        <view
+          wx:for="{{project.highlights}}"
+          wx:key="index"
+          class="highlight-item"
+        >
+          <text class="highlight-icon">✨</text>
+          <text class="highlight-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- Detail -->
+    <view class="detail-card">
+      <text class="section-title">项目详情</text>
+      <view class="detail-content">
+        <text class="detail-text">{{project.detail}}</text>
+      </view>
+      <view class="detail-images">
+        <image
+          wx:for="{{project.detailImages}}"
+          wx:key="index"
+          class="detail-image"
+          src="{{item}}"
+          mode="widthFix"
+        />
+      </view>
+    </view>
+
+    <!-- Related Projects -->
+    <view class="related-section">
+      <text class="section-title">相关项目</text>
+      <scroll-view class="related-scroll" scroll-x enable-flex>
+        <view
+          wx:for="{{relatedProjects}}"
+          wx:key="id"
+          class="related-card"
+          bindtap="onOpenProject"
+          data-id="{{item.id}}"
+        >
+          <image class="related-thumb" src="{{item.thumb || item.image}}" mode="aspectFill" />
+          <text class="related-name">{{item.name}}</text>
+          <text class="related-loc">{{item.location}}</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+</view>

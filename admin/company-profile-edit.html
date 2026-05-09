@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>编辑企业动态卡片 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/wangeditor@4.7.15/dist/wangEditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.0/dist/purify.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('company-profile')
+  await DataStore.init()
+
+  const params = new URLSearchParams(window.location.search)
+  const editId = params.get('id') ? parseInt(params.get('id')) : null
+  const isEdit = !!editId
+
+  function defaultCover(title) {
+    return {
+      backgroundImage: '',
+      video: '',
+      aspectRatio: '16:9',
+      body: '',
+      zones: {
+        top: { textBoxes: [] },
+        middle: { textBoxes: [] },
+        bottom: { textBoxes: [] }
+      }
+    }
+  }
+
+  function defaultDetail(title) {
+    return { title: title || '', body: '', images: [], video: '', detailEntry: true }
+  }
+
+  function isHtml(str) { return /<[a-z][\s\S]*>/i.test(str || '') }
+
+  // Split editor HTML: first block element text = title, remainder = body
+  function splitContent(html) {
+    if (!html) return { title: '', body: '' }
+    var m = html.match(/^(\s*<(p|h[1-6]|div)\b[^>]*>)([\s\S]*?)<\/\2>(\s*)/i)
+    if (!m) return { title: '', body: html }
+    var innerHtml = m[3]
+    var title = innerHtml.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim()
+    if (!title) return { title: '', body: html }
+    var body = html.slice(m[0].length).replace(/^\s*/, '')
+    return { title: title, body: body }
+  }
+
+  // Merge title + body back into editor HTML for editing existing records
+  function mergeContent(title, body) {
+    var t = (title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    var b = body || ''
+    if (!t && !b) return '<p><br></p>'
+    if (!t) return b
+    return '<p>' + t + '</p>' + (b || '<p><br></p>')
+  }
+
+  function buildVideoEmbedCard(platform, videoId) {
+    const label = platform === 'youtube' ? 'YouTube' : 'Bilibili'
+    return '<div class="editor-video-card" data-platform="' + platform + '" data-video-id="' + videoId + '" contenteditable="false" style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:#f0f4f8;border:2px dashed #c1c6d6;border-radius:8px;margin:8px 0;user-select:none;cursor:default"><span style="font-size:22px;color:#005bbf">&#9654;</span><span style="font-size:14px;font-weight:600;color:#414754">' + label + ' ' + videoId + '</span></div>'
+  }
+
+  function destroyEditor() {
+    if (editorInstance) {
+      try { editorInstance.destroy() } catch (e) {}
+      editorInstance = null
+    }
+  }
+
+  function destroyCoverEditor() {
+    if (coverEditorInstance) {
+      try { coverEditorInstance.destroy() } catch (e) {}
+      coverEditorInstance = null
+    }
+  }
+
+  // Custom menu: business card import
+  var CARD_IMPORT_KEY = 'cardImport'
+
+  var CardImportMenu = (function () {
+    var BtnMenu = wangEditor.BtnMenu
+    var $ = wangEditor.$
+
+    function CardImportMenu(editor) {
+      var $elem = $(
+        '<div class="w-e-menu" data-title="导入名片">' +
+          '<button style="font-size:16px;line-height:1;border:0;background:none;cursor:pointer">&#128220;</button>' +
+        '</div>'
+      )
+      BtnMenu.call(this, $elem, editor)
+    }
+
+    CardImportMenu.prototype = Object.create(BtnMenu.prototype)
+    CardImportMenu.prototype.constructor = CardImportMenu
+
+    CardImportMenu.prototype.clickHandler = function () {
+      var self = this
+      var cards = DataStore.getCards().filter(function (c) { return c.status !== false })
+      if (!cards.length) { Admin.showToast('暂无活跃名片可导入', 'info'); return }
+
+      var selectedId = null
+
+      window._onImportCardClick = function (el) {
+        selectedId = parseInt(el.dataset.id)
+        var rows = document.querySelectorAll('.card-import-row')
+        rows.forEach(function (r) {
+          r.classList.toggle('selected', parseInt(r.dataset.id) === selectedId)
+        })
+      }
+
+      var rowsHTML = cards.map(function (c) {
+        var avatarHTML = c.avatar
+          ? '<img src="' + escapeHtml(c.avatar) + '" style="width:100%;height:100%;object-fit:cover">'
+          : escapeHtml(c.name[0] || '')
+        var subtitle = c.title || '—'
+        return '<div class="card-import-row" data-id="' + c.id + '" ' +
+          'style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all 0.15s" ' +
+          'onclick="window._onImportCardClick(this)">' +
+          '<div style="width:32px;height:32px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--primary);font-weight:700;overflow:hidden;flex-shrink:0">' + avatarHTML + '</div>' +
+          '<div style="min-width:0">' +
+          '<div style="font-weight:600;font-size:14px;color:#1a202c">' + escapeHtml(c.name) + '</div>' +
+          '<div style="font-size:11px;color:var(--on-surface-variant)">' + escapeHtml(subtitle) + '</div>' +
+          '</div></div>'
+      }).join('')
+
+      Admin.showModal('导入名片',
+        '<div style="max-height:360px;overflow-y:auto">' + rowsHTML + '</div>',
+        function () {
+          if (!selectedId) { Admin.showToast('请先选择一个名片', 'info'); return }
+          var card = cards.find(function (c) { return c.id === selectedId })
+          if (!card) return
+          var avatarBlock = card.avatar
+            ? '<img src="' + escapeHtml(card.avatar) + '" style="width:100%;height:100%;object-fit:cover">'
+            : escapeHtml(card.name[0] || '')
+          var sub = card.title || '—'
+          var insertHTML = '<div style="display:flex;align-items:center;gap:10px;padding:8px 0">' +
+            '<div style="width:32px;height:32px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--primary);font-weight:700;overflow:hidden;flex-shrink:0">' + avatarBlock + '</div>' +
+            '<div>' +
+            '<div style="font-weight:600;font-size:14px;color:#1a202c">' + escapeHtml(card.name) + '</div>' +
+            '<div style="font-size:11px;color:var(--on-surface-variant)">' + escapeHtml(sub || '—') + '</div>' +
+            '</div></div>'
+          self.editor.cmd.do('insertHTML', insertHTML)
+        },
+        '确认'
+      )
+    }
+
+    CardImportMenu.prototype.tryChangeActive = function () { this.active() }
+
+    return CardImportMenu
+  })()
+
+  wangEditor.registerMenu(CARD_IMPORT_KEY, CardImportMenu)
+
+  // Custom menu: Chinese font sizes (初号-六号)
+  var CHINESE_FONTSIZE_KEY = 'chineseFontSize'
+
+  var ChineseFontSizeMenu = (function () {
+    var DropListMenu = wangEditor.DropListMenu
+    var $ = wangEditor.$
+
+    var FONT_SIZES = [
+      { name: '初号', pt: '42pt' },
+      { name: '小初', pt: '36pt' },
+      { name: '一号', pt: '26pt' },
+      { name: '小一', pt: '24pt' },
+      { name: '二号', pt: '22pt' },
+      { name: '小二', pt: '18pt' },
+      { name: '三号', pt: '16pt' },
+      { name: '小三', pt: '15pt' },
+      { name: '四号', pt: '14pt' },
+      { name: '小四', pt: '12pt' },
+      { name: '五号', pt: '10.5pt' },
+      { name: '小五', pt: '9pt' },
+      { name: '六号', pt: '7.5pt' }
+    ]
+
+    function ChineseFontSizeMenu(editor) {
+      var $elem = $(
+        '<div class="w-e-menu" data-title="字号">' +
+          '<button style="font-size:14px;line-height:1;border:0;background:none;cursor:pointer">A<sup>+</sup></button>' +
+        '</div>'
+      )
+
+      var list = FONT_SIZES.map(function(item) {
+        return {
+          $elem: $('<p style="padding:4px 14px;cursor:pointer;font-size:13px">' + item.name + ' ' + item.pt + '</p>'),
+          value: item.pt
+        }
+      })
+
+      var dropListConf = {
+        width: 130,
+        title: '字号',
+        type: 'list',
+        list: list,
+        clickHandler: function (value) {
+          var range = editor.selection.getRange()
+          // Fallback: try native selection if saved range is empty
+          if (!range || range.collapsed) {
+            var sel = window.getSelection()
+            if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+              range = sel.getRangeAt(0)
+            }
+          }
+          if (!range || range.collapsed) return
+          var text = range.toString()
+          var span = document.createElement('span')
+          span.style.fontSize = value
+          span.textContent = text
+          range.deleteContents()
+          range.insertNode(span)
+          range.setStartAfter(span)
+          range.collapse(true)
+          editor.selection.saveRange(range)
+          editor.change && editor.change()
+        }
+      }
+
+      DropListMenu.call(this, $elem, editor, dropListConf)
+    }
+
+    ChineseFontSizeMenu.prototype = Object.create(DropListMenu.prototype)
+    ChineseFontSizeMenu.prototype.constructor = ChineseFontSizeMenu
+    ChineseFontSizeMenu.prototype.tryChangeActive = function () { this.active() }
+
+    return ChineseFontSizeMenu
+  })()
+
+  wangEditor.registerMenu(CHINESE_FONTSIZE_KEY, ChineseFontSizeMenu)
+
+  function initEditor(initialContent) {
+    const container = document.getElementById('editor-container')
+    if (!container || editorInstance) return
+
+    editorInstance = new wangEditor('#editor-container')
+
+    editorInstance.config.menus = [
+      'chineseFontSize', 'bold', 'italic', 'underline', 'strikeThrough',
+      'foreColor', 'backColor',
+      'list', 'justify',
+      'blockquote',
+      'link', 'image', 'video',
+      'table', 'splitLine',
+      'undo', 'redo',
+      'cardImport'
+    ]
+
+    editorInstance.config.placeholder = '请输入正文内容...'
+    editorInstance.config.zIndex = 10
+
+    // Paste text handler: auto-detect image URLs and video URLs
+    editorInstance.config.pasteTextHandle = function(pasteStr) {
+      const trimmed = pasteStr.trim()
+      // Image URL on its own line
+      if (/^https?:\/\/\S+\.(jpg|jpeg|png|gif|webp)(\?\S*)?$/i.test(trimmed)) {
+        try {
+          editorInstance.cmd.do('insertHTML', '<p><img src="' + trimmed + '" style="max-width:100%"/></p>')
+        } catch (e) {}
+        return ''
+      }
+      // Bilibili URL
+      const biliMatch = trimmed.match(/^https?:\/\/(?:www\.)?bilibili\.com\/video\/(BV[a-zA-Z0-9]+)/i)
+      if (biliMatch) {
+        try {
+          editorInstance.cmd.do('insertHTML', '<p>' + buildVideoEmbedCard('bilibili', biliMatch[1]) + '</p>')
+        } catch (e) {}
+        return ''
+      }
+      // YouTube URL
+      const ytWatch = trimmed.match(/^https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/i)
+      const ytShort = trimmed.match(/^https?:\/\/youtu\.be\/([a-zA-Z0-9_-]+)/i)
+      const ytMatch = ytWatch || ytShort
+      if (ytMatch) {
+        try {
+          editorInstance.cmd.do('insertHTML', '<p>' + buildVideoEmbedCard('youtube', ytMatch[1]) + '</p>')
+        } catch (e) {}
+        return ''
+      }
+      return pasteStr
+    }
+
+    // Custom image upload (drag-drop + paste + toolbar)
+    editorInstance.config.customUploadImg = async function(resultFiles, insertImgFn) {
+      for (const file of resultFiles) {
+        if (file.size > 5 * 1048576) {
+          Admin.showToast(file.name + ' 超过5MB，已跳过', 'error')
+          continue
+        }
+        try {
+          Admin.showToast('正在上传 ' + file.name, 'info')
+          const url = await DataStore.uploadEditorFile(file)
+          insertImgFn(url)
+        } catch (e) {
+          Admin.showToast('上传失败: ' + e.message, 'error')
+        }
+      }
+    }
+
+    // Custom video upload (drag-drop + toolbar)
+    editorInstance.config.customUploadVideo = async function(resultFiles, insertVideoFn) {
+      for (const file of resultFiles) {
+        if (file.size > 50 * 1048576) {
+          Admin.showToast(file.name + ' 超过50MB，已跳过', 'error')
+          continue
+        }
+        try {
+          Admin.showToast('正在上传视频 ' + file.name, 'info')
+          const url = await DataStore.uploadEditorFile(file)
+          insertVideoFn(url)
+        } catch (e) {
+          Admin.showToast('上传失败: ' + e.message, 'error')
+        }
+      }
+    }
+
+    // Sync content to profile on change
+    editorInstance.config.onchange = function(newHtml) {
+      profile.detail.body = newHtml
+    }
+
+    editorInstance.config.showFullScreen = false
+    editorInstance.config.styleWithCSS = true
+
+    editorInstance.create()
+
+    // WangEditor v4 bug: custom menus always appended after built-in menus.
+    // Reorder toolbar DOM to match config.menus order.
+    ;(function(){
+      var tb = document.querySelector('#editor-container .w-e-toolbar')
+      if (!tb) return
+      var fontSizeBtn = tb.querySelector('[data-title="字号"]')
+      var cardBtn = tb.querySelector('[data-title="导入名片"]')
+      if (fontSizeBtn) tb.insertBefore(fontSizeBtn, tb.firstChild)
+      if (cardBtn) tb.appendChild(cardBtn)
+    })()
+
+    // Set initial content
+    if (initialContent && isHtml(initialContent)) {
+      editorInstance.txt.html(initialContent)
+    } else if (initialContent) {
+      const paragraphs = (initialContent || '').split(/\n\n+/)
+      const html = paragraphs.map(function(p) {
+        const trimmed = p.trim()
+        if (!trimmed) return ''
+        return '<p>' + trimmed.split('\n').join('<br>') + '</p>'
+      }).join('')
+      editorInstance.txt.html(html || '<p><br></p>')
+    }
+  }
+
+  function initCoverEditor(initialTitle, initialBody) {
+    const container = document.getElementById('cover-editor-container')
+    if (!container || coverEditorInstance) return
+
+    coverEditorInstance = new wangEditor('#cover-editor-container')
+
+    coverEditorInstance.config.menus = [
+      'chineseFontSize', 'bold', 'italic', 'underline', 'strikeThrough',
+      'foreColor', 'backColor',
+      'list', 'justify',
+      'blockquote',
+      'link', 'image', 'video',
+      'table', 'splitLine',
+      'undo', 'redo',
+      'cardImport'
+    ]
+
+    coverEditorInstance.config.placeholder = '输入标题，回车后输入正文内容...'
+    coverEditorInstance.config.zIndex = 10
+
+    coverEditorInstance.config.pasteTextHandle = function(pasteStr) {
+      const trimmed = pasteStr.trim()
+      if (/^https?:\/\/\S+\.(jpg|jpeg|png|gif|webp)(\?\S*)?$/i.test(trimmed)) {
+        try { coverEditorInstance.cmd.do('insertHTML', '<p><img src="' + trimmed + '" style="max-width:100%"/></p>') } catch (e) {}
+        return ''
+      }
+      const biliMatch = trimmed.match(/^https?:\/\/(?:www\.)?bilibili\.com\/video\/(BV[a-zA-Z0-9]+)/i)
+      if (biliMatch) {
+        try { coverEditorInstance.cmd.do('insertHTML', '<p>' + buildVideoEmbedCard('bilibili', biliMatch[1]) + '</p>') } catch (e) {}
+        return ''
+      }
+      const ytWatch = trimmed.match(/^https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/i)
+      const ytShort = trimmed.match(/^https?:\/\/youtu\.be\/([a-zA-Z0-9_-]+)/i)
+      const ytMatch = ytWatch || ytShort
+      if (ytMatch) {
+        try { coverEditorInstance.cmd.do('insertHTML', '<p>' + buildVideoEmbedCard('youtube', ytMatch[1]) + '</p>') } catch (e) {}
+        return ''
+      }
+      return pasteStr
+    }
+
+    coverEditorInstance.config.customUploadImg = async function(resultFiles, insertImgFn) {
+      for (const file of resultFiles) {
+        if (file.size > 5 * 1048576) { Admin.showToast(file.name + ' 超过5MB，已跳过', 'error'); continue }
+        try {
+          Admin.showToast('正在上传 ' + file.name, 'info')
+          const url = await DataStore.uploadEditorFile(file)
+          insertImgFn(url)
+        } catch (e) { Admin.showToast('上传失败: ' + e.message, 'error') }
+      }
+    }
+
+    coverEditorInstance.config.customUploadVideo = async function(resultFiles, insertVideoFn) {
+      for (const file of resultFiles) {
+        if (file.size > 50 * 1048576) { Admin.showToast(file.name + ' 超过50MB，已跳过', 'error'); continue }
+        try {
+          Admin.showToast('正在上传视频 ' + file.name, 'info')
+          const url = await DataStore.uploadEditorFile(file)
+          insertVideoFn(url)
+        } catch (e) { Admin.showToast('上传失败: ' + e.message, 'error') }
+      }
+    }
+
+    coverEditorInstance.config.onchange = function(newHtml) {
+      profile.cover.body = newHtml
+    }
+
+    coverEditorInstance.config.showFullScreen = false
+    coverEditorInstance.config.styleWithCSS = true
+
+    coverEditorInstance.create()
+
+    // WangEditor v4 bug: custom menus always appended after built-in menus.
+    // Reorder toolbar DOM to match config.menus order.
+    ;(function(){
+      var tb = document.querySelector('#cover-editor-container .w-e-toolbar')
+      if (!tb) return
+      var fontSizeBtn = tb.querySelector('[data-title="字号"]')
+      var cardBtn = tb.querySelector('[data-title="导入名片"]')
+      if (fontSizeBtn) tb.insertBefore(fontSizeBtn, tb.firstChild)
+      if (cardBtn) tb.appendChild(cardBtn)
+    })()
+
+    var merged = mergeContent(initialTitle || '', initialBody || '')
+    if (merged && merged !== '<p><br></p>') {
+      coverEditorInstance.txt.html(merged)
+    }
+  }
+
+  let profile = { id: null, title: '', sortOrder: 0, cover: defaultCover(''), detail: defaultDetail(''), createdAt: '' }
+  let activeTab = 'cover'
+  let editorInstance = null
+  let coverEditorInstance = null
+
+  // Pending upload state
+  let pendingCoverBg = ''
+  let pendingCoverVideo = ''
+  let pendingDetailImages = []
+  let pendingDetailVideo = ''
+
+  if (isEdit) {
+    const existing = DataStore.getCompanyProfile(editId)
+    if (existing) {
+      if (!existing.cover) existing.cover = defaultCover(existing.title || '')
+      if (!existing.cover.aspectRatio) existing.cover.aspectRatio = '16:9'
+      if (!existing.cover.body && existing.cover.body !== '') existing.cover.body = ''
+      if (!existing.detail) existing.detail = defaultDetail(existing.title || '')
+      profile = { ...profile, ...existing }
+    }
+  }
+
+  pendingCoverBg = profile.cover.backgroundImage || ''
+  pendingCoverVideo = profile.cover.video || ''
+  pendingDetailImages = [...(profile.detail.images || [])]
+  pendingDetailVideo = profile.detail.video || ''
+
+  function renderCoverTab() {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">封面背景图</label>
+              ${pendingCoverBg ? `<div class="media-preview-sm"><img src="${escapeHtml(pendingCoverBg)}" class="media-preview-img"><button class="media-remove-btn" onclick="window.removeCoverBg()">✕</button></div>` : ''}
+              <div class="media-upload-row">
+                ${pendingCoverBg ? '<span class="media-status">已上传</span>' : '<span class="media-empty">未设置</span>'}
+                <button class="btn btn-outline btn-sm" onclick="document.getElementById('coverBgInput').click()">${pendingCoverBg ? '更换' : '上传'}</button>
+              </div>
+              <input type="file" id="coverBgInput" accept="image/jpeg,image/png" style="display:none" onchange="window.onCoverBgSelected(this)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">封面视频</label>
+              ${pendingCoverVideo ? `<div class="media-preview-sm" style="width:100px"><video src="${escapeHtml(pendingCoverVideo)}" class="media-preview-video"></video><button class="media-remove-btn" onclick="window.removeCoverVideo()">✕</button></div>` : ''}
+              <div class="media-upload-row">
+                ${pendingCoverVideo ? '<span class="media-status">已上传</span>' : '<span class="media-empty">未设置</span>'}
+                <button class="btn btn-outline btn-sm" onclick="document.getElementById('coverVideoInput').click()">${pendingCoverVideo ? '更换' : '上传'}</button>
+              </div>
+              <input type="file" id="coverVideoInput" accept="video/mp4,video/webm" style="display:none" onchange="window.onCoverVideoSelected(this)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:24px">
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">正文内容</label>
+            <div id="cover-editor-container" style="min-height:400px;background:#fff;border-radius:8px;border:1px solid #e2e8f0"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:24px">
+        <div class="card-header"><h3>封面预览</h3></div>
+        <div class="card-body">
+          <select class="form-select" onchange="window.syncAspectRatio(this.value)" style="max-width:200px">
+            <option value="16:9" ${profile.cover.aspectRatio === '16:9' ? 'selected' : ''}>16:9</option>
+            <option value="4:3" ${profile.cover.aspectRatio === '4:3' ? 'selected' : ''}>4:3</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:24px">
+        <div class="card-body">
+          <div class="cover-preview" style="position:relative;width:100%;max-width:375px;height:${profile.cover.aspectRatio === '4:3' ? '281px' : '211px'};margin:0;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#e8edf5,#dce3ef)">
+            ${pendingCoverBg ? `<img src="${escapeHtml(pendingCoverBg)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0">` : ''}
+            <div style="position:relative;z-index:1;display:flex;flex-direction:column;height:100%;padding:16px 14px;box-sizing:border-box">
+              ${profile.title ? `<div style="font-size:18px;font-weight:700;color:#1a202c;margin-bottom:4px;flex-shrink:0">${escapeHtml(profile.title)}</div>` : ''}
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:center"></div>
+              ${profile.cover.body ? `<div style="flex-shrink:0;overflow:hidden">${profile.cover.body}</div>` : ''}
+              ${pendingCoverVideo ? `<div style="flex-shrink:0;margin-top:8px;text-align:center"><span style="display:inline-block;width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.4);line-height:44px;text-align:center;color:#fff;font-size:22px">▶</span></div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  function renderDetailTab() {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">详情页标题</label>
+            <input class="form-input" id="detailTitle" value="${escapeHtml(profile.detail.title || '')}" placeholder="请输入详情页标题" onchange="window.syncDetailTitle(this.value)">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">正文内容</label>
+            <div id="editor-container" style="min-height:400px;background:#fff;border-radius:8px;border:1px solid #e2e8f0"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:24px">
+        <div class="card-body">
+          <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+            <label class="form-label" style="margin-bottom:0">详情页入口 <span class="form-hint">关闭后，小程序端点击封面卡片不会跳转详情页</span></label>
+            <label class="switch">
+              <input type="checkbox" id="detailEntryToggle" ${profile.detail.detailEntry ? 'checked' : ''} onchange="window.syncDetailEntry(this.checked)">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  function render() {
+    // Sync editor content before destroying
+    if (editorInstance) {
+      try { profile.detail.body = editorInstance.txt.html() } catch (e) {}
+    }
+    if (coverEditorInstance) {
+      try {
+        var coverHtml = coverEditorInstance.txt.html()
+        var split = splitContent(coverHtml)
+        profile.title = split.title
+        profile.cover.body = split.body
+      } catch (e) {}
+    }
+    destroyEditor()
+    destroyCoverEditor()
+
+    const html = `
+      <div class="page-header">
+        <h1>${isEdit ? '编辑企业动态卡片' : '新增企业动态卡片'}</h1>
+        <button class="btn btn-secondary" onclick="window.location.href='company-profile.html'">← 返回</button>
+      </div>
+
+      <div class="tab-bar-edit">
+        <button class="tab-btn ${activeTab === 'cover' ? 'tab-active' : ''}" onclick="window.switchEditTab('cover')">封面编辑区</button>
+        <button class="tab-btn ${activeTab === 'detail' ? 'tab-active' : ''}" onclick="window.switchEditTab('detail')">详情页编辑区</button>
+      </div>
+
+      <div id="tabContent">
+        ${activeTab === 'cover' ? renderCoverTab() : renderDetailTab()}
+      </div>
+
+      <div style="margin-top:32px;display:flex;gap:12px;justify-content:center;">
+        <button class="btn btn-secondary" onclick="window.location.href='company-profile.html'">取消</button>
+        <button class="btn btn-primary btn-lg" onclick="window.saveAll()">保存</button>
+      </div>
+    `
+
+    Admin.setPageContent(html)
+
+    // Re-initialize editor after DOM is ready
+    if (activeTab === 'detail') {
+      setTimeout(function() { initEditor(profile.detail.body) }, 50)
+    } else if (activeTab === 'cover') {
+      setTimeout(function() { initCoverEditor(profile.title, profile.cover.body) }, 50)
+    }
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  // Sync helpers
+  window.switchEditTab = function(tab) {
+    if (editorInstance && activeTab === 'detail') {
+      try { profile.detail.body = editorInstance.txt.html() } catch (e) {}
+    }
+    if (coverEditorInstance && activeTab === 'cover') {
+      try {
+        var coverHtml = coverEditorInstance.txt.html()
+        var split = splitContent(coverHtml)
+        profile.title = split.title
+        profile.cover.body = split.body
+      } catch (e) {}
+    }
+    activeTab = tab
+    render()
+  }
+
+  window.syncDetailTitle = function(val) { profile.detail.title = val }
+  window.syncDetailEntry = function(val) { profile.detail.detailEntry = val }
+  window.syncAspectRatio = function(val) { profile.cover.aspectRatio = val; render() }
+
+  // Cover media
+  window.onCoverBgSelected = async function(input) {
+    const file = input.files[0]
+    if (!file) return
+    if (file.size > 5 * 1048576) { Admin.showToast('图片不能超过 5MB', 'error'); input.value = ''; return }
+    Admin.showToast('正在上传背景图...', 'info')
+    try {
+      pendingCoverBg = await DataStore.uploadProfileImage(file)
+      input.value = ''
+      render()
+    } catch (e) { Admin.showToast('上传失败: ' + e.message, 'error') }
+  }
+
+  window.removeCoverBg = function() { pendingCoverBg = ''; render() }
+
+  window.onCoverVideoSelected = async function(input) {
+    const file = input.files[0]
+    if (!file) return
+    if (file.size > 50 * 1048576) { Admin.showToast('视频不能超过 50MB', 'error'); input.value = ''; return }
+    Admin.showToast('正在上传封面视频...', 'info')
+    try {
+      pendingCoverVideo = await DataStore.uploadVideo(file)
+      input.value = ''
+      render()
+    } catch (e) { Admin.showToast('上传失败: ' + e.message, 'error') }
+  }
+
+  window.removeCoverVideo = function() { pendingCoverVideo = ''; render() }
+
+  // Detail media
+  window.onDetailImagesSelected = async function(input) {
+    const files = Array.from(input.files)
+    if (!files.length) return
+    for (const file of files) {
+      if (file.size > 5 * 1048576) { Admin.showToast(file.name + ' 超过5MB，已跳过', 'error'); continue }
+      try {
+        Admin.showToast('正在上传 ' + file.name, 'info')
+        const url = await DataStore.uploadProfileImage(file)
+        pendingDetailImages.push(url)
+      } catch (e) { Admin.showToast('上传失败: ' + e.message, 'error') }
+    }
+    input.value = ''
+    render()
+  }
+
+  window.removeDetailImage = function(idx) { pendingDetailImages.splice(idx, 1); render() }
+
+  window.onDetailVideoSelected = async function(input) {
+    const file = input.files[0]
+    if (!file) return
+    if (file.size > 50 * 1048576) { Admin.showToast('视频不能超过 50MB', 'error'); input.value = ''; return }
+    Admin.showToast('正在上传详情视频...', 'info')
+    try {
+      pendingDetailVideo = await DataStore.uploadVideo(file)
+      input.value = ''
+      render()
+    } catch (e) { Admin.showToast('上传失败: ' + e.message, 'error') }
+  }
+
+  window.removeDetailVideo = function() { pendingDetailVideo = ''; render() }
+
+  // Save
+  window.saveAll = async function() {
+    // Sync editor content
+    if (editorInstance) {
+      try { profile.detail.body = editorInstance.txt.html() } catch (e) {}
+    }
+    if (coverEditorInstance) {
+      try {
+        var coverHtml = coverEditorInstance.txt.html()
+        var split = splitContent(coverHtml)
+        profile.title = split.title
+        profile.cover.body = split.body
+      } catch (e) {}
+    }
+
+    if (!profile.title) { Admin.showToast('请输入卡片标题', 'error'); return }
+
+    // Sync title into zones.top so mobile displays it
+    var topBoxes = profile.cover.zones.top.textBoxes
+    if (topBoxes.length === 0) {
+      topBoxes.push({ id: 'title_' + Date.now(), text: profile.title, textAlign: 'left', fontSize: 'large' })
+    } else {
+      topBoxes[0].text = profile.title
+    }
+
+    // XSS sanitize body HTML
+    if (typeof DOMPurify !== 'undefined') {
+      const sanitizeOpts = {
+        ALLOWED_TAGS: ['p','br','strong','em','u','s','b','i','ol','ul','li',
+          'h1','h2','h3','h4','h5','h6','blockquote','pre','code',
+          'a','img','span','div','sub','sup','table','tbody','tr','td','th','thead',
+          'video','source','hr','section'],
+        ALLOWED_ATTR: ['align','class','contenteditable','controls','autoplay','data-platform','data-video-id',
+          'height','href','loop','muted','poster','rel','src','style','target','width'],
+      }
+      profile.detail.body = DOMPurify.sanitize(profile.detail.body || '', sanitizeOpts)
+      profile.cover.body = DOMPurify.sanitize(profile.cover.body || '', sanitizeOpts)
+    }
+
+    const saveData = {
+      id: profile.id,
+      title: profile.title,
+      sortOrder: profile.sortOrder,
+      cover: {
+        backgroundImage: pendingCoverBg,
+        video: pendingCoverVideo,
+        aspectRatio: profile.cover.aspectRatio || '16:9',
+        body: profile.cover.body || '',
+        zones: profile.cover.zones
+      },
+      detail: {
+        title: profile.detail.title,
+        body: profile.detail.body,
+        images: pendingDetailImages,
+        video: pendingDetailVideo,
+        detailEntry: profile.detail.detailEntry
+      }
+    }
+
+    try {
+      await DataStore.saveCompanyProfile(saveData)
+      Admin.showToast(isEdit ? '已更新' : '已创建', 'success')
+      setTimeout(() => { window.location.href = 'company-profile.html' }, 800)
+    } catch (e) { Admin.showToast('保存失败: ' + e.message, 'error') }
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+
+<style>
+.tab-bar-edit { display: flex; gap: 0; margin-bottom: 24px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.tab-btn { flex: 1; padding: 14px 24px; border: none; background: #fff; font-size: 15px; font-weight: 600; color: #718096; cursor: pointer; transition: all 0.2s; }
+.tab-btn:hover { background: #f8f9fa; }
+.tab-active { color: #3a5f94; background: #e8f0fe; }
+
+.media-upload-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.media-preview-sm { position: relative; width: 80px; height: 56px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; }
+.media-preview-img { width: 100%; height: 100%; object-fit: cover; }
+.media-preview-video { width: 100%; height: 100%; object-fit: cover; }
+.media-remove-btn { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.media-empty { color: #a0aec0; font-size: 14px; }
+.media-status { color: #1e8e3e; font-size: 14px; font-weight: 600; }
+
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* Reuse styles from company-profile-edit original */
+.form-group { margin-bottom: 20px; }
+.form-label { display: block; font-size: 15px; font-weight: 600; color: #1a202c; margin-bottom: 8px; }
+.form-input { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; color: #1a202c; background: #fff; box-sizing: border-box; }
+.form-input:focus { outline: none; border-color: #3a5f94; box-shadow: 0 0 0 3px rgba(58,95,148,0.1); }
+.form-textarea { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; line-height: 1.7; color: #1a202c; background: #fff; resize: vertical; font-family: inherit; box-sizing: border-box; }
+.form-textarea:focus { outline: none; border-color: #3a5f94; box-shadow: 0 0 0 3px rgba(58,95,148,0.1); }
+.form-select { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; color: #1a202c; background: #fff; box-sizing: border-box; }
+.form-select-sm { padding: 6px 10px; font-size: 13px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.form-hint { font-size: 12px; color: #a0aec0; margin-top: 4px; }
+
+.image-upload-area { text-align: left; }
+.img-preview-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.img-preview-item { position: relative; width: 140px; height: 140px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+.img-preview-thumb { width: 100%; height: 100%; object-fit: cover; }
+.img-remove-btn { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+.btn-lg { padding: 14px 48px; font-size: 16px; font-weight: 600; }
+
+/* WangEditor overrides */
+#editor-container .w-e-text-container,
+#cover-editor-container .w-e-text-container {
+  min-height: 400px;
+  border-radius: 0 0 8px 8px;
+}
+#editor-container .w-e-toolbar,
+#cover-editor-container .w-e-toolbar {
+  border-radius: 8px 8px 0 0;
+}
+#editor-container .w-e-text ::selection,
+#cover-editor-container .w-e-text ::selection {
+  background: rgba(51, 153, 255, 0.3);
+}
+.editor-video-card { pointer-events: none; }
+
+/* Business card import modal */
+.card-import-row:hover { background: rgba(0,91,191,0.04); }
+.card-import-row.selected { border-color: var(--primary) !important; background: var(--primary-light) !important; }
+</style>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<view class="page-container">
+  <!-- Hero -->
+  <view class="hero-section signature-gradient">
+    <view class="hero-content">
+      <text class="hero-label">施工一线</text>
+      <text class="hero-title">施工现场展示</text>
+      <text class="hero-desc">见证智能建造的每一个瞬间</text>
+    </view>
+  </view>
+
+  <!-- Filter Tabs -->
+  <view class="filter-bar">
+    <view
+      wx:for="{{filters}}"
+      wx:key="value"
+      class="filter-item {{activeFilter === item.value ? 'filter-item--active' : ''}}"
+      data-filter="{{item.value}}"
+      bindtap="onFilter"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <!-- Image Grid -->
+  <view class="image-grid">
+    <view
+      wx:for="{{filteredSites}}"
+      wx:key="id"
+      class="grid-item"
+      bindtap="onPreviewImage"
+      data-index="{{index}}"
+    >
+      <image class="grid-image" src="{{item.image}}" mode="aspectFill" />
+      <view class="grid-overlay">
+        <view class="grid-info">
+          <text class="grid-project">{{item.projectName}}</text>
+          <view class="grid-stage">
+            <text class="stage-dot"></text>
+            <text>{{item.stage}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- More Button -->
+  <view class="more-section">
+    <button class="more-btn" bindtap="onLoadMore">
+      <text>查看更多施工现场</text>
+      <text>↓</text>
+    </button>
+  </view>
+
+</view>

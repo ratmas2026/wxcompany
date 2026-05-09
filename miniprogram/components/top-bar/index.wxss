@@ -1,0 +1,69 @@
+.top-bar {
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.top-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 32rpx;
+  position: relative;
+}
+
+.top-bar-left {
+  width: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-icon {
+  font-size: 48rpx;
+  color: #1a202c;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.top-bar-center {
+  flex: 1;
+  text-align: left;
+  padding-left: 8rpx;
+}
+
+.top-icon {
+  font-size: 40rpx;
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+.top-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #2b3437;
+}
+
+/* Centered title: absolute positioning to avoid capsule button overlap */
+.top-bar-center-absolute {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 55%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.top-title-centered {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-bar-right {
+  width: 120rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}

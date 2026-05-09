@@ -1,0 +1,99 @@
+<view class="page-container">
+  <!-- Background -->
+  <view class="bg-layer">
+    <image class="bg-image" src="/images/office-bg.jpg" mode="aspectFill" />
+  </view>
+
+  <!-- Top Bar -->
+  <view class="top-bar">
+    <view class="logo-icon signature-gradient">
+      <text>💼</text>
+    </view>
+    <text class="logo-text">执行官组合</text>
+  </view>
+
+  <!-- Login Panel -->
+  <view class="login-area">
+    <view class="glass-panel">
+      <!-- Welcome -->
+      <view class="welcome-section">
+        <text class="welcome-title">欢迎回来</text>
+        <text class="welcome-sub">访问您的高端专业顾问套件</text>
+      </view>
+
+      <!-- WeChat One-Click Login -->
+      <button class="wechat-btn signature-gradient" bindtap="onWechatLogin">
+        <text>💬</text>
+        <text>微信一键登录</text>
+      </button>
+
+      <!-- Divider -->
+      <view class="divider-row">
+        <view class="divider-line"></view>
+        <text class="divider-text">或使用手机号登录</text>
+        <view class="divider-line"></view>
+      </view>
+
+      <!-- Phone Login Form -->
+      <form bindsubmit="onPhoneLogin">
+        <!-- Phone Number -->
+        <view class="field-group">
+          <text class="field-label">手机号码</text>
+          <view class="input-wrap">
+            <text class="input-icon">📱</text>
+            <input
+              class="form-input"
+              name="phone"
+              type="number"
+              placeholder="请输入11位手机号"
+              maxlength="11"
+            />
+          </view>
+        </view>
+
+        <!-- Verification Code -->
+        <view class="field-group">
+          <text class="field-label">验证码</text>
+          <view class="code-row">
+            <view class="input-wrap code-input-wrap">
+              <text class="input-icon">🔐</text>
+              <input
+                class="form-input"
+                name="code"
+                type="number"
+                placeholder="6位验证码"
+                maxlength="6"
+              />
+            </view>
+            <button
+              class="code-btn {{countdown > 0 ? 'code-btn--disabled' : ''}}"
+              bindtap="onSendCode"
+              disabled="{{countdown > 0}}"
+            >
+              {{countdown > 0 ? countdown + 's后重发' : '获取验证码'}}
+            </button>
+          </view>
+        </view>
+
+        <!-- Login Button -->
+        <button class="login-btn" form-type="submit">登录</button>
+      </form>
+
+      <!-- Privacy Links -->
+      <view class="privacy-links">
+        <text class="privacy-text">
+          登录即代表您同意我们的
+          <text class="privacy-link" bindtap="onViewPrivacy">隐私政策</text>
+          和
+          <text class="privacy-link" bindtap="onViewTerms">服务条款</text>
+          。
+        </text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Footer -->
+  <view class="page-footer">
+    <text class="footer-text">© 2024 执行官组合 • 卓越咨询系统</text>
+  </view>
+</view>

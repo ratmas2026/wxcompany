@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>职位管理 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('position')
+  await DataStore.init()
+
+  let positions = []
+  const pageSize = 20
+  let currentPage = 1
+
+  function render() {
+    positions = [...DataStore.getPositions()].sort((a, b) => a.sort - b.sort)
+    const total = positions.length
+    const start = (currentPage - 1) * pageSize
+    const paged = positions.slice(start, start + pageSize)
+
+    const rows = paged.map(p => `
+      <tr>
+        <td class="checkbox-cell"><input type="checkbox" value="${p.id}" class="row-check"></td>
+        <td style="font-weight:600">${p.name}</td>
+        <td>${p.desc || '-'}</td>
+        <td style="text-align:center">${p.sort}</td>
+        <td style="text-align:center">${p.count || 0}</td>
+        <td style="text-align:right">
+          <button class="btn btn-outline btn-sm" onclick="window.editPosition(${p.id})">编辑</button>
+          <button class="btn btn-danger btn-sm" onclick="window.deletePosition(${p.id})" style="margin-left:4px">删除</button>
+        </td>
+      </tr>
+    `).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>职位管理</h1>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="window.exportPositions()">📥 导出Excel</button>
+          <button class="btn btn-primary" onclick="window.addPosition()">+ 新增职位</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button class="btn btn-danger btn-sm" onclick="window.batchDeletePos()">🗑 批量删除</button>
+          </div>
+          <div class="toolbar-right">
+            <span style="font-size:13px;color:var(--on-surface-variant)">共 ${positions.length} 条</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="checkbox-cell"><input type="checkbox" id="selectAll" onchange="window.toggleSelectAll(this)"></th>
+                <th>职位名称</th>
+                <th>描述</th>
+                <th style="text-align:center">排序</th>
+                <th style="text-align:center">人员数</th>
+                <th style="text-align:right;padding-right:68px">操作</th>
+              </tr>
+            </thead>
+            <tbody>${rows || '<tr><td colspan="6"><div class="empty-state"><p>暂无职位数据</p></div></td></tr>'}</tbody>
+          </table>
+        </div>
+
+        ${Admin.renderPagination(total, currentPage, pageSize, (p) => { currentPage = p; render() })}
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  window.toggleSelectAll = function(el) {
+    document.querySelectorAll('.row-check').forEach(cb => { cb.checked = el.checked })
+  }
+
+  window.getCheckedIds = function() {
+    return [...document.querySelectorAll('.row-check:checked')].map(cb => parseInt(cb.value))
+  }
+
+  window.addPosition = function() {
+    Admin.showModal('新增职位',
+      `<div class="form-group">
+        <label class="form-label">职位名称</label>
+        <input class="form-input" id="posName" placeholder="请输入职位名称">
+      </div>
+      <div class="form-group">
+        <label class="form-label">描述</label>
+        <textarea class="form-textarea" id="posDesc" placeholder="请输入职位描述"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">排序</label>
+        <input class="form-input" id="posSort" type="number" value="${positions.length + 1}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">人员数</label>
+        <input class="form-input" id="posCount" type="number" value="0">
+      </div>`,
+      () => {
+        const name = document.getElementById('posName').value.trim()
+        const desc = document.getElementById('posDesc').value.trim()
+        const sort = parseInt(document.getElementById('posSort').value) || 1
+        const count = parseInt(document.getElementById('posCount').value) || 0
+        if (!name) { Admin.showToast('请输入职位名称', 'error'); return }
+        DataStore.savePosition({ name, desc, sort, count })
+        Admin.showToast('新增成功', 'success')
+        render()
+      }, '保存'
+    )
+  }
+
+  window.editPosition = function(id) {
+    const pos = positions.find(p => p.id === id)
+    if (!pos) return
+    Admin.showModal('编辑职位',
+      `<div class="form-group">
+        <label class="form-label">职位名称</label>
+        <input class="form-input" id="posName" value="${pos.name}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">描述</label>
+        <textarea class="form-textarea" id="posDesc">${pos.desc || ''}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">排序</label>
+        <input class="form-input" id="posSort" type="number" value="${pos.sort}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">人员数</label>
+        <input class="form-input" id="posCount" type="number" value="${pos.count || 0}">
+      </div>`,
+      () => {
+        const name = document.getElementById('posName').value.trim()
+        const desc = document.getElementById('posDesc').value.trim()
+        const sort = parseInt(document.getElementById('posSort').value) || 1
+        const count = parseInt(document.getElementById('posCount').value) || 0
+        if (!name) { Admin.showToast('请输入职位名称', 'error'); return }
+        DataStore.savePosition({ id, name, desc, sort, count })
+        Admin.showToast('保存成功', 'success')
+        render()
+      }, '保存'
+    )
+  }
+
+  window.deletePosition = function(id) {
+    const pos = positions.find(p => p.id === id)
+    Admin.confirmDelete(`确定要删除 <strong>${pos?.name || '此项'}</strong> 吗？`, () => {
+      DataStore.deletePositions([id])
+      Admin.showToast('删除成功', 'success')
+      render()
+    })
+  }
+
+  window.batchDeletePos = function() {
+    const ids = window.getCheckedIds()
+    if (!ids.length) { Admin.showToast('请先选择', 'info'); return }
+    Admin.confirmDelete(`确定要删除选中的 <strong>${ids.length}</strong> 条吗？`, () => {
+      DataStore.deletePositions(ids)
+      Admin.showToast(`已删除 ${ids.length} 条`, 'success')
+      render()
+    })
+  }
+
+  window.exportPositions = function() {
+    Admin.exportCSV(positions, '职位管理')
+    Admin.showToast('导出成功', 'success')
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+</body>
+</html>
