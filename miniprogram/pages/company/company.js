@@ -119,10 +119,13 @@ Page({
           const cards = (sec.selectedIds || []).map(id => allProfiles.find(p => p.id === id)).filter(Boolean)
           cards.forEach(card => {
             const is43 = card.cover && card.cover.aspectRatio === '4:3'
-            if (parsed.layout === 'grid' || parsed.layout === 'tab') {
+            if (parsed.layout === 'grid') {
               card._height = is43 ? 250 : 187
             } else if (parsed.layout === 'horizontal-scroll') {
               card._height = is43 ? 450 : 338
+            } else if (parsed.layout === 'tab') {
+              const perPage = sec.tabPerPage || 1
+              card._height = perPage === 1 ? (is43 ? 515 : 386) : (is43 ? 250 : 187)
             } else {
               card._height = is43 ? 515 : 386
             }
@@ -144,6 +147,7 @@ Page({
               id: sec.id,
               displayLayout: 'tab',
               tabLayout: sec.tabLayout || 'scroll',
+              tabPerPage: perPage,
               activeTab: 0,
               tabs,
               currentTabCards: tabs.length > 0 ? tabs[0].cards : [],

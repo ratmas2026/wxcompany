@@ -147,7 +147,36 @@
             <text>{{tab.title}}</text>
           </view>
         </view>
-        <view class="profile-grid">
+        <!-- 每页1张：全宽单张样式 -->
+        <view wx:if="{{item.tabPerPage === 1}}" class="profile-single">
+          <view wx:for="{{item.currentTabCards}}" wx:for-item="card" wx:key="id"
+            class="profile-card profile-card-single" style="height:{{card._height}}rpx"
+            data-card="{{card}}" bindtap="onCardTap">
+            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <view class="profile-card-overlay">
+              <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <view class="profile-card-middle">
+                <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+              </view>
+              <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-card="{{card}}" catchtap="onCoverVideoTap">
+                <text class="profile-card-play-icon">▶</text>
+              </view>
+            </view>
+            <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
+              <text>查看详情 →</text>
+            </view>
+          </view>
+        </view>
+        <!-- 每页多张：网格样式 -->
+        <view wx:else class="profile-grid g-active" style="display:grid;grid-template-columns:repeat(2,1fr);gap:20rpx">
           <view wx:for="{{item.currentTabCards}}" wx:for-item="card" wx:key="id"
             class="profile-card profile-card-grid" style="height:{{card._height}}rpx"
             data-card="{{card}}" bindtap="onCardTap">
