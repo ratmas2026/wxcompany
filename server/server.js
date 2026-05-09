@@ -3,10 +3,10 @@ const cors = require('cors')
 const fs = require('fs')
 const path = require('path')
 const multer = require('multer')
+const db = require('./db')
 
 const app = express()
 const PORT = 3456
-const DATA_FILE = path.join(__dirname, 'data.json')
 const UPLOADS_DIR = path.join(__dirname, 'uploads')
 var VIDEOS_DIR = path.join(UPLOADS_DIR, 'videos')
 var COVERS_DIR = path.join(UPLOADS_DIR, 'covers')
@@ -163,27 +163,11 @@ app.use((err, req, res, next) => {
 
 // --- Helpers ---
 function readData() {
-  try {
-    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'))
-    if (!data.businessModules) data.businessModules = []
-    if (!data.nextId.businessModules) data.nextId.businessModules = 1
-    if (!data.businessModulePageConfig) data.businessModulePageConfig = { sections: [] }
-    if (!data.companyPerformances) data.companyPerformances = []
-    if (!data.companyPerformanceConfig) data.companyPerformanceConfig = { sections: [] }
-    if (!data.casePageConfig) data.casePageConfig = { sections: [] }
-    return data
-  } catch (e) {
-    return { cards: [], messages: [], positions: [], videos: [], companyInfo: {}, business: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, business: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1 } }
-  }
+  return db.readData()
 }
 
 function writeData(data) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8')
-  } catch (e) {
-    console.error('Failed to write data file:', e.message)
-    throw e
-  }
+  db.writeData(data)
 }
 
 // API health
@@ -1214,17 +1198,27 @@ app.post('/api/inquiry', (req, res) => {
 
 // Data reset
 app.post('/api/reset', (req, res) => {
+  var seedFile = path.join(__dirname, 'data-seed.json')
   try {
-    const seed = JSON.parse(fs.readFileSync(DATA_FILE.replace('.json', '-seed.json'), 'utf-8'))
-    writeData(seed)
+    if (fs.existsSync(seedFile)) {
+      var seed = JSON.parse(fs.readFileSync(seedFile, 'utf-8'))
+      writeData(seed)
+    } else {
+      writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, business: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, business: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1 } })
+    }
   } catch (e) {
-    writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, business: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], nextId: { cards: 1, messages: 1, positions: 1, videos: 1, business: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1 } })
+    writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, business: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, business: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1 } })
   }
   res.json({ ok: true })
 })
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`)
-  console.log(`Admin panel: http://localhost:${PORT}/index.html`)
-  console.log(`API base:    http://localhost:${PORT}/api`)
+db.initDatabase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`)
+    console.log(`Admin panel: http://localhost:${PORT}/index.html`)
+    console.log(`API base:    http://localhost:${PORT}/api`)
+  })
+}).catch(err => {
+  console.error('Failed to initialize database:', err)
+  process.exit(1)
 })
