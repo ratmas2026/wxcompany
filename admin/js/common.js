@@ -30,6 +30,7 @@ const Admin = {
     const navItems = [
       { page: 'index', icon: '&#x1F4C7;', label: '名片管理' },
       { page: 'position', icon: '&#x1F4CB;', label: '职位管理' },
+      { page: 'splash', icon: '&#x1F3A8;', label: '启动页' },
       { page: 'company-profile', icon: '&#x1F3E2;', label: '企业动态' },
       { page: 'company-performance', icon: '&#x1F4CA;', label: '公司业绩' },
       { page: 'business-module', icon: '&#x1F4E6;', label: '核心业务' },
@@ -37,8 +38,7 @@ const Admin = {
       { page: 'projects', icon: '&#x1F3D7;', label: '企业项目' },
       { page: 'sites', icon: '&#x1F6A7;', label: '施工现场' },
       { page: 'case-custom', icon: '&#x1F39B;', label: '案例自定义' },
-      { page: 'message', icon: '&#x1F4E9;', label: '留言管理' },
-      { page: 'splash', icon: '&#x1F3A8;', label: '启动页' }
+      { page: 'message', icon: '&#x1F4E9;', label: '留言管理' }
     ]
 
     const links = navItems.map(item => `
