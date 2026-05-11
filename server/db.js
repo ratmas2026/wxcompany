@@ -54,13 +54,6 @@ CREATE TABLE IF NOT EXISTS company_performances (
   created_at TEXT
 );
 
-CREATE TABLE IF NOT EXISTS business (
-  id INTEGER PRIMARY KEY,
-  name TEXT, icon TEXT, "desc" TEXT,
-  images TEXT, advantages TEXT, process TEXT, pricing TEXT,
-  created_at TEXT
-);
-
 CREATE TABLE IF NOT EXISTS business_modules (
   id INTEGER PRIMARY KEY,
   name TEXT, cover_image TEXT, cover_aspect_ratio TEXT DEFAULT '16:9',
@@ -129,6 +122,9 @@ function initDatabase() {
 
     // Migration: drop legacy company_info table (replaced by company_infos)
     db.run('DROP TABLE IF EXISTS company_info');
+
+    // Migration: drop legacy business table (replaced by business_modules)
+    db.run('DROP TABLE IF EXISTS business');
 
     const row = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='cards'");
     const hasData = row.length > 0 && db.exec("SELECT COUNT(*) AS c FROM cards")[0].values[0][0] > 0;
@@ -215,16 +211,6 @@ function migrateFromJSON() {
     insPerf.run([p.id, p.title||'', p.sortOrder||0, jsonVal(p.cover), jsonVal(p.detail), p.createdAt||'']);
   });
   insPerf.free();
-
-  // Business
-  const insBiz = db.prepare(
-    'INSERT INTO business (id,name,icon,"desc",images,advantages,process,pricing,created_at) VALUES (?,?,?,?,?,?,?,?,?)'
-  );
-  (data.business || []).forEach(function(b) {
-    insBiz.run([b.id, b.name||'', b.icon||'', b.desc||'',
-      jsonVal(b.images), jsonVal(b.advantages), jsonVal(b.process), jsonVal(b.pricing), b.createdAt||'']);
-  });
-  insBiz.free();
 
   // Business Modules
   const insBM = db.prepare(
@@ -358,18 +344,6 @@ function readData() {
     };
   });
 
-  // Business
-  var business = queryAll('business', function(b) {
-    return {
-      id: b.id, name: b.name || '', icon: b.icon || '', desc: b.desc || '',
-      images: jsonParse(b.images) || [],
-      advantages: jsonParse(b.advantages) || [],
-      process: jsonParse(b.process) || [],
-      pricing: jsonParse(b.pricing) || [],
-      createdAt: b.created_at || ''
-    };
-  });
-
   // Business Modules
   var businessModules = queryAll('business_modules', function(m) {
     return {
@@ -439,7 +413,7 @@ function readData() {
 
   // NextId
   var defaultNextId = {
-    cards: 1, messages: 1, positions: 1, videos: 1, business: 1,
+    cards: 1, messages: 1, positions: 1, videos: 1,
     honors: 1, projects: 1, sites: 1, splashImages: 4,
     companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1
   };
@@ -458,7 +432,6 @@ function readData() {
     ],
     companyProfiles: companyProfiles,
     companyPerformances: companyPerformances,
-    business: business,
     businessModules: businessModules,
     honors: honors,
     projects: projects,
@@ -535,14 +508,6 @@ function writeData(data) {
     ['id','title','sort_order','cover','detail','created_at'],
     data.companyPerformances,
     function(p) { return [p.id, p.title||'', p.sortOrder||0, jsonVal(p.cover), jsonVal(p.detail), p.createdAt||'']; }
-  );
-
-  // Business
-  syncTable('business',
-    ['id','name','icon','desc','images','advantages','process','pricing','created_at'],
-    data.business,
-    function(b) { return [b.id, b.name||'', b.icon||'', b.desc||'',
-      jsonVal(b.images), jsonVal(b.advantages), jsonVal(b.process), jsonVal(b.pricing), b.createdAt||'']; }
   );
 
   // Business Modules

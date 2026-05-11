@@ -49,9 +49,13 @@
           <template is="textBox" data="{{tb}}" />
         </block>
         <rich-text wx:if="{{heroCard.cover.body}}" nodes="{{heroCard.cover.body}}" class="cover-body-rich"></rich-text>
-        <view wx:if="{{heroCard.cover.video}}" class="hero-video-btn" data-profile="{{heroCard}}" catchtap="onCoverVideoTap">
+        <view wx:if="{{heroCard.cover.video}}" hidden="{{videoPlayingId === heroCard.id}}" class="hero-video-btn" data-profile="{{heroCard}}" catchtap="onCoverVideoTap">
           <text class="profile-card-play-icon">▶</text>
         </view>
+      </view>
+      <view wx:if="{{heroCard.cover.video}}" hidden="{{videoPlayingId !== heroCard.id}}" class="inline-video-overlay">
+        <video id="vid-{{heroCard.id}}" class="inline-video" src="{{heroCard.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+        <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
       </view>
     </view>
   </block>
@@ -108,10 +112,15 @@
                 <template is="textBox" data="{{tb}}" />
               </block>
               <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
-              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+              <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId === card.id}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                 <text class="profile-card-play-icon">▶</text>
               </view>
-            </view>          </view>
+            </view>
+            <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId !== card.id}}" class="inline-video-overlay">
+              <video id="vid-{{card.id}}" class="inline-video" src="{{card.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+              <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
+            </view>
+          </view>
         </view>
 
         <!-- 轮播布局 -->
@@ -140,9 +149,13 @@
                   <template is="textBox" data="{{tb}}" />
                 </block>
                 <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
-                <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId === card.id}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                   <text class="profile-card-play-icon">▶</text>
                 </view>
+              </view>
+              <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId !== card.id}}" class="inline-video-overlay">
+                <video id="vid-{{card.id}}" class="inline-video" src="{{card.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+                <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
               </view>
               <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
                 <text>查看详情 →</text>
@@ -176,10 +189,15 @@
                 <template is="textBox" data="{{tb}}" />
               </block>
               <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
-              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+              <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId === card.id}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                 <text class="profile-card-play-icon">▶</text>
               </view>
-            </view>          </view>
+            </view>
+            <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId !== card.id}}" class="inline-video-overlay">
+              <video id="vid-{{card.id}}" class="inline-video" src="{{card.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+              <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
+            </view>
+          </view>
         </view>
 
         <!-- Tab标签页 -->
@@ -219,9 +237,13 @@
                   <template is="textBox" data="{{tb}}" />
                 </block>
                 <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
-                <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId === card.id}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                   <text class="profile-card-play-icon">▶</text>
                 </view>
+              </view>
+              <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId !== card.id}}" class="inline-video-overlay">
+                <video id="vid-{{card.id}}" class="inline-video" src="{{card.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+                <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
               </view>
               <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
                 <text>查看详情 →</text>
@@ -247,9 +269,13 @@
                   <template is="textBox" data="{{tb}}" />
                 </block>
                 <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
-                <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId === card.id}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                   <text class="profile-card-play-icon">▶</text>
                 </view>
+              </view>
+              <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId !== card.id}}" class="inline-video-overlay">
+                <video id="vid-{{card.id}}" class="inline-video" src="{{card.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+                <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
               </view>
               <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
                 <text>查看详情 →</text>
@@ -358,9 +384,13 @@
             <template is="textBox" data="{{tb}}" />
           </block>
           <rich-text wx:if="{{performanceHeroCard.cover.body}}" nodes="{{performanceHeroCard.cover.body}}" class="cover-body-rich"></rich-text>
-          <view wx:if="{{performanceHeroCard.cover.video}}" class="hero-video-btn" data-profile="{{performanceHeroCard}}" catchtap="onCoverVideoTap">
+          <view wx:if="{{performanceHeroCard.cover.video}}" hidden="{{videoPlayingId === performanceHeroCard.id}}" class="hero-video-btn" data-profile="{{performanceHeroCard}}" catchtap="onCoverVideoTap">
             <text class="profile-card-play-icon">▶</text>
           </view>
+        </view>
+        <view wx:if="{{performanceHeroCard.cover.video}}" hidden="{{videoPlayingId !== performanceHeroCard.id}}" class="inline-video-overlay">
+          <video id="vid-{{performanceHeroCard.id}}" class="inline-video" src="{{performanceHeroCard.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+          <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
         </view>
       </view>
     </block>
@@ -393,9 +423,13 @@
                 <template is="textBox" data="{{tb}}" />
               </block>
               <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
-              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+              <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId === card.id}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                 <text class="profile-card-play-icon">▶</text>
               </view>
+            </view>
+            <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId !== card.id}}" class="inline-video-overlay">
+              <video id="vid-{{card.id}}" class="inline-video" src="{{card.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+              <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
             </view>
           </view>
         </view>
@@ -425,9 +459,13 @@
                   <template is="textBox" data="{{tb}}" />
                 </block>
                 <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
-                <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId === card.id}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                   <text class="profile-card-play-icon">▶</text>
                 </view>
+              </view>
+              <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId !== card.id}}" class="inline-video-overlay">
+                <video id="vid-{{card.id}}" class="inline-video" src="{{card.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+                <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
               </view>
               <view wx:if="{{card.detail.detailEntry}}" class="profile-card-entry">
                 <text>查看详情 →</text>
@@ -460,9 +498,13 @@
                 <template is="textBox" data="{{tb}}" />
               </block>
               <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
-              <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+              <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId === card.id}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                 <text class="profile-card-play-icon">▶</text>
               </view>
+            </view>
+            <view wx:if="{{card.cover.video}}" hidden="{{videoPlayingId !== card.id}}" class="inline-video-overlay">
+              <video id="vid-{{card.id}}" class="inline-video" src="{{card.cover.video}}" controls object-fit="contain" preload="{{false}}" enable-progress-gesture="{{false}}" custom-cache="{{false}}" show-mute-btn="{{false}}" />
+              <view class="inline-video-close" catchtap="closeInlineVideo">✕</view>
             </view>
           </view>
         </view>
@@ -576,17 +618,5 @@
     </block>
   </view>
 
-  <!-- 视频播放遮罩 -->
-  <view wx:if="{{currentVideo}}" class="video-player-overlay" bindtap="closeVideo">
-    <video
-      class="video-player"
-      src="{{currentVideo.url}}"
-      controls
-      autoplay
-      show-center-play-btn
-      object-fit="contain"
-    />
-    <view class="video-close" bindtap="closeVideo">✕</view>
-  </view>
   </block>
 </view>

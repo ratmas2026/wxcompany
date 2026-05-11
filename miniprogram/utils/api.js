@@ -36,9 +36,6 @@ const submitInquiry = (data) => request('/inquiry', { method: 'POST', data })
 // 获取视频列表
 const getVideos = () => request('/videos')
 
-// 获取业务列表
-const getBusiness = () => request('/business')
-
 // 获取项目列表
 const getProjects = () => request('/projects')
 
@@ -104,7 +101,6 @@ module.exports = {
   getCompanyInfos,
   getCards,
   getVideos,
-  getBusiness,
   getProjects,
   getProjectDetail,
   getSites,

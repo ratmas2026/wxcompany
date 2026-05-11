@@ -9,7 +9,7 @@ Page({
     sections: [],
     heroCard: null,
     videos: [],
-    currentVideo: null,
+    videoPlayingId: null,
     honors: [],
     awards: [],
     projects: [],
@@ -449,18 +449,22 @@ Page({
   onCoverVideoTap(e) {
     const profile = e.currentTarget.dataset.profile
     if (!profile || !profile.cover || !profile.cover.video) return
-    this.setData({ currentVideo: { url: profile.cover.video, cover: profile.cover.backgroundImage } })
-  },
-
-  previewVideo(e) {
-    const vid = e.currentTarget.dataset.video
-    if (vid) {
-      this.setData({ currentVideo: vid })
+    // Pause old video before switching
+    if (this.data.videoPlayingId) {
+      const oldCtx = wx.createVideoContext('vid-' + this.data.videoPlayingId)
+      if (oldCtx) oldCtx.pause()
     }
+    this.setData({ videoPlayingId: profile.id })
+    const ctx = wx.createVideoContext('vid-' + profile.id)
+    if (ctx) ctx.play()
   },
 
-  closeVideo() {
-    this.setData({ currentVideo: null })
+  closeInlineVideo() {
+    if (this.data.videoPlayingId) {
+      const ctx = wx.createVideoContext('vid-' + this.data.videoPlayingId)
+      if (ctx) ctx.pause()
+    }
+    this.setData({ videoPlayingId: null })
   },
 
   onShareAppMessage() {

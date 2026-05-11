@@ -19,9 +19,7 @@ const DataStore = {
       const splashImages = await res5.json()
       const res6 = await fetch(API_BASE + '/company/profile')
       const companyProfiles = await res6.json()
-      const res7 = await fetch(API_BASE + '/business')
-      const business = await res7.json()
-      const res8 = await fetch(API_BASE + '/honors')
+      const res7 = await fetch(API_BASE + '/honors')
       const honors = await res8.json()
       const res9 = await fetch(API_BASE + '/projects')
       const projects = await res9.json()
@@ -43,7 +41,7 @@ const DataStore = {
       const res17 = await fetch(API_BASE + '/company-infos')
       const companyInfos = await res17.json()
 
-      localStorage.setItem(this._storageKey, JSON.stringify({ cards, messages, positions, videos, splashImages, companyProfiles, companyProfileConfig, companyPerformances, companyPerformanceConfig, casePageConfig, business, honors, projects, sites, businessModules, businessModulePageConfig, companyInfos }))
+      localStorage.setItem(this._storageKey, JSON.stringify({ cards, messages, positions, videos, splashImages, companyProfiles, companyProfileConfig, companyPerformances, companyPerformanceConfig, casePageConfig, honors, projects, sites, businessModules, businessModulePageConfig, companyInfos }))
       this._ready = true
       return true
     } catch (e) {
@@ -61,7 +59,6 @@ const DataStore = {
           companyPerformances: [],
           companyPerformanceConfig: { sections: [] },
           casePageConfig: { sections: [] },
-          business: [],
           honors: [],
           projects: [],
           sites: [],
@@ -78,7 +75,7 @@ const DataStore = {
 
   _getCache() {
     const raw = localStorage.getItem(this._storageKey)
-    return raw ? JSON.parse(raw) : { cards: [], messages: [], positions: [], videos: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, business: [], honors: [], projects: [], sites: [], businessModules: [], businessModulePageConfig: { sections: [] }, companyInfos: [] }
+    return raw ? JSON.parse(raw) : { cards: [], messages: [], positions: [], videos: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, honors: [], projects: [], sites: [], businessModules: [], businessModulePageConfig: { sections: [] }, companyInfos: [] }
   },
 
   _setCache(data) {
@@ -417,46 +414,6 @@ const DataStore = {
     cache.casePageConfig = config
     this._setCache(cache)
     await this._sync('casePageConfig', 'PUT', '/company/case-page-config', config)
-  },
-
-  // Business
-  getBusinessList() { return this._getCache().business || [] },
-
-  getBusiness(id) { return (this._getCache().business || []).find(b => b.id === id) },
-
-  async saveBusiness(item) {
-    const cache = this._getCache()
-    if (!cache.business) cache.business = []
-    if (item.id) {
-      const idx = cache.business.findIndex(b => b.id === item.id)
-      if (idx >= 0) { cache.business[idx] = item; this._setCache(cache); await this._sync('business', 'PUT', '/business/' + item.id, item) }
-    } else {
-      try {
-        const res = await fetch(API_BASE + '/business', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
-        const saved = await res.json()
-        cache.business.push(saved)
-        this._setCache(cache)
-      } catch (e) {
-        item.id = Date.now()
-        cache.business.push(item)
-        this._setCache(cache)
-      }
-    }
-  },
-
-  async deleteBusiness(id) {
-    const cache = this._getCache()
-    cache.business = (cache.business || []).filter(b => b.id !== id)
-    this._setCache(cache)
-    await this._sync('business', 'DELETE', '/business/' + id)
-  },
-
-  async uploadBusinessImage(file) {
-    const fd = new FormData()
-    fd.append('business', file)
-    const res = await fetch(API_BASE + '/upload/business', { method: 'POST', body: fd })
-    const data = await res.json()
-    return data.url
   },
 
   // Business Modules
