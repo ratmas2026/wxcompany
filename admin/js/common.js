@@ -28,6 +28,7 @@ const Admin = {
 
   sidebarHTML() {
     const navItems = [
+      { page: 'company-info', icon: '&#x1F3F7;', label: '企业信息' },
       { page: 'index', icon: '&#x1F4C7;', label: '名片管理' },
       { page: 'position', icon: '&#x1F4CB;', label: '职位管理' },
       { page: 'splash', icon: '&#x1F3A8;', label: '启动页' },

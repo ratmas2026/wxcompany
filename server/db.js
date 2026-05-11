@@ -89,11 +89,12 @@ CREATE TABLE IF NOT EXISTS sites (
   created_at TEXT, updated_at TEXT
 );
 
-CREATE TABLE IF NOT EXISTS company_info (
+CREATE TABLE IF NOT EXISTS company_infos (
   id INTEGER PRIMARY KEY,
-  name TEXT, since INTEGER, headquarters TEXT, description TEXT,
-  stats TEXT, leader_quote TEXT, leader_name TEXT, leader_title TEXT,
-  leader_avatar TEXT, phone TEXT, email TEXT, address TEXT
+  name TEXT, legal_person TEXT, phone TEXT, address TEXT,
+  longitude REAL, latitude REAL, website TEXT, description TEXT,
+  sort_order INTEGER DEFAULT 0, status INTEGER DEFAULT 1,
+  created_at TEXT, updated_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS config (
@@ -125,6 +126,9 @@ function initDatabase() {
     }
 
     db.run(SCHEMA);
+
+    // Migration: drop legacy company_info table (replaced by company_infos)
+    db.run('DROP TABLE IF EXISTS company_info');
 
     const row = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='cards'");
     const hasData = row.length > 0 && db.exec("SELECT COUNT(*) AS c FROM cards")[0].values[0][0] > 0;
@@ -263,15 +267,6 @@ function migrateFromJSON() {
       s.location||'', s.desc||'', s.image||'', s.createdAt||'', s.updatedAt||'']);
   });
   insSite.free();
-
-  // Company Info
-  const ci = data.companyInfo || {};
-  db.run(
-    'INSERT INTO company_info (id,name,since,headquarters,description,stats,leader_quote,leader_name,leader_title,leader_avatar,phone,email,address) VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?)',
-    [ci.name||'', ci.since||null, ci.headquarters||'', ci.description||'',
-     jsonVal(ci.stats), ci.leaderQuote||'', ci.leaderName||'', ci.leaderTitle||'',
-     ci.leaderAvatar||'', ci.phone||'', ci.email||'', ci.address||'']
-  );
 
   // Configs
   const insCfg = db.prepare('INSERT OR REPLACE INTO config (key,value) VALUES (?,?)');
@@ -419,25 +414,17 @@ function readData() {
     };
   });
 
-  // Company Info
-  var companyInfo = {};
-  try {
-    var ciRows = db.exec('SELECT * FROM company_info WHERE id=1');
-    if (ciRows.length > 0 && ciRows[0].values.length > 0) {
-      var ci = ciRows[0].values[0];
-      var ciCols = ciRows[0].columns;
-      var ciObj = {};
-      ciCols.forEach(function(col, i) { ciObj[col] = ci[i]; });
-      companyInfo = {
-        name: ciObj.name || '', since: ciObj.since || null,
-        headquarters: ciObj.headquarters || '', description: ciObj.description || '',
-        stats: jsonParse(ciObj.stats) || {},
-        leaderQuote: ciObj.leader_quote || '', leaderName: ciObj.leader_name || '',
-        leaderTitle: ciObj.leader_title || '', leaderAvatar: ciObj.leader_avatar || '',
-        phone: ciObj.phone || '', email: ciObj.email || '', address: ciObj.address || ''
-      };
-    }
-  } catch (e) { /* ignore */ }
+  // Company Infos (new multi-row table)
+  var companyInfos = queryAll('company_infos', function(ci) {
+    return {
+      id: ci.id, name: ci.name || '', legalPerson: ci.legal_person || '',
+      phone: ci.phone || '', address: ci.address || '',
+      longitude: ci.longitude || null, latitude: ci.latitude || null,
+      website: ci.website || '', description: ci.description || '',
+      sortOrder: ci.sort_order || 0, status: !!ci.status,
+      createdAt: ci.created_at || '', updatedAt: ci.updated_at || ''
+    };
+  });
 
   // Configs
   var configs = {};
@@ -454,7 +441,7 @@ function readData() {
   var defaultNextId = {
     cards: 1, messages: 1, positions: 1, videos: 1, business: 1,
     honors: 1, projects: 1, sites: 1, splashImages: 4,
-    companyProfiles: 1, companyPerformances: 1, businessModules: 1
+    companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1
   };
   var nextId = configs.nextId || defaultNextId;
 
@@ -476,7 +463,7 @@ function readData() {
     honors: honors,
     projects: projects,
     sites: sites,
-    companyInfo: companyInfo,
+    companyInfos: companyInfos,
     companyProfileConfig: { sections: configs.companyProfileConfig || [] },
     companyPerformanceConfig: { sections: configs.companyPerformanceConfig || [] },
     casePageConfig: { sections: configs.casePageConfig || [] },
@@ -592,14 +579,13 @@ function writeData(data) {
       s.location||'', s.desc||'', s.image||'', s.createdAt||'', s.updatedAt||'']; }
   );
 
-  // Company Info
-  db.run('DELETE FROM company_info');
-  var ci = data.companyInfo || {};
-  db.run(
-    'INSERT INTO company_info (id,name,since,headquarters,description,stats,leader_quote,leader_name,leader_title,leader_avatar,phone,email,address) VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?)',
-    [ci.name||'', ci.since||null, ci.headquarters||'', ci.description||'',
-     jsonVal(ci.stats), ci.leaderQuote||'', ci.leaderName||'', ci.leaderTitle||'',
-     ci.leaderAvatar||'', ci.phone||'', ci.email||'', ci.address||'']
+  // Company Infos (new multi-row table)
+  syncTable('company_infos',
+    ['id','name','legal_person','phone','address','longitude','latitude','website','description','sort_order','status','created_at','updated_at'],
+    data.companyInfos,
+    function(ci) { return [ci.id, ci.name||'', ci.legalPerson||'', ci.phone||'', ci.address||'',
+      ci.longitude||null, ci.latitude||null, ci.website||'', ci.description||'',
+      ci.sortOrder||0, ci.status?1:0, ci.createdAt||'', ci.updatedAt||'']; }
   );
 
   // Configs

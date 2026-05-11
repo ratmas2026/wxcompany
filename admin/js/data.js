@@ -40,8 +40,10 @@ const DataStore = {
 
       const res16 = await fetch(API_BASE + '/business-modules/page-config')
       const businessModulePageConfig = await res16.json()
+      const res17 = await fetch(API_BASE + '/company-infos')
+      const companyInfos = await res17.json()
 
-      localStorage.setItem(this._storageKey, JSON.stringify({ cards, messages, positions, videos, splashImages, companyProfiles, companyProfileConfig, companyPerformances, companyPerformanceConfig, casePageConfig, business, honors, projects, sites, businessModules, businessModulePageConfig }))
+      localStorage.setItem(this._storageKey, JSON.stringify({ cards, messages, positions, videos, splashImages, companyProfiles, companyProfileConfig, companyPerformances, companyPerformanceConfig, casePageConfig, business, honors, projects, sites, businessModules, businessModulePageConfig, companyInfos }))
       this._ready = true
       return true
     } catch (e) {
@@ -64,7 +66,8 @@ const DataStore = {
           projects: [],
           sites: [],
           businessModules: [],
-          businessModulePageConfig: { sections: [] }
+          businessModulePageConfig: { sections: [] },
+          companyInfos: []
         }
         localStorage.setItem(this._storageKey, JSON.stringify(seed))
       }
@@ -75,7 +78,7 @@ const DataStore = {
 
   _getCache() {
     const raw = localStorage.getItem(this._storageKey)
-    return raw ? JSON.parse(raw) : { cards: [], messages: [], positions: [], videos: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, business: [], honors: [], projects: [], sites: [], businessModules: [], businessModulePageConfig: { sections: [] } }
+    return raw ? JSON.parse(raw) : { cards: [], messages: [], positions: [], videos: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, business: [], honors: [], projects: [], sites: [], businessModules: [], businessModulePageConfig: { sections: [] }, companyInfos: [] }
   },
 
   _setCache(data) {
@@ -682,5 +685,41 @@ const DataStore = {
     const res = await fetch(API_BASE + '/upload/sites', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
+  },
+
+  // Company Infos
+  getCompanyInfos() { return this._getCache().companyInfos || [] },
+
+  getCompanyInfo(id) { return (this._getCache().companyInfos || []).find(ci => ci.id === id) },
+
+  async saveCompanyInfo(item) {
+    const cache = this._getCache()
+    if (!cache.companyInfos) cache.companyInfos = []
+    if (item.id) {
+      const idx = cache.companyInfos.findIndex(ci => ci.id === item.id)
+      if (idx >= 0) {
+        await this._sync('companyInfos', 'PUT', '/company-infos/' + item.id, item)
+        cache.companyInfos[idx] = item
+        this._setCache(cache)
+      }
+    } else {
+      try {
+        const res = await fetch(API_BASE + '/company-infos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
+        const saved = await res.json()
+        cache.companyInfos.push(saved)
+        this._setCache(cache)
+      } catch (e) {
+        item.id = Date.now()
+        cache.companyInfos.push(item)
+        this._setCache(cache)
+      }
+    }
+  },
+
+  async deleteCompanyInfo(id) {
+    const cache = this._getCache()
+    cache.companyInfos = (cache.companyInfos || []).filter(ci => ci.id !== id)
+    this._setCache(cache)
+    await this._sync('companyInfos', 'DELETE', '/company-infos/' + id)
   }
 }

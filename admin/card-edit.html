@@ -20,11 +20,12 @@
   const editId = params.get('id')
   const isEdit = !!editId
 
-  // 从企业动态获取默认公司名称和地址
-  const profiles = DataStore.getCompanyProfiles()
-  const defaultProfile = (profiles && profiles.length > 0) ? profiles[0] : null
-  const defaultCompany = defaultProfile ? (defaultProfile.title || '执行官组合') : '执行官组合'
-  const defaultAddress = defaultProfile ? (defaultProfile.address || '') : ''
+  // 从企业信息获取公司名称和地址
+  const companyInfos = DataStore.getCompanyInfos()
+  const hasCI = companyInfos && companyInfos.length > 0
+  const defaultCI = hasCI ? companyInfos[0] : null
+  const defaultCompany = defaultCI ? (defaultCI.name || '') : ''
+  const defaultAddress = defaultCI ? (defaultCI.address || '') : ''
 
   let card = { id: null, name: '', title: '', company: defaultCompany, phone: '', email: '', department: '', avatar: '', bio: '', address: defaultAddress }
   let selectedAvatarFile = null       // File object for upload
@@ -44,6 +45,11 @@
   function render() {
     const deptOptions = departments.map(d =>
       `<option value="${d}" ${card.department === d ? 'selected' : ''}>${d}</option>`
+    ).join('')
+
+    // Build company info options for select
+    const ciOptions = companyInfos.map(ci =>
+      '<option value="' + escapeHtml(ci.name) + '" data-address="' + escapeHtml(ci.address || '') + '" ' + (card.company === ci.name ? 'selected' : '') + '>' + escapeHtml(ci.name) + '</option>'
     ).join('')
 
     const posOptions = positions.map(p =>
@@ -84,7 +90,7 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">职位/职级 *</label>
+              <label class="form-label">职位 *</label>
               <select class="form-select" id="cardTitle">
                 <option value="">请选择职位</option>
                 ${posOptions}
@@ -102,7 +108,12 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">公司名称</label>
-              <input class="form-input" id="cardCompany" value="${card.company}" placeholder="请输入公司名称">
+              ${hasCI ? `
+              <select class="form-select" id="cardCompany" onchange="window.onCompanyChange(this)">
+                <option value="">请选择企业</option>
+                ${ciOptions}
+              </select>
+              ` : `<input class="form-input" id="cardCompany" value="${escapeHtml(card.company)}" placeholder="暂无企业信息，请手动输入">`}
             </div>
             <div class="form-group">
               <label class="form-label">邮箱</label>
@@ -112,7 +123,7 @@
 
           <div class="form-group">
             <label class="form-label">联系地址</label>
-            <input class="form-input" id="cardAddress" value="${card.address || ''}" placeholder="请输入联系地址">
+            <input class="form-input" id="cardAddress" value="${escapeHtml(card.address || '')}" placeholder="选择企业后自动填充，也可手动修改">
           </div>
 
           <div class="form-group">
@@ -129,6 +140,10 @@
     `
 
     Admin.setPageContent(html)
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }
 
   window.onAvatarSelected = function(input) {
@@ -160,6 +175,15 @@
     render()
   }
 
+  window.onCompanyChange = function(select) {
+    const addressInput = document.getElementById('cardAddress')
+    const selectedOpt = select.options[select.selectedIndex]
+    const addr = selectedOpt ? selectedOpt.dataset.address : ''
+    if (addr && addressInput) {
+      addressInput.value = addr
+    }
+  }
+
   window.saveCard = async function(e) {
     e.preventDefault()
 
@@ -167,7 +191,8 @@
     const phoneVal = document.getElementById('cardPhone').value.trim()
     const titleVal = document.getElementById('cardTitle').value
     const deptVal = document.getElementById('cardDept').value
-    const companyVal = document.getElementById('cardCompany').value.trim()
+    const companyEl = document.getElementById('cardCompany')
+    const companyVal = companyEl ? companyEl.value.trim() : ''
     const emailVal = document.getElementById('cardEmail').value.trim()
     const addressVal = document.getElementById('cardAddress').value.trim()
     const bioVal = document.getElementById('cardBio').value.trim()

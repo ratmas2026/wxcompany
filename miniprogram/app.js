@@ -2,13 +2,7 @@ App({
   globalData: {
     userInfo: null,
     isLogin: false,
-    apiBase: 'https://api.example.com',
-    companyInfo: {
-      name: '执行官组合',
-      nameEn: 'Executive Portfolio',
-      since: 2015,
-      headquarters: '中国，深圳'
-    }
+    apiBase: 'https://api.example.com'
   },
 
   onLaunch() {

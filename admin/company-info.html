@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>企业信息 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('company-info')
+  await DataStore.init()
+
+  let items = []
+
+  function render() {
+    items = DataStore.getCompanyInfos().sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+
+    const cards = items.map(ci => `
+      <div class="media-card">
+        <div class="media-thumb" style="background:linear-gradient(135deg,#e8edf5,#dce3ef);">
+          <span style="font-size:48px">🏢</span>
+        </div>
+        <div class="media-body">
+          <div class="media-title">${escapeHtml(ci.name || '未命名企业')}</div>
+          <div class="media-meta">
+            <span>法人: ${escapeHtml(ci.legalPerson || '-')}</span>
+            <span>电话: ${escapeHtml(ci.phone || '-')}</span>
+            <span>地址: ${escapeHtml((ci.address || '-').substring(0, 20))}${(ci.address || '').length > 20 ? '...' : ''}</span>
+            ${ci.status ? '<span class="badge badge-success">启用</span>' : '<span class="badge badge-neutral">停用</span>'}
+          </div>
+          <div class="media-actions">
+            <button class="btn btn-outline btn-sm" onclick="window.location.href='company-info-edit.html?id=${ci.id}'">编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="window.deleteItem(${ci.id})">删除</button>
+          </div>
+        </div>
+      </div>
+    `).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>企业信息</h1>
+        <button class="btn btn-primary" onclick="window.location.href='company-info-edit.html'">+ 新增企业</button>
+      </div>
+
+      <div class="card-grid">
+        ${cards || '<div class="empty-state"><div class="empty-icon">🏢</div><p>暂无企业信息</p><p style="font-size:13px;color:#a0aec0;margin-top:8px;">点击右上角「新增企业」按钮添加</p></div>'}
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  window.deleteItem = function(id) {
+    const ci = items.find(c => c.id === id)
+    Admin.confirmDelete('确定要删除 <strong>' + escapeHtml(ci ? ci.name : '此项') + '</strong> 吗？', async () => {
+      await DataStore.deleteCompanyInfo(id)
+      Admin.showToast('删除成功', 'success')
+      render()
+    })
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+</body>
+</html>

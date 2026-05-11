@@ -55,8 +55,19 @@ Page({
     return Promise.all([
       api.getCompanyProfileConfig().catch(() => ({ sections: [] })),
       api.getCompanyProfile().catch(() => []),
-      api.getCompanyInfo().catch(() => ({}))
-    ]).then(([config, profiles, companyInfo]) => {
+      api.getCompanyInfos().catch(() => [])
+    ]).then(([config, profiles, companyInfos]) => {
+      const activeCI = (companyInfos || []).find(ci => ci.status !== false)
+      const companyInfo = activeCI ? {
+        name: activeCI.name || '',
+        description: activeCI.description || '',
+        headquarters: '',
+        phone: activeCI.phone || '',
+        address: activeCI.address || '',
+        email: '',
+        stats: {},
+        leaderQuote: '', leaderName: '', leaderTitle: '', leaderAvatar: ''
+      } : {}
       // Process all profiles
       const allProfiles = (profiles || []).sort((a, b) => (a.sortOrder || a.id) - (b.sortOrder || b.id)).map(p => {
         if (p.cover) {
@@ -168,8 +179,19 @@ Page({
   },
 
   fetchCompanyInfo() {
-    api.getCompanyInfo().then(info => {
-      this.setData({ companyInfo: info || {} })
+    api.getCompanyInfos().then(list => {
+      const activeCI = (list || []).find(ci => ci.status !== false)
+      const info = activeCI ? {
+        name: activeCI.name || '',
+        description: activeCI.description || '',
+        headquarters: '',
+        phone: activeCI.phone || '',
+        address: activeCI.address || '',
+        email: '',
+        stats: {},
+        leaderQuote: '', leaderName: '', leaderTitle: '', leaderAvatar: ''
+      } : {}
+      this.setData({ companyInfo: info })
     }).catch(() => {})
   },
 

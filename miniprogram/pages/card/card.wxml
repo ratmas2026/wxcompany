@@ -35,8 +35,8 @@
       <view class="card-location" bindtap="openMap">
         <text>📍</text>
         <view class="location-info">
-          <text class="location-company">{{cardData.company}}</text>
-          <text class="location-addr">{{cardData.address || companyInfo.address || '深圳市南山区科技园南路88号智能大厦38层'}}</text>
+          <text class="location-company">{{matchedCI.name || cardData.company}}</text>
+          <text class="location-addr">{{matchedCI.address || cardData.address || companyInfo.address || '深圳市南山区科技园南路88号智能大厦38层'}}</text>
         </view>
         <text class="location-arrow">›</text>
       </view>

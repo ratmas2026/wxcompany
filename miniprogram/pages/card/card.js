@@ -4,6 +4,8 @@ Page({
   data: {
     cardData: {},
     companyInfo: {},
+    companyInfos: [],
+    matchedCI: null,
     honors: [],
     projects: [],
     missionVideo: null,
@@ -30,10 +32,10 @@ Page({
   fetchData() {
     Promise.all([
       api.getCards(),
-      api.getCompanyInfo(),
+      api.getCompanyInfos(),
       api.getProjects(),
       api.getVideos()
-    ]).then(([cards, info, projects, videos]) => {
+    ]).then(([cards, companyInfos, projects, videos]) => {
       const card = (cards || []).find(c => c.status === true) || (cards && cards[0]) || {}
       if (card.avatar) card.avatar = api.staticUrl(card.avatar)
       const missionVideo = (videos || []).find(v => v.category === 'mission' && v.status === 'published') || null
@@ -41,9 +43,16 @@ Page({
         missionVideo.url = api.staticUrl(missionVideo.url)
         missionVideo.cover = api.staticUrl(missionVideo.cover)
       }
+      // Match company_info by company name, or use first entry
+      const infos = (companyInfos || []).filter(ci => ci.status !== false)
+      const matched = card.company ? infos.find(ci => ci.name === card.company) || null : null
+      const matchedCI = matched || (infos.length > 0 ? infos[0] : null)
+      const fallbackCI = infos.length > 0 ? infos[0] : {}
       this.setData({
         cardData: card,
-        companyInfo: info || {},
+        companyInfo: fallbackCI,
+        companyInfos: infos,
+        matchedCI: matchedCI,
         projects: (projects || []).slice(0, 2).map(p => ({ ...p, image: api.staticUrl(p.image) })),
         missionVideo: missionVideo
       })
@@ -64,7 +73,18 @@ Page({
   },
 
   openMap() {
-    wx.showToast({ title: '打开地图', icon: 'none' })
+    const ci = this.data.matchedCI
+    if (ci && ci.longitude && ci.latitude) {
+      wx.openLocation({
+        latitude: ci.latitude,
+        longitude: ci.longitude,
+        name: ci.name || '',
+        address: ci.address || '',
+        scale: 16
+      })
+    } else {
+      wx.showToast({ title: '暂无定位信息', icon: 'none' })
+    }
   },
 
   shareCard() {

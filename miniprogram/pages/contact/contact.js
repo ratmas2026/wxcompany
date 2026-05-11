@@ -6,8 +6,10 @@ Page({
   },
 
   onLoad() {
-    api.getCompanyInfo().then(info => {
-      this.setData({ companyInfo: info || {} })
+    api.getCompanyInfos().then(list => {
+      const activeCI = (list || []).find(ci => ci.status !== false)
+      const info = activeCI ? activeCI : {}
+      this.setData({ companyInfo: info })
     }).catch(() => {})
   },
 

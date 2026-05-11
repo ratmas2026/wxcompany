@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>新增/编辑企业信息 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('company-info')
+  await DataStore.init()
+
+  const params = new URLSearchParams(window.location.search)
+  const editId = params.get('id')
+  const isEdit = !!editId
+
+  let item = { id: null, name: '', legalPerson: '', phone: '', address: '', longitude: null, latitude: null, website: '', description: '', status: true }
+  if (isEdit) {
+    const existing = DataStore.getCompanyInfo(parseInt(editId))
+    if (existing) item = { ...existing }
+  }
+
+  let mapInstance = null
+  let mapMarker = null
+  let mapLoaded = false
+
+  function render() {
+    const hasCoords = item.longitude && item.latitude
+    const navUrl = hasCoords
+      ? 'https://uri.amap.com/navigation?to=' + item.longitude + ',' + item.latitude + ',' + encodeURIComponent(item.address || '企业地址')
+      : '#'
+
+    const html = `
+      <style>
+        .map-search-bar {
+          display: flex;
+          gap: 10px;
+          padding: 14px 16px;
+          background: #f1f5f9;
+          border-radius: 12px;
+          align-items: center;
+          margin-bottom: 0;
+        }
+        .map-search-input {
+          flex: 1;
+          padding: 10px 16px;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          font-size: 14px;
+          outline: none;
+          background: #fff;
+          transition: border-color 0.2s;
+          margin-bottom: 0;
+          box-sizing: border-box;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .map-search-input:focus {
+          border-color: #4f46e5;
+          box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        }
+        .map-search-btn {
+          padding: 10px 18px;
+          background: #4f46e5;
+          color: #fff;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background 0.2s;
+        }
+        .map-search-btn:hover {
+          background: #4338ca;
+        }
+        .map-locate-btn {
+          padding: 10px 18px;
+          background: #fff;
+          color: #4f46e5;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          font-size: 14px;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background 0.2s;
+        }
+        .map-locate-btn:hover {
+          background: #f1f5f9;
+        }
+      </style>
+      <div class="page-header">
+        <h1>${isEdit ? '编辑企业信息' : '新增企业信息'}</h1>
+        <button class="btn btn-secondary" onclick="window.history.back()">返回</button>
+      </div>
+
+      <div class="card">
+        <form id="companyInfoForm" onsubmit="window.saveItem(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">企业名称 *</label>
+              <input class="form-input" id="ciName" value="${escapeHtml(item.name)}" placeholder="请输入企业名称" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">法人名字</label>
+              <input class="form-input" id="ciLegalPerson" value="${escapeHtml(item.legalPerson)}" placeholder="请输入法人名字">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">联系方式</label>
+              <input class="form-input" id="ciPhone" value="${escapeHtml(item.phone)}" placeholder="请输入电话号码">
+            </div>
+            <div class="form-group">
+              <label class="form-label">企业官网</label>
+              <input class="form-input" id="ciWebsite" value="${escapeHtml(item.website)}" placeholder="https://">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">联系地址</label>
+            <div class="map-search-bar" style="margin-top:0">
+              <input type="text" id="mapSearchInput" class="map-search-input" value="${escapeHtml(item.address)}" placeholder="请输入地址/地点">
+              <button type="button" class="map-search-btn" id="mapSearchBtn">🔍 搜索</button>
+              ${hasCoords ? '<a href="' + navUrl + '" target="_blank" class="btn btn-outline" style="text-decoration:none;padding:10px 18px;border-radius:10px;white-space:nowrap">导航</a>' : ''}
+            </div>
+            <input type="hidden" id="ciLongitude" value="${item.longitude || ''}">
+            <input type="hidden" id="ciLatitude" value="${item.latitude || ''}">
+          </div>
+
+          <div id="mapPanel" style="display:none;margin-top:0;border:1px solid #e2e8f0;border-radius:0 0 12px 12px;overflow:hidden;border-top:none">
+            <div style="position:relative">
+              <div id="mapContainer" style="width:100%;min-height:400px"></div>
+              <div id="mapLoadingOverlay" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.7);z-index:20;align-items:center;justify-content:center;font-size:14px;color:#4f46e5">定位中...</div>
+              <button type="button" id="mapLocateBtn" onclick="window.locateMe()" title="定位到当前位置" style="position:absolute;bottom:12px;right:12px;width:36px;height:36px;border:none;border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:10">📍</button>
+            </div>
+            <div style="padding:8px 12px;background:#f8f9fa;font-size:12px;color:#718096">
+              点击地图或拖拽标记选择位置，搜索后从结果列表中点选
+            </div>
+            <div id="mapSearchResults" style="max-height:150px;overflow-y:auto;border-top:1px solid #e2e8f0"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">简介</label>
+            <textarea class="form-textarea" id="ciDescription" placeholder="请输入企业简介">${escapeHtml(item.description)}</textarea>
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:32px">
+            <button type="button" class="btn btn-secondary" onclick="window.history.back()">取消</button>
+            <button type="submit" class="btn btn-primary btn-lg">${isEdit ? '保存修改' : '创建企业'}</button>
+          </div>
+        </form>
+      </div>
+    `
+
+    Admin.setPageContent(html)
+
+    // 绑定搜索事件（addEventListener 替代内联 onclick，避免 innerHTML 绑定竞态）
+    var searchInput = document.getElementById('mapSearchInput')
+    var searchBtn = document.getElementById('mapSearchBtn')
+    if (searchInput) {
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') window.searchMap()
+      })
+    }
+    if (searchBtn) {
+      searchBtn.addEventListener('click', function() {
+        window.searchMap()
+      })
+    }
+
+    // Load Gaode map JS if not loaded
+    if (!mapLoaded) {
+      loadMapScript()
+    }
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  function escapeJsStr(str) {
+    return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+  }
+
+  /**
+   * 将地图实例暴露到 window 全局对象。
+   * 原因：页面运行在 IIFE 闭包中，mapInstance 局部变量无法被 Console 调试
+   * 和 AMap.plugin 异步回调直接访问。挂载到 window 统一入口解决作用域隔离。
+   * @param {AMap.Map} map — 高德地图实例
+   */
+  function exposeMapInstance(map) {
+    window.__AMAP_INSTANCE__ = map
+  }
+
+  function loadMapScript() {
+    if (window.AMap) { mapLoaded = true; setTimeout(autoInitMap, 100); return }
+    window._AMapSecurityConfig = {
+      securityJsCode: 'b0c338635c3cfd4bc40175ec55e15e74'
+    }
+    const script = document.createElement('script')
+    script.src = 'https://webapi.amap.com/maps?v=2.0&key=8d88196ae5d470ac5b4181a6908fd0b0&plugin=AMap.PlaceSearch,AMap.Geolocation,AMap.AutoComplete,AMap.Geocoder'
+    script.onload = function() { mapLoaded = true; autoInitMap() }
+    script.onerror = function() { Admin.showToast('地图加载失败', 'error') }
+    document.head.appendChild(script)
+  }
+
+  function initMap(lng, lat) {
+    const container = document.getElementById('mapContainer')
+    if (!container || !window.AMap) return
+
+    const centerLng = lng || 116.397428
+    const centerLat = lat || 39.90923
+
+    mapInstance = new AMap.Map('mapContainer', {
+      center: [centerLng, centerLat],
+      zoom: 15,
+      resizeEnable: true
+    })
+    exposeMapInstance(mapInstance)
+
+    // Add marker
+    mapMarker = new AMap.Marker({
+      position: [centerLng, centerLat],
+      draggable: true
+    })
+    mapInstance.add(mapMarker)
+
+    // Click anywhere on map to move marker
+    mapInstance.on('click', function(e) {
+      mapMarker.setPosition(e.lnglat)
+      reverseGeocode(e.lnglat.getLng(), e.lnglat.getLat())
+    })
+
+    // Drag marker
+    mapMarker.on('dragend', function(e) {
+      reverseGeocode(e.lnglat.getLng(), e.lnglat.getLat())
+    })
+  }
+
+  function reverseGeocode(lng, lat) {
+    if (!window.AMap || !mapInstance) return
+    AMap.plugin('AMap.Geocoder', function() {
+      var geocoder = new AMap.Geocoder({})
+      geocoder.getAddress([lng, lat], function(status, result) {
+        if (status === 'complete' && result.regeocode) {
+          document.getElementById('mapSearchInput').value = result.regeocode.formattedAddress || ''
+          document.getElementById('ciLongitude').value = lng
+          document.getElementById('ciLatitude').value = lat
+        }
+      })
+    })
+  }
+
+  function geocodeAddress(address) {
+    if (!window.AMap || !address) return
+    AMap.plugin('AMap.Geocoder', function() {
+      var geocoder = new AMap.Geocoder({})
+      geocoder.getLocation(address, function(status, result) {
+        if (status === 'complete' && result.geocodes.length > 0) {
+          var lng = result.geocodes[0].location.getLng()
+          var lat = result.geocodes[0].location.getLat()
+          if (mapMarker) mapMarker.setPosition([lng, lat])
+          if (mapInstance) mapInstance.setCenter([lng, lat])
+          document.getElementById('ciLongitude').value = lng
+          document.getElementById('ciLatitude').value = lat
+          document.getElementById('mapSearchInput').value = result.geocodes[0].formattedAddress || address
+        }
+      })
+    })
+  }
+
+  function geocodeAddressAsync(address) {
+    return new Promise(function(resolve) {
+      if (!window.AMap || !address) { resolve(null); return }
+      AMap.plugin('AMap.Geocoder', function() {
+        var geocoder = new AMap.Geocoder({})
+        geocoder.getLocation(address, function(status, result) {
+          if (status === 'complete' && result.geocodes.length > 0) {
+            var lng = result.geocodes[0].location.getLng()
+            var lat = result.geocodes[0].location.getLat()
+            resolve({ lng: lng, lat: lat, address: result.geocodes[0].formattedAddress || address })
+          } else {
+            resolve(null)
+          }
+        })
+      })
+    })
+  }
+
+  function showMapPanel() {
+    const panel = document.getElementById('mapPanel')
+    if (panel) panel.style.display = 'block'
+  }
+
+  function autoInitMap() {
+    if (!window.AMap) {
+      showMapPanel()
+      initMap(item.longitude, item.latitude)
+      return
+    }
+    showMapPanel()
+
+    // 编辑模式有坐标：直接用坐标初始化地图（不重新定位，尊重已保存数据）
+    if (isEdit && item.longitude && item.latitude) {
+      initMap(item.longitude, item.latitude)
+      reverseGeocode(item.longitude, item.latitude)
+      return
+    }
+
+    // 编辑模式无坐标但有地址：自动搜索地址来定位（不重新定位）
+    if (isEdit && item.address && !item.longitude && !item.latitude) {
+      initMap()
+      setTimeout(function() {
+        geocodeAddress(item.address)
+      }, 300)
+      return
+    }
+
+    // 新建模式：定位优先
+    initMap()
+    tryGeolocate()
+
+    function tryGeolocate() {
+      var located = false
+      console.log('📍 开始定位：优先浏览器定位(5s超时)...')
+
+      var geoTimeout = setTimeout(function() {
+        if (located) return
+        console.warn('浏览器定位超时(5s)，切换高德IP定位')
+        tryAmapGeolocation()
+      }, 5000)
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          if (located) return; located = true
+          clearTimeout(geoTimeout)
+          var lng = pos.coords.longitude
+          var lat = pos.coords.latitude
+          console.log('✅ 浏览器定位成功: lng=' + lng + ', lat=' + lat)
+          var inst = window.__AMAP_INSTANCE__
+          if (inst) { inst.setZoomAndCenter(16, [lng, lat]) }
+          if (mapMarker) mapMarker.setPosition([lng, lat])
+          reverseGeocode(lng, lat)
+        }, function(err) {
+          if (located) return; located = true
+          clearTimeout(geoTimeout)
+          console.warn('浏览器定位失败(code=' + (err && err.code) + ')，回退高德IP定位')
+          tryAmapGeolocation()
+        }, { enableHighAccuracy: true, timeout: 5000 })
+      } else {
+        clearTimeout(geoTimeout)
+        tryAmapGeolocation()
+      }
+
+      function tryAmapGeolocation() {
+        if (located) return; located = true
+        AMap.plugin('AMap.Geolocation', function() {
+          var geolocation = new AMap.Geolocation({
+            enableHighAccuracy: true,
+            timeout: 10000,
+            showButton: false
+          })
+          geolocation.getCurrentPosition(function(status, result) {
+            if (status === 'complete' && result.position) {
+              var lng = result.position.getLng()
+              var lat = result.position.getLat()
+              console.log('✅ 高德IP定位成功: lng=' + lng + ', lat=' + lat)
+              var inst = window.__AMAP_INSTANCE__
+              if (inst) { inst.setZoomAndCenter(16, [lng, lat]) }
+              if (mapMarker) mapMarker.setPosition([lng, lat])
+              reverseGeocode(lng, lat)
+              if (result.formattedAddress) {
+                document.getElementById('mapSearchInput').value = result.formattedAddress
+              }
+            } else {
+              console.warn('高德IP定位也失败(status=' + status + ')，无法自动定位')
+              Admin.showToast('无法获取您的位置，请手动搜索地址', 'info')
+            }
+          })
+        })
+      }
+    }
+  }
+
+  window.searchMap = function() {
+    console.log('🔍 [DEBUG] 搜索按钮被点击 | 输入值:', document.getElementById('mapSearchInput')?.value)
+    const query = document.getElementById('mapSearchInput').value.trim()
+    if (!query) { Admin.showToast('请输入搜索关键词', 'info'); return }
+    if (!window.AMap) { Admin.showToast('地图尚未加载', 'error'); return }
+
+    console.log('🔍 [DEBUG] AMap.plugin 回调触发，准备创建 PlaceSearch')
+    AMap.plugin('AMap.PlaceSearch', function() {
+      console.log('🔍 [DEBUG] AMap.PlaceSearch 插件就绪，构造实例')
+      const placeSearch = new AMap.PlaceSearch({
+        pageSize: 10,
+        pageIndex: 1,
+        city: '全国',
+        citylimit: false
+      })
+      console.log('🔍 [DEBUG] 开始搜索，关键词:', query)
+      placeSearch.search(query, function(status, result) {
+        console.log('RAW', result)
+        try {
+          const pois = result?.poiList?.pois
+          if (status === 'complete' && pois && pois.length > 0) {
+            const firstPoi = pois[0]
+            const lng = firstPoi.location.getLng()
+            const lat = firstPoi.location.getLat()
+
+            if (!mapInstance) {
+              showMapPanel()
+              initMap(lng, lat)
+            } else {
+              mapInstance.setCenter([lng, lat])
+              if (mapMarker) mapMarker.setPosition([lng, lat])
+            }
+
+            document.getElementById('ciLongitude').value = lng
+            document.getElementById('ciLatitude').value = lat
+            document.getElementById('mapSearchInput').value = firstPoi.address || firstPoi.name
+
+            const resultsDiv = document.getElementById('mapSearchResults')
+            let html = ''
+            pois.forEach(function(poi, i) {
+              html += '<div style="padding:10px 12px;border-bottom:1px solid #e2e8f0;cursor:pointer;font-size:13px" onclick="window.selectPoi(' + poi.location.getLng() + ',' + poi.location.getLat() + ',\'' + escapeJsStr(poi.name) + '\',\'' + escapeJsStr(poi.address || poi.name) + '\')">' +
+                '<div style="font-weight:600">' + escapeHtml(poi.name) + '</div>' +
+                '<div style="color:#718096;font-size:11px">' + escapeHtml(poi.address || '') + '</div>' +
+                '</div>'
+            })
+            resultsDiv.innerHTML = html
+          } else if (status === 'complete' && (!pois || pois.length === 0)) {
+            document.getElementById('mapSearchResults').innerHTML = '<div style="padding:12px;color:#a0aec0;font-size:13px">未找到匹配结果</div>'
+            Admin.showToast('未找到匹配结果，请尝试更具体的关键词', 'info')
+          } else {
+            document.getElementById('mapSearchResults').innerHTML = '<div style="padding:12px;color:#a0aec0;font-size:13px">搜索失败</div>'
+          }
+        } catch(e) {
+          console.error('搜索异常:', e)
+          Admin.showToast('搜索失败，请重试', 'error')
+        }
+      })
+    })
+  }
+
+  window.selectPoi = function(lng, lat, name, address) {
+    document.getElementById('mapSearchInput').value = address || name
+    document.getElementById('ciLongitude').value = lng
+    document.getElementById('ciLatitude').value = lat
+
+    if (mapMarker) mapMarker.setPosition([lng, lat])
+    if (mapInstance) mapInstance.setCenter([lng, lat])
+
+    const resultsDiv = document.getElementById('mapSearchResults')
+    if (resultsDiv) resultsDiv.innerHTML = ''
+
+    Admin.showToast('已选择: ' + name, 'success')
+  }
+
+  // 地图右下角定位按钮 — 浏览器高精度GPS定位
+  window.locateMe = function() {
+    var btn = document.getElementById('mapLocateBtn')
+    if (!navigator.geolocation) { Admin.showToast('浏览器不支持定位', 'error'); return }
+    var overlay = document.getElementById('mapLoadingOverlay')
+    // 显示定位中遮罩，防止重复点击
+    if (btn) { btn.style.opacity = '0.5'; btn.disabled = true }
+    if (overlay) { overlay.style.display = 'flex' }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      var lng = pos.coords.longitude
+      var lat = pos.coords.latitude
+      var inst = window.__AMAP_INSTANCE__
+      if (!inst) {
+        // 地图实例未初始化，先初始化再定位
+        showMapPanel()
+        initMap(lng, lat)
+        inst = window.__AMAP_INSTANCE__
+        reverseGeocode(lng, lat)
+      } else {
+        inst.setZoomAndCenter(16, [lng, lat])
+        if (mapMarker) {
+          mapMarker.setPosition([lng, lat])
+        } else {
+          mapMarker = new AMap.Marker({ position: [lng, lat], draggable: true })
+          inst.add(mapMarker)
+        }
+        reverseGeocode(lng, lat)
+      }
+      if (btn) { btn.style.opacity = '1'; btn.disabled = false }
+      if (overlay) { overlay.style.display = 'none' }
+      Admin.showToast('已定位到当前位置', 'success')
+    }, function(err) {
+      if (btn) { btn.style.opacity = '1'; btn.disabled = false }
+      if (overlay) { overlay.style.display = 'none' }
+      console.warn('浏览器定位失败:', err)
+      Admin.showToast('无法获取位置，请检查浏览器权限', 'error')
+    }, { enableHighAccuracy: true, timeout: 15000 })
+  }
+
+  window.saveItem = async function(e) {
+    e.preventDefault()
+
+    const nameVal = document.getElementById('ciName').value.trim()
+    if (!nameVal) { Admin.showToast('请输入企业名称', 'error'); return }
+
+    const address = document.getElementById('mapSearchInput').value.trim()
+    let lng = parseFloat(document.getElementById('ciLongitude').value) || null
+    let lat = parseFloat(document.getElementById('ciLatitude').value) || null
+
+    // 有地址但无坐标 → 保存前自动地理编码
+    if (address && (!lng || !lat)) {
+      const coords = await geocodeAddressAsync(address)
+      if (coords) {
+        lng = coords.lng
+        lat = coords.lat
+        document.getElementById('ciLongitude').value = lng
+        document.getElementById('ciLatitude').value = lat
+        document.getElementById('mapSearchInput').value = coords.address
+      }
+    }
+
+    const data = {
+      id: item.id,
+      name: nameVal,
+      legalPerson: document.getElementById('ciLegalPerson').value.trim(),
+      phone: document.getElementById('ciPhone').value.trim(),
+      address: document.getElementById('mapSearchInput').value.trim(),
+      longitude: lng,
+      latitude: lat,
+      website: document.getElementById('ciWebsite').value.trim(),
+      description: document.getElementById('ciDescription').value.trim(),
+      status: item.status !== undefined ? item.status : true
+    }
+
+    await DataStore.saveCompanyInfo(data)
+    Admin.showToast(isEdit ? '企业信息已更新' : '企业已创建', 'success')
+
+    setTimeout(function() {
+      window.location.href = 'company-info.html'
+    }, 800)
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+</body>
+</html>

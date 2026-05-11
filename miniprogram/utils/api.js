@@ -24,8 +24,8 @@ const request = (url, options = {}) => {
   })
 }
 
-// 获取企业信息
-const getCompanyInfo = () => request('/company/info')
+// 获取企业信息列表（含经纬度坐标）
+const getCompanyInfos = () => request('/company-infos')
 
 // 获取名片列表
 const getCards = (params) => request('/cards', { data: params })
@@ -101,7 +101,7 @@ const staticUrl = (path) => {
 module.exports = {
   request,
   staticUrl,
-  getCompanyInfo,
+  getCompanyInfos,
   getCards,
   getVideos,
   getBusiness,

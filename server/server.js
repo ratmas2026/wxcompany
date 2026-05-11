@@ -171,12 +171,61 @@ function writeData(data) {
 }
 
 // API health
-app.get('/api', (req, res) => res.json({ ok: true, endpoints: ['company/info','company/profile','company/profile/:id','cards','messages','positions','videos','business','business/:id','honors','honors/:id','projects','projects/:id','sites','sites/:id','splash','user/phone/:phone','inquiry','reset','upload/video','upload/cover','upload/avatar','upload/splash','upload/profile','upload/business','upload/honors','upload/projects','upload/sites','upload/editor','business-modules','business-modules/:id','business-modules/:mid/cards','business-modules/:mid/cards/:cid','upload/business-module'] }))
+app.get('/api', (req, res) => res.json({ ok: true, endpoints: ['company/profile','company/profile/:id','cards','messages','positions','videos','business','business/:id','honors','honors/:id','projects','projects/:id','sites','sites/:id','splash','user/phone/:phone','inquiry','reset','upload/video','upload/cover','upload/avatar','upload/splash','upload/profile','upload/business','upload/honors','upload/projects','upload/sites','upload/editor','business-modules','business-modules/:id','business-modules/:mid/cards','business-modules/:mid/cards/:cid','upload/business-module'] }))
 
-// --- Company Info ---
-app.get('/api/company/info', (req, res) => {
+// --- Company Infos (new multi-row table) ---
+app.get('/api/company-infos', (req, res) => {
   const data = readData()
-  res.json(data.companyInfo || {})
+  if (!data.companyInfos) data.companyInfos = []
+  res.json(data.companyInfos.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)))
+})
+
+app.get('/api/company-infos/:id', (req, res) => {
+  const data = readData()
+  const item = (data.companyInfos || []).find(ci => ci.id === parseInt(req.params.id))
+  if (!item) return res.status(404).json({ error: 'Not found' })
+  res.json(item)
+})
+
+app.post('/api/company-infos', (req, res) => {
+  const data = readData()
+  if (!data.companyInfos) data.companyInfos = []
+  if (!data.nextId.companyInfos) data.nextId.companyInfos = 1
+  const item = {
+    ...req.body,
+    id: data.nextId.companyInfos++,
+    name: req.body.name || '',
+    legalPerson: req.body.legalPerson || '',
+    phone: req.body.phone || '',
+    address: req.body.address || '',
+    longitude: req.body.longitude || null,
+    latitude: req.body.latitude || null,
+    website: req.body.website || '',
+    description: req.body.description || '',
+    sortOrder: req.body.sortOrder || 0,
+    status: req.body.status !== undefined ? req.body.status : true,
+    createdAt: new Date().toISOString().split('T')[0],
+    updatedAt: new Date().toISOString()
+  }
+  data.companyInfos.push(item)
+  writeData(data)
+  res.json(item)
+})
+
+app.put('/api/company-infos/:id', (req, res) => {
+  const data = readData()
+  const idx = (data.companyInfos || []).findIndex(ci => ci.id === parseInt(req.params.id))
+  if (idx < 0) return res.status(404).json({ error: 'Not found' })
+  data.companyInfos[idx] = { ...data.companyInfos[idx], ...req.body, id: data.companyInfos[idx].id, updatedAt: new Date().toISOString() }
+  writeData(data)
+  res.json(data.companyInfos[idx])
+})
+
+app.delete('/api/company-infos/:id', (req, res) => {
+  const data = readData()
+  data.companyInfos = (data.companyInfos || []).filter(ci => ci.id !== parseInt(req.params.id))
+  writeData(data)
+  res.json({ ok: true })
 })
 
 app.get('/api/company/profile', (req, res) => {
@@ -1204,10 +1253,10 @@ app.post('/api/reset', (req, res) => {
       var seed = JSON.parse(fs.readFileSync(seedFile, 'utf-8'))
       writeData(seed)
     } else {
-      writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, business: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, business: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1 } })
+      writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], business: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, business: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1 } })
     }
   } catch (e) {
-    writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, business: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, business: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1 } })
+    writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], business: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, business: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1 } })
   }
   res.json({ ok: true })
 })
