@@ -3,6 +3,11 @@
   padding-bottom: 160rpx;
 }
 
+.scroll-bottom-spacer {
+  height: 160rpx;
+  flex-shrink: 0;
+}
+
 /* Hero */
 .hero-section {
   position: relative;

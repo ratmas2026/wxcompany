@@ -600,4 +600,5 @@
 
   </block>
 
+  <view class="scroll-bottom-spacer"></view>
 </scroll-view>
