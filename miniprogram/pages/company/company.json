@@ -1,5 +1,12 @@
 {
   "navigationStyle": "custom",
+  "renderer": "skyline",
+  "componentFramework": "glass-easel",
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true
+    }
+  },
   "usingComponents": {
     "top-bar": "/components/top-bar/index"
   }

@@ -9,7 +9,7 @@ Page({
     sections: [],
     heroCard: null,
     videos: [],
-    videoPlayingId: null,
+    playingCardId: null,
     honors: [],
     awards: [],
     projects: [],
@@ -115,7 +115,7 @@ Page({
       // Extract hero card (first hero section's first card)
       const heroSection = sections.find(sec => sec.displayLayout === 'hero')
       const heroCard = heroSection
-        ? allProfiles.find(p => p.id === heroSection.selectedIds[0]) || null
+        ? allProfiles.find(p => p.id === (heroSection.selectedIds || [])[0]) || null
         : null
       if (heroCard) {
         const is43 = heroCard.cover && heroCard.cover.aspectRatio === '4:3'
@@ -273,7 +273,7 @@ Page({
 
       const heroSection = sections.find(sec => sec.displayLayout === 'hero')
       const heroCard = heroSection
-        ? allProfiles.find(p => p.id === heroSection.selectedIds[0]) || null
+        ? allProfiles.find(p => p.id === (heroSection.selectedIds || [])[0]) || null
         : null
       if (heroCard) {
         const is43 = heroCard.cover && heroCard.cover.aspectRatio === '4:3'
@@ -291,10 +291,38 @@ Page({
               card._height = is43 ? 250 : 187
             } else if (parsed.layout === 'horizontal-scroll') {
               card._height = is43 ? 450 : 338
+            } else if (parsed.layout === 'tab') {
+              const perPage = sec.tabPerPage || 1
+              card._height = perPage === 1 ? (is43 ? 515 : 386) : (is43 ? 250 : 187)
             } else {
               card._height = is43 ? 515 : 386
             }
           })
+          if (parsed.layout === 'tab') {
+            const perPage = sec.tabPerPage || 1
+            const tabs = []
+            for (let i = 0; i < Math.ceil(cards.length / perPage); i++) {
+              const pageCards = cards.slice(i * perPage, (i + 1) * perPage)
+              let title = ''
+              if (sec.tabTitleSource === 'custom' && sec.tabLabels && sec.tabLabels[i]) {
+                title = sec.tabLabels[i]
+              } else {
+                title = pageCards[0] ? (pageCards[0].title || '') : ('标签' + (i + 1))
+              }
+              tabs.push({ title, cards: pageCards })
+            }
+            return {
+              id: sec.id,
+              displayLayout: 'tab',
+              tabLayout: sec.tabLayout || 'scroll',
+              tabPerPage: perPage,
+              activeTab: 0,
+              tabs,
+              currentTabCards: tabs.length > 0 ? tabs[0].cards : [],
+              gridCols: parsed.gridCols,
+              gridClass: parsed.gridClass
+            }
+          }
           return { id: sec.id, displayLayout: parsed.layout, cards, gridCols: parsed.gridCols, gridClass: parsed.gridClass }
         })
 
@@ -364,7 +392,7 @@ Page({
 
       const heroSections = configSections.filter(sec => sec.displayLayout === 'hero')
       const businessHeroCards = heroSections.map(sec => {
-        const mod = allModules.find(m => m.id === sec.selectedIds[0])
+        const mod = allModules.find(m => m.id === (sec.selectedIds || [])[0])
         if (mod) {
           const is43 = mod.coverAspectRatio === '4:3'
           mod._height = is43 ? 515 : 386
@@ -449,22 +477,24 @@ Page({
   onCoverVideoTap(e) {
     const profile = e.currentTarget.dataset.profile
     if (!profile || !profile.cover || !profile.cover.video) return
-    // Pause old video before switching
-    if (this.data.videoPlayingId) {
-      const oldCtx = wx.createVideoContext('vid-' + this.data.videoPlayingId)
+    if (this.data.playingCardId) {
+      const oldCtx = wx.createVideoContext('vid-' + this.data.playingCardId)
       if (oldCtx) oldCtx.pause()
     }
-    this.setData({ videoPlayingId: profile.id })
-    const ctx = wx.createVideoContext('vid-' + profile.id)
-    if (ctx) ctx.play()
+    this.setData({ playingCardId: profile.id }, () => {
+      wx.nextTick(() => {
+        const ctx = wx.createVideoContext('vid-' + profile.id)
+        if (ctx) ctx.play()
+      })
+    })
   },
 
   closeInlineVideo() {
-    if (this.data.videoPlayingId) {
-      const ctx = wx.createVideoContext('vid-' + this.data.videoPlayingId)
+    if (this.data.playingCardId) {
+      const ctx = wx.createVideoContext('vid-' + this.data.playingCardId)
       if (ctx) ctx.pause()
     }
-    this.setData({ videoPlayingId: null })
+    this.setData({ playingCardId: null })
   },
 
   onShareAppMessage() {
