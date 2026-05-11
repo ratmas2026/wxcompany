@@ -23,8 +23,6 @@ const DataStore = {
       const honors = await res7.json()
       const res9 = await fetch(API_BASE + '/projects')
       const projects = await res9.json()
-      const res10 = await fetch(API_BASE + '/sites')
-      const sites = await res10.json()
       const res11 = await fetch(API_BASE + '/company/profile-config')
       const companyProfileConfig = await res11.json()
       const res12 = await fetch(API_BASE + '/business-modules')
@@ -38,10 +36,12 @@ const DataStore = {
 
       const res16 = await fetch(API_BASE + '/business-modules/page-config')
       const businessModulePageConfig = await res16.json()
-      const res17 = await fetch(API_BASE + '/company-infos')
-      const companyInfos = await res17.json()
+      const res17 = await fetch(API_BASE + '/card-page-config')
+      const cardPageConfig = await res17.json()
+      const res18 = await fetch(API_BASE + '/company-infos')
+      const companyInfos = await res18.json()
 
-      localStorage.setItem(this._storageKey, JSON.stringify({ cards, messages, positions, videos, splashImages, companyProfiles, companyProfileConfig, companyPerformances, companyPerformanceConfig, casePageConfig, honors, projects, sites, businessModules, businessModulePageConfig, companyInfos }))
+      localStorage.setItem(this._storageKey, JSON.stringify({ cards, messages, positions, videos, splashImages, companyProfiles, companyProfileConfig, companyPerformances, companyPerformanceConfig, casePageConfig, cardPageConfig, honors, projects, businessModules, businessModulePageConfig, companyInfos }))
       this._ready = true
       return true
     } catch (e) {
@@ -59,9 +59,9 @@ const DataStore = {
           companyPerformances: [],
           companyPerformanceConfig: { sections: [] },
           casePageConfig: { sections: [] },
+          cardPageConfig: { sections: [] },
           honors: [],
           projects: [],
-          sites: [],
           businessModules: [],
           businessModulePageConfig: { sections: [] },
           companyInfos: []
@@ -75,7 +75,7 @@ const DataStore = {
 
   _getCache() {
     const raw = localStorage.getItem(this._storageKey)
-    return raw ? JSON.parse(raw) : { cards: [], messages: [], positions: [], videos: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, honors: [], projects: [], sites: [], businessModules: [], businessModulePageConfig: { sections: [] }, companyInfos: [] }
+    return raw ? JSON.parse(raw) : { cards: [], messages: [], positions: [], videos: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, cardPageConfig: { sections: [] }, honors: [], projects: [], businessModules: [], businessModulePageConfig: { sections: [] }, companyInfos: [] }
   },
 
   _setCache(data) {
@@ -416,6 +416,16 @@ const DataStore = {
     await this._sync('casePageConfig', 'PUT', '/company/case-page-config', config)
   },
 
+  // Card Page Config
+  getCardPageConfig() { return this._getCache().cardPageConfig || { sections: [] } },
+
+  async updateCardPageConfig(config) {
+    const cache = this._getCache()
+    cache.cardPageConfig = config
+    this._setCache(cache)
+    await this._sync('cardPageConfig', 'PUT', '/card-page-config', config)
+  },
+
   // Business Modules
   getBusinessModules() { return this._getCache().businessModules || [] },
 
@@ -600,46 +610,6 @@ const DataStore = {
     const fd = new FormData()
     fd.append('projects', file)
     const res = await fetch(API_BASE + '/upload/projects', { method: 'POST', body: fd })
-    const data = await res.json()
-    return data.url
-  },
-
-  // Sites
-  getSitesList() { return this._getCache().sites || [] },
-
-  getSite(id) { return (this._getCache().sites || []).find(s => s.id === id) },
-
-  async saveSite(item) {
-    const cache = this._getCache()
-    if (!cache.sites) cache.sites = []
-    if (item.id) {
-      const idx = cache.sites.findIndex(s => s.id === item.id)
-      if (idx >= 0) { cache.sites[idx] = item; this._setCache(cache); await this._sync('sites', 'PUT', '/sites/' + item.id, item) }
-    } else {
-      try {
-        const res = await fetch(API_BASE + '/sites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
-        const saved = await res.json()
-        cache.sites.push(saved)
-        this._setCache(cache)
-      } catch (e) {
-        item.id = Date.now()
-        cache.sites.push(item)
-        this._setCache(cache)
-      }
-    }
-  },
-
-  async deleteSite(id) {
-    const cache = this._getCache()
-    cache.sites = (cache.sites || []).filter(s => s.id !== id)
-    this._setCache(cache)
-    await this._sync('sites', 'DELETE', '/sites/' + id)
-  },
-
-  async uploadSiteImage(file) {
-    const fd = new FormData()
-    fd.append('sites', file)
-    const res = await fetch(API_BASE + '/upload/sites', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },

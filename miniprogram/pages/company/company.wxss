@@ -677,61 +677,6 @@
   font-weight: 600;
 }
 
-/* Sites Gallery */
-.sites-gallery {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20rpx;
-}
-.site-card {
-  background: #fff;
-  border-radius: 16rpx;
-  overflow: hidden;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
-}
-.site-image {
-  width: 100%;
-  height: 200rpx;
-  background: #e8edf5;
-}
-.site-body {
-  padding: 20rpx;
-}
-.site-name {
-  display: block;
-  font-size: 26rpx;
-  font-weight: 700;
-  color: #1a202c;
-  margin-bottom: 8rpx;
-}
-.site-stage {
-  margin-bottom: 8rpx;
-}
-.site-stage-label {
-  display: inline-block;
-  padding: 4rpx 16rpx;
-  background: #e8f0fe;
-  color: #3a5f94;
-  font-size: 20rpx;
-  font-weight: 600;
-  border-radius: 8rpx;
-}
-.site-location {
-  display: block;
-  font-size: 20rpx;
-  color: #718096;
-  margin-bottom: 4rpx;
-}
-.site-desc {
-  display: block;
-  font-size: 22rpx;
-  color: #586064;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 
 /* Inline Video Overlay */
 .inline-video-overlay {

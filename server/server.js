@@ -15,7 +15,6 @@ var SPLASH_DIR = path.join(UPLOADS_DIR, 'splash')
 var PROFILE_DIR = path.join(UPLOADS_DIR, 'profile')
 var HONORS_DIR = path.join(UPLOADS_DIR, 'honors')
 var PROJECTS_DIR = path.join(UPLOADS_DIR, 'projects')
-var SITES_DIR = path.join(UPLOADS_DIR, 'sites')
 var EDITOR_DIR = path.join(UPLOADS_DIR, 'editor')
 var BUSINESS_MODULES_DIR = path.join(UPLOADS_DIR, 'business-modules')
 var PERFORMANCE_DIR = path.join(UPLOADS_DIR, 'performance')
@@ -28,7 +27,6 @@ if (!fs.existsSync(SPLASH_DIR)) fs.mkdirSync(SPLASH_DIR, { recursive: true })
 if (!fs.existsSync(PROFILE_DIR)) fs.mkdirSync(PROFILE_DIR, { recursive: true })
 if (!fs.existsSync(HONORS_DIR)) fs.mkdirSync(HONORS_DIR, { recursive: true })
 if (!fs.existsSync(PROJECTS_DIR)) fs.mkdirSync(PROJECTS_DIR, { recursive: true })
-if (!fs.existsSync(SITES_DIR)) fs.mkdirSync(SITES_DIR, { recursive: true })
 if (!fs.existsSync(EDITOR_DIR)) fs.mkdirSync(EDITOR_DIR, { recursive: true })
 if (!fs.existsSync(BUSINESS_MODULES_DIR)) fs.mkdirSync(BUSINESS_MODULES_DIR, { recursive: true })
 if (!fs.existsSync(PERFORMANCE_DIR)) fs.mkdirSync(PERFORMANCE_DIR, { recursive: true })
@@ -96,15 +94,6 @@ var projectsStorage = multer.diskStorage({
 })
 var uploadProjects = multer({ storage: projectsStorage, limits: { fileSize: 5 * 1048576 } })
 
-var sitesStorage = multer.diskStorage({
-  destination: function(req, file, cb) { cb(null, SITES_DIR) },
-  filename: function(req, file, cb) {
-    var ext = path.extname(file.originalname) || '.jpg'
-    cb(null, 'site_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
-  }
-})
-var uploadSites = multer({ storage: sitesStorage, limits: { fileSize: 5 * 1048576 } })
-
 var editorStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, EDITOR_DIR) },
   filename: function(req, file, cb) {
@@ -160,7 +149,7 @@ function writeData(data) {
 }
 
 // API health
-app.get('/api', (req, res) => res.json({ ok: true, endpoints: ['company/profile','company/profile/:id','cards','messages','positions','videos','honors','honors/:id','projects','projects/:id','sites','sites/:id','splash','user/phone/:phone','inquiry','reset','upload/video','upload/cover','upload/avatar','upload/splash','upload/profile','upload/honors','upload/projects','upload/sites','upload/editor','business-modules','business-modules/:id','business-modules/:mid/cards','business-modules/:mid/cards/:cid','upload/business-module'] }))
+app.get('/api', (req, res) => res.json({ ok: true, endpoints: ['company/profile','company/profile/:id','cards','messages','positions','videos','honors','honors/:id','projects','projects/:id','splash','user/phone/:phone','inquiry','reset','upload/video','upload/cover','upload/avatar','upload/splash','upload/profile','upload/honors','upload/projects','upload/editor','business-modules','business-modules/:id','business-modules/:mid/cards','business-modules/:mid/cards/:cid','upload/business-module'] }))
 
 // --- Company Infos (new multi-row table) ---
 app.get('/api/company-infos', (req, res) => {
@@ -611,6 +600,38 @@ app.put('/api/company/case-page-config', (req, res) => {
   res.json(data.casePageConfig)
 })
 
+// --- Card Page Config ---
+app.get('/api/card-page-config', (req, res) => {
+  const data = readData()
+  if (!data.cardPageConfig) data.cardPageConfig = { sections: [] }
+  const config = data.cardPageConfig
+  let sections = config.sections || []
+  let migrated = false
+  sections.forEach((sec, idx) => {
+    if (sec.sortOrder === undefined) {
+      sec.sortOrder = (idx + 1) * 10
+      migrated = true
+    }
+    if (sec.enabled === undefined) {
+      sec.enabled = true
+      migrated = true
+    }
+  })
+  sections.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+  if (migrated) {
+    config.sections = sections
+    writeData(data)
+  }
+  res.json(config)
+})
+
+app.put('/api/card-page-config', (req, res) => {
+  const data = readData()
+  data.cardPageConfig = { ...(data.cardPageConfig || {}), ...req.body }
+  writeData(data)
+  res.json(data.cardPageConfig)
+})
+
 // --- Business Modules API ---
 app.get('/api/business-modules', (req, res) => {
   const data = readData()
@@ -905,60 +926,6 @@ app.post('/api/upload/projects', uploadProjects.single('projects'), (req, res) =
   res.json({ url: '/uploads/projects/' + req.file.filename })
 })
 
-// --- Sites API ---
-app.get('/api/sites', (req, res) => {
-  const data = readData()
-  res.json(data.sites || [])
-})
-
-app.get('/api/sites/:id', (req, res) => {
-  const data = readData()
-  const item = (data.sites || []).find(s => s.id === parseInt(req.params.id))
-  if (!item) return res.status(404).json({ error: 'Not found' })
-  res.json(item)
-})
-
-app.post('/api/sites', (req, res) => {
-  const data = readData()
-  if (!data.sites) data.sites = []
-  if (!data.nextId.sites) data.nextId.sites = 1
-  const item = {
-    ...req.body,
-    id: data.nextId.sites++,
-    projectName: req.body.projectName || '',
-    stage: req.body.stage || '',
-    stageValue: req.body.stageValue || '',
-    location: req.body.location || '',
-    desc: req.body.desc || '',
-    image: req.body.image || '',
-    createdAt: req.body.createdAt || new Date().toISOString().split('T')[0]
-  }
-  data.sites.push(item)
-  writeData(data)
-  res.json(item)
-})
-
-app.put('/api/sites/:id', (req, res) => {
-  const data = readData()
-  const idx = (data.sites || []).findIndex(s => s.id === parseInt(req.params.id))
-  if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.sites[idx] = { ...data.sites[idx], ...req.body, id: data.sites[idx].id }
-  writeData(data)
-  res.json(data.sites[idx])
-})
-
-app.delete('/api/sites/:id', (req, res) => {
-  const data = readData()
-  data.sites = (data.sites || []).filter(s => s.id !== parseInt(req.params.id))
-  writeData(data)
-  res.json({ ok: true })
-})
-
-app.post('/api/upload/sites', uploadSites.single('sites'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file' })
-  res.json({ url: '/uploads/sites/' + req.file.filename })
-})
-
 // --- File Upload ---
 app.post('/api/upload/video', uploadVideo.single('video'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No video file' })
@@ -1190,10 +1157,10 @@ app.post('/api/reset', (req, res) => {
       var seed = JSON.parse(fs.readFileSync(seedFile, 'utf-8'))
       writeData(seed)
     } else {
-      writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1 } })
+      writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], honors: [], projects: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1, projects: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1 } })
     }
   } catch (e) {
-    writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], honors: [], projects: [], sites: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1 } })
+    writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], honors: [], projects: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1, projects: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1 } })
   }
   res.json({ ok: true })
 })

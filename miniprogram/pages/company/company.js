@@ -18,20 +18,17 @@ Page({
     businessModules: [],
     businessSections: [],
     businessHeroCards: [],
-    sitesList: [],
 
     showProfiles: false,
     showBusiness: false,
     showPerformance: false,
     showHonors: false,
     showProjects: false,
-    showSites: false,
     profilesModuleName: '',
     businessModuleName: '',
     performanceModuleName: '',
     honorsModuleName: '',
-    projectsModuleName: '',
-    sitesModuleName: ''
+    projectsModuleName: ''
   },
 
   onLoad() {
@@ -350,7 +347,6 @@ Page({
       if (types.has('honors')) tasks.push(this.fetchHonors())
       if (types.has('projects')) tasks.push(this.fetchProjects())
       if (types.has('business')) tasks.push(this.fetchBusinessModules())
-      if (types.has('sites')) tasks.push(this.fetchSitesData())
 
       this.setData({
         hasProfiles: types.has('profiles'),
@@ -359,13 +355,11 @@ Page({
         showPerformance: types.has('performance'),
         showHonors: types.has('honors'),
         showProjects: types.has('projects'),
-        showSites: types.has('sites'),
         profilesModuleName: moduleNames.profiles || '企业动态',
         businessModuleName: moduleNames.business || '核心业务',
         performanceModuleName: moduleNames.performance || '企业业绩',
         honorsModuleName: moduleNames.honors || '企业荣誉',
-        projectsModuleName: moduleNames.projects || '企业项目',
-        sitesModuleName: moduleNames.sites || '施工现场'
+        projectsModuleName: moduleNames.projects || '企业项目'
       })
 
       Promise.all(tasks).then(() => {
@@ -425,16 +419,6 @@ Page({
         }
       })
       this.setData({ businessModules: allModules, businessSections: sections, businessHeroCards: businessHeroCards })
-    }).catch(() => {})
-  },
-
-  fetchSitesData() {
-    return api.getSites().then(sites => {
-      const items = (sites || []).map(s => ({
-        ...s,
-        image: api.staticUrl(s.image)
-      }))
-      this.setData({ sitesList: items })
     }).catch(() => {})
   },
 

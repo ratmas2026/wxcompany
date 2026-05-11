@@ -37,8 +37,9 @@ const Admin = {
       { page: 'business-module', icon: '&#x1F4E6;', label: '核心业务' },
       { page: 'honors', icon: '&#x1F3C6;', label: '企业荣誉' },
       { page: 'projects', icon: '&#x1F3D7;', label: '企业项目' },
-      { page: 'sites', icon: '&#x1F6A7;', label: '施工现场' },
+
       { page: 'case-custom', icon: '&#x1F39B;', label: '案例自定义' },
+      { page: 'card-custom', icon: '&#x1F4C7;', label: '名片自定义' },
       { page: 'message', icon: '&#x1F4E9;', label: '留言管理' }
     ]
 

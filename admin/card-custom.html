@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>案例自定义 - Admin Panel</title>
+<title>名片自定义 - Admin Panel</title>
 <link rel="stylesheet" href="css/common.css"/>
 <script src="js/data.js"></script>
 <script src="js/common.js"></script>
@@ -13,7 +13,7 @@
 
 <script>
 (async function() {
-  Admin.init('case-custom')
+  Admin.init('card-custom')
   await DataStore.init()
 
   let draggedIdx = null
@@ -26,8 +26,8 @@
   ]
 
   function getSections() {
-    const config = DataStore.getCasePageConfig()
-    let sections = (config.sections || []).filter(function(sec) { return sec.type !== 'sites' })
+    const config = DataStore.getCardPageConfig()
+    let sections = config.sections || []
     if (!sections.length) {
       sections = JSON.parse(JSON.stringify(DEFAULT_SECTIONS))
     }
@@ -54,7 +54,7 @@
       `
     }).join('')
 
-    // Bottom drag-sort table (100% copied from company-profile.html section rows)
+    // Bottom drag-sort table
     const circledDigits = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩']
 
     const sectionRows = sections.map((sec, idx) => {
@@ -79,7 +79,7 @@
 
     const html = `
       <div class="page-header">
-        <h1>案例自定义 <span style="font-size:13px;color:#a0aec0">配置小程序"案例"Tab页的模块显隐与顺序</span></h1>
+        <h1>名片自定义 <span style="font-size:13px;color:#a0aec0">配置小程序"名片"Tab页的模块显隐与顺序</span></h1>
       </div>
 
       <div class="card" style="padding:20px 24px">
@@ -112,7 +112,7 @@
     const sec = sections.find(s => s.id === id)
     if (!sec) return
     sec.enabled = sec.enabled === false ? true : false
-    await DataStore.updateCasePageConfig({ sections })
+    await DataStore.updateCardPageConfig({ sections })
     render()
   }
 
@@ -121,11 +121,11 @@
     const sec = sections[idx]
     if (!sec) return
     sec.enabled = sec.enabled === false ? true : false
-    await DataStore.updateCasePageConfig({ sections })
+    await DataStore.updateCardPageConfig({ sections })
     render()
   }
 
-  // Drag-and-drop (100% copied from company-profile.html)
+  // Drag-and-drop
   window.onSectionDragStart = function(event, idx) {
     draggedIdx = idx
     event.target.style.opacity = '0.4'
@@ -160,7 +160,7 @@
       order += 10
     })
 
-    await DataStore.updateCasePageConfig({ sections })
+    await DataStore.updateCardPageConfig({ sections })
     draggedIdx = null
     render()
   }

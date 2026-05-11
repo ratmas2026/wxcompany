@@ -572,31 +572,6 @@
     </block>
   </view>
 
-  <!-- 施工现场 -->
-  <view wx:if="{{showSites}}" class="module-block">
-    <view class="section-header">
-      <text class="section-headline">{{sitesModuleName}}</text>
-    </view>
-    <view wx:if="{{sitesList.length > 0}}" class="sites-gallery">
-      <view wx:for="{{sitesList}}" wx:key="id" class="site-card">
-        <image wx:if="{{item.image}}" class="site-image" src="{{item.image}}" mode="aspectFill" />
-        <view class="site-body">
-          <text class="site-name">{{item.projectName}}</text>
-          <view class="site-stage">
-            <text class="site-stage-label">{{item.stage}}</text>
-          </view>
-          <text class="site-location">{{item.location}}</text>
-          <text class="site-desc">{{item.desc}}</text>
-        </view>
-      </view>
-    </view>
-    <block wx:else>
-      <view class="intro-card card">
-        <text class="section-title">施工现场</text>
-        <text class="section-desc">暂无施工现场数据</text>
-      </view>
-    </block>
-  </view>
 
   </block>
 

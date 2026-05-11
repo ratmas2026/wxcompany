@@ -1,20 +1,41 @@
 const api = require('../../utils/api')
+const { FONT_SIZE_MAP, parseGridLayout } = require('../../utils/layout')
 
 Page({
   data: {
+    isDataReady: false,
+    hasProfiles: false,
     cardData: {},
     companyInfo: {},
     companyInfos: [],
     matchedCI: null,
+    sections: [],
+    heroCard: null,
+    playingCardId: null,
     honors: [],
+    awards: [],
     projects: [],
-    missionVideo: null,
-    currentVideo: null
+    performanceSections: [],
+    performanceHeroCard: null,
+    businessModules: [],
+    businessSections: [],
+    businessHeroCards: [],
+
+    showProfiles: true,
+    showBusiness: true,
+    showPerformance: true,
+    showHonors: true,
+    showProjects: true,
+    profilesModuleName: '',
+    businessModuleName: '',
+    performanceModuleName: '',
+    honorsModuleName: '',
+    projectsModuleName: ''
   },
 
   onLoad() {
+    this.fetchCardConfig()
     this.fetchData()
-    this.fetchHonors()
   },
 
   onShow() {
@@ -23,27 +44,335 @@ Page({
     }
   },
 
+  fetchCardConfig() {
+    api.getCardPageConfig().then(config => {
+      const sections = (config.sections || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      const enabled = sections.filter(sec => sec.enabled !== false)
+      const types = new Set(enabled.map(sec => sec.type))
+      const moduleNames = {}
+      enabled.forEach(sec => { moduleNames[sec.type] = sec.name })
+
+      const tasks = []
+      if (types.has('profiles')) tasks.push(this.fetchAll())
+      if (types.has('performance')) tasks.push(this.fetchPerformance())
+      if (types.has('honors')) tasks.push(this.fetchHonors())
+      if (types.has('projects')) tasks.push(this.fetchProjects())
+      if (types.has('business')) tasks.push(this.fetchBusinessModules())
+
+      this.setData({
+        hasProfiles: types.has('profiles'),
+        showProfiles: types.has('profiles'),
+        showBusiness: types.has('business'),
+        showPerformance: types.has('performance'),
+        showHonors: types.has('honors'),
+        showProjects: types.has('projects'),
+        profilesModuleName: moduleNames.profiles || '企业动态',
+        businessModuleName: moduleNames.business || '核心业务',
+        performanceModuleName: moduleNames.performance || '企业业绩',
+        honorsModuleName: moduleNames.honors || '企业荣誉',
+        projectsModuleName: moduleNames.projects || '企业项目'
+      })
+
+      Promise.all(tasks).then(() => {
+        this.setData({ isDataReady: true })
+      })
+    }).catch(() => {
+      this.setData({ isDataReady: true })
+    })
+  },
+
+  fetchAll() {
+    return Promise.all([
+      api.getCompanyProfileConfig().catch(() => ({ sections: [] })),
+      api.getCompanyProfile().catch(() => []),
+      api.getCompanyInfos().catch(() => [])
+    ]).then(([config, profiles, companyInfos]) => {
+      const activeCI = (companyInfos || []).find(ci => ci.status !== false)
+      const companyInfo = activeCI ? {
+        name: activeCI.name || '',
+        description: activeCI.description || '',
+        headquarters: '',
+        phone: activeCI.phone || '',
+        address: activeCI.address || '',
+        email: '',
+        stats: {},
+        leaderQuote: '', leaderName: '', leaderTitle: '', leaderAvatar: ''
+      } : {}
+      const allProfiles = (profiles || []).sort((a, b) => (a.sortOrder || a.id) - (b.sortOrder || b.id)).map(p => {
+        if (p.cover) {
+          p.cover.backgroundImage = api.staticUrl(p.cover.backgroundImage)
+          p.cover.video = api.staticUrl(p.cover.video)
+        }
+        if (p.detail) {
+          p.detail.images = (p.detail.images || []).map(img => api.staticUrl(img))
+          p.detail.video = api.staticUrl(p.detail.video)
+        }
+        if (p.cover && p.cover.zones) {
+          Object.keys(p.cover.zones).forEach(zoneKey => {
+            p.cover.zones[zoneKey].textBoxes = p.cover.zones[zoneKey].textBoxes.map(tb => {
+              const result = {
+                ...tb,
+                fontSizeRpx: FONT_SIZE_MAP[tb.fontSize] || '32rpx'
+              }
+              if (result.role && result.role.avatar) {
+                result.role = { ...result.role, avatar: api.staticUrl(result.role.avatar) }
+              }
+              return result
+            })
+          })
+        }
+        if (p.cover && p.cover.body) {
+          p.cover.body = p.cover.body.replace(/<img[^>]+src="([^"]+)"/gi, function(fullMatch, src) {
+            if (src && !/^(https?:|data:|\/\/)/i.test(src)) {
+              return fullMatch.replace(src, api.staticUrl(src))
+            }
+            return fullMatch
+          })
+          p.cover.body = p.cover.body.replace(/style="text-align:\s*center;?"/gi, 'style="text-align:left"')
+        }
+        return p
+      })
+
+      const sections = (config.sections || [])
+        .filter(sec => sec.status !== false)
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+
+      const heroSection = sections.find(sec => sec.displayLayout === 'hero')
+      const heroCard = heroSection
+        ? allProfiles.find(p => p.id === (heroSection.selectedIds || [])[0]) || null
+        : null
+      if (heroCard) {
+        const is43 = heroCard.cover && heroCard.cover.aspectRatio === '4:3'
+        heroCard._height = is43 ? 515 : 386
+      }
+
+      const sectionData = sections
+        .filter(sec => sec.displayLayout !== 'hero')
+        .map(sec => {
+          const parsed = parseGridLayout(sec.displayLayout)
+          const cards = (sec.selectedIds || []).map(id => allProfiles.find(p => p.id === id)).filter(Boolean)
+          cards.forEach(card => {
+            const is43 = card.cover && card.cover.aspectRatio === '4:3'
+            if (parsed.layout === 'grid') {
+              card._height = is43 ? 250 : 187
+            } else if (parsed.layout === 'horizontal-scroll') {
+              card._height = is43 ? 450 : 338
+            } else if (parsed.layout === 'tab') {
+              const perPage = sec.tabPerPage || 1
+              card._height = perPage === 1 ? (is43 ? 515 : 386) : (is43 ? 250 : 187)
+            } else {
+              card._height = is43 ? 515 : 386
+            }
+          })
+          if (parsed.layout === 'tab') {
+            const perPage = sec.tabPerPage || 1
+            const tabs = []
+            for (let i = 0; i < Math.ceil(cards.length / perPage); i++) {
+              const pageCards = cards.slice(i * perPage, (i + 1) * perPage)
+              let title = ''
+              if (sec.tabTitleSource === 'custom' && sec.tabLabels && sec.tabLabels[i]) {
+                title = sec.tabLabels[i]
+              } else {
+                title = pageCards[0] ? (pageCards[0].title || '') : ('标签' + (i + 1))
+              }
+              tabs.push({ title, cards: pageCards })
+            }
+            return {
+              id: sec.id,
+              displayLayout: 'tab',
+              tabLayout: sec.tabLayout || 'scroll',
+              tabPerPage: perPage,
+              activeTab: 0,
+              tabs,
+              currentTabCards: tabs.length > 0 ? tabs[0].cards : [],
+              gridCols: parsed.gridCols,
+              gridClass: parsed.gridClass
+            }
+          }
+          return { id: sec.id, displayLayout: parsed.layout, cards, gridCols: parsed.gridCols, gridClass: parsed.gridClass }
+        })
+
+      this.setData({ sections: sectionData, heroCard, companyInfo: companyInfo || {} })
+    }).catch(() => {})
+  },
+
   fetchHonors() {
-    api.getHonors().then(honors => {
-      this.setData({ honors: (honors || []).map(h => ({ image: api.staticUrl(h.image), name: h.name, desc: h.desc })) })
+    return api.getHonors().then(honors => {
+      const awards = (honors || []).map(h => ({
+        ...h,
+        image: api.staticUrl(h.image)
+      }))
+      this.setData({ awards })
+    }).catch(() => {})
+  },
+
+  fetchProjects() {
+    return api.getProjects().then(projects => {
+      const items = (projects || []).map(p => ({
+        ...p,
+        image: api.staticUrl(p.image),
+        images: (p.images || []).map(img => api.staticUrl(img))
+      }))
+      this.setData({ projects: items })
+    }).catch(() => {})
+  },
+
+  fetchPerformance() {
+    return Promise.all([
+      api.getCompanyPerformanceConfig().catch(() => ({ sections: [] })),
+      api.getCompanyPerformance().catch(() => [])
+    ]).then(([config, profiles]) => {
+      const allProfiles = (profiles || []).sort((a, b) => (a.sortOrder || a.id) - (b.sortOrder || b.id)).map(p => {
+        if (p.cover) {
+          p.cover.backgroundImage = api.staticUrl(p.cover.backgroundImage)
+          p.cover.video = api.staticUrl(p.cover.video)
+        }
+        if (p.detail) {
+          p.detail.images = (p.detail.images || []).map(img => api.staticUrl(img))
+          p.detail.video = api.staticUrl(p.detail.video)
+        }
+        if (p.cover && p.cover.zones) {
+          Object.keys(p.cover.zones).forEach(zoneKey => {
+            p.cover.zones[zoneKey].textBoxes = p.cover.zones[zoneKey].textBoxes.map(tb => {
+              const result = {
+                ...tb,
+                fontSizeRpx: FONT_SIZE_MAP[tb.fontSize] || '32rpx'
+              }
+              if (result.role && result.role.avatar) {
+                result.role = { ...result.role, avatar: api.staticUrl(result.role.avatar) }
+              }
+              return result
+            })
+          })
+        }
+        if (p.cover && p.cover.body) {
+          p.cover.body = p.cover.body.replace(/<img[^>]+src="([^"]+)"/gi, function(fullMatch, src) {
+            if (src && !/^(https?:|data:|\/\/)/i.test(src)) {
+              return fullMatch.replace(src, api.staticUrl(src))
+            }
+            return fullMatch
+          })
+          p.cover.body = p.cover.body.replace(/style="text-align:\s*center;?"/gi, 'style="text-align:left"')
+        }
+        return p
+      })
+
+      const sections = (config.sections || [])
+        .filter(sec => sec.status !== false)
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+
+      const heroSection = sections.find(sec => sec.displayLayout === 'hero')
+      const heroCard = heroSection
+        ? allProfiles.find(p => p.id === (heroSection.selectedIds || [])[0]) || null
+        : null
+      if (heroCard) {
+        const is43 = heroCard.cover && heroCard.cover.aspectRatio === '4:3'
+        heroCard._height = is43 ? 515 : 386
+      }
+
+      const sectionData = sections
+        .filter(sec => sec.displayLayout !== 'hero')
+        .map(sec => {
+          const parsed = parseGridLayout(sec.displayLayout)
+          const cards = (sec.selectedIds || []).map(id => allProfiles.find(p => p.id === id)).filter(Boolean)
+          cards.forEach(card => {
+            const is43 = card.cover && card.cover.aspectRatio === '4:3'
+            if (parsed.layout === 'grid') {
+              card._height = is43 ? 250 : 187
+            } else if (parsed.layout === 'horizontal-scroll') {
+              card._height = is43 ? 450 : 338
+            } else if (parsed.layout === 'tab') {
+              const perPage = sec.tabPerPage || 1
+              card._height = perPage === 1 ? (is43 ? 515 : 386) : (is43 ? 250 : 187)
+            } else {
+              card._height = is43 ? 515 : 386
+            }
+          })
+          if (parsed.layout === 'tab') {
+            const perPage = sec.tabPerPage || 1
+            const tabs = []
+            for (let i = 0; i < Math.ceil(cards.length / perPage); i++) {
+              const pageCards = cards.slice(i * perPage, (i + 1) * perPage)
+              let title = ''
+              if (sec.tabTitleSource === 'custom' && sec.tabLabels && sec.tabLabels[i]) {
+                title = sec.tabLabels[i]
+              } else {
+                title = pageCards[0] ? (pageCards[0].title || '') : ('标签' + (i + 1))
+              }
+              tabs.push({ title, cards: pageCards })
+            }
+            return {
+              id: sec.id,
+              displayLayout: 'tab',
+              tabLayout: sec.tabLayout || 'scroll',
+              tabPerPage: perPage,
+              activeTab: 0,
+              tabs,
+              currentTabCards: tabs.length > 0 ? tabs[0].cards : [],
+              gridCols: parsed.gridCols,
+              gridClass: parsed.gridClass
+            }
+          }
+          return { id: sec.id, displayLayout: parsed.layout, cards, gridCols: parsed.gridCols, gridClass: parsed.gridClass }
+        })
+
+      this.setData({ performanceSections: sectionData, performanceHeroCard: heroCard })
+    }).catch(() => {})
+  },
+
+  fetchBusinessModules() {
+    return Promise.all([
+      api.getBusinessModules().catch(() => []),
+      api.getBusinessModulePageConfig().catch(() => ({ sections: [] }))
+    ]).then(([modules, config]) => {
+      const allModules = (modules || []).filter(m => m.status !== false).map(m => ({
+        ...m,
+        coverImage: api.staticUrl(m.coverImage)
+      }))
+      const configSections = (config.sections || [])
+        .filter(sec => sec.status !== false)
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+
+      const heroSections = configSections.filter(sec => sec.displayLayout === 'hero')
+      const businessHeroCards = heroSections.map(sec => {
+        const mod = allModules.find(m => m.id === (sec.selectedIds || [])[0])
+        if (mod) {
+          const is43 = mod.coverAspectRatio === '4:3'
+          mod._height = is43 ? 515 : 386
+        }
+        return mod
+      }).filter(Boolean)
+
+      const sections = configSections
+        .filter(sec => sec.displayLayout !== 'hero')
+        .map(sec => {
+          const parsed = parseGridLayout(sec.displayLayout)
+          const cards = (sec.selectedIds || [])
+            .map(id => allModules.find(m => m.id === id))
+            .filter(Boolean)
+          cards.forEach(card => {
+            const is43 = card.coverAspectRatio === '4:3'
+            if (parsed.layout === 'grid') {
+              card._height = is43 ? 250 : 187
+            } else if (parsed.layout === 'horizontal-scroll') {
+              card._height = is43 ? 450 : 338
+            } else {
+              card._height = is43 ? 515 : 386
+            }
+          })
+          return { id: sec.id, displayLayout: parsed.layout, cards, gridCols: parsed.gridCols, gridClass: parsed.gridClass }
+        })
+      this.setData({ businessModules: allModules, businessSections: sections, businessHeroCards: businessHeroCards })
     }).catch(() => {})
   },
 
   fetchData() {
     Promise.all([
       api.getCards(),
-      api.getCompanyInfos(),
-      api.getProjects(),
-      api.getVideos()
-    ]).then(([cards, companyInfos, projects, videos]) => {
+      api.getCompanyInfos()
+    ]).then(([cards, companyInfos]) => {
       const card = (cards || []).find(c => c.status === true) || (cards && cards[0]) || {}
       if (card.avatar) card.avatar = api.staticUrl(card.avatar)
-      const missionVideo = (videos || []).find(v => v.category === 'mission' && v.status === 'published') || null
-      if (missionVideo) {
-        missionVideo.url = api.staticUrl(missionVideo.url)
-        missionVideo.cover = api.staticUrl(missionVideo.cover)
-      }
-      // Match company_info by company name, or use first entry
       const infos = (companyInfos || []).filter(ci => ci.status !== false)
       const matched = card.company ? infos.find(ci => ci.name === card.company) || null : null
       const matchedCI = matched || (infos.length > 0 ? infos[0] : null)
@@ -52,11 +381,68 @@ Page({
         cardData: card,
         companyInfo: fallbackCI,
         companyInfos: infos,
-        matchedCI: matchedCI,
-        projects: (projects || []).slice(0, 2).map(p => ({ ...p, image: api.staticUrl(p.image) })),
-        missionVideo: missionVideo
+        matchedCI: matchedCI
       })
     }).catch(() => {})
+  },
+
+  onCoverCardTap(e) {
+    const profile = e.currentTarget.dataset.profile
+    if (!profile) return
+    if (!profile.detail || !profile.detail.detailEntry) return
+    wx.navigateTo({ url: '/pages/company-detail/company-detail?id=' + profile.id })
+  },
+
+  onTabSwitch(e) {
+    const sectionId = e.currentTarget.dataset.sectionId
+    const tabIndex = e.currentTarget.dataset.tabIndex
+    const sections = this.data.sections.map(sec => {
+      if (sec.id === sectionId) {
+        return {
+          ...sec,
+          activeTab: tabIndex,
+          currentTabCards: sec.tabs[tabIndex] ? sec.tabs[tabIndex].cards : []
+        }
+      }
+      return sec
+    })
+    this.setData({ sections })
+  },
+
+  onPerformanceCardTap(e) {
+    const profile = e.currentTarget.dataset.profile
+    if (!profile) return
+    if (!profile.detail || !profile.detail.detailEntry) return
+    wx.navigateTo({ url: '/pages/company-detail-performance/company-detail-performance?id=' + profile.id })
+  },
+
+  onBizCardTap(e) {
+    const moduleId = e.currentTarget.dataset.moduleId
+    if (!moduleId) return
+    wx.navigateTo({ url: '/pages/business-module-detail/business-module-detail?moduleId=' + moduleId })
+  },
+
+  onCoverVideoTap(e) {
+    const profile = e.currentTarget.dataset.profile
+    if (!profile || !profile.cover || !profile.cover.video) return
+    if (this.data.playingCardId) {
+      const oldCtx = wx.createVideoContext('vid-' + this.data.playingCardId)
+      if (oldCtx) oldCtx.pause()
+    }
+    this.setData({ playingCardId: profile.id }, () => {
+      wx.nextTick(() => {
+        const ctx = wx.createVideoContext('vid-' + profile.id)
+        if (ctx) ctx.play()
+      })
+    })
+  },
+
+  closeInlineVideo() {
+    if (this.data.playingCardId) {
+      const ctx = wx.createVideoContext('vid-' + this.data.playingCardId)
+      if (ctx) ctx.pause()
+    }
+    this.setData({ playingCardId: null })
   },
 
   callPhone() {
@@ -97,17 +483,6 @@ Page({
 
   collectCard() {
     wx.showToast({ title: '已收藏', icon: 'success' })
-  },
-
-  previewVideo() {
-    const vid = this.data.missionVideo
-    if (vid && vid.url) {
-      this.setData({ currentVideo: vid })
-    }
-  },
-
-  closeVideo() {
-    this.setData({ currentVideo: null })
   },
 
   onShareAppMessage() {

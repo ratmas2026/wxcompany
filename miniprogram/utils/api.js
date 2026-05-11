@@ -42,8 +42,6 @@ const getProjects = () => request('/projects')
 // 获取项目详情
 const getProjectDetail = (id) => request('/projects/' + id)
 
-// 获取施工现场列表
-const getSites = () => request('/sites')
 
 // 获取启动页图片
 const getSplashImages = () => request('/splash')
@@ -71,6 +69,9 @@ const getHonors = () => request('/honors')
 
 // 获取案例页配置
 const getCasePageConfig = () => request('/company/case-page-config')
+
+// 获取名片页配置
+const getCardPageConfig = () => request('/card-page-config')
 
 // 获取核心业务模块列表
 const getBusinessModules = () => request('/business-modules')
@@ -103,7 +104,7 @@ module.exports = {
   getVideos,
   getProjects,
   getProjectDetail,
-  getSites,
+
   getSplashImages,
   getCompanyProfile,
   getCompanyProfileConfig,
@@ -113,6 +114,7 @@ module.exports = {
   getCompanyPerformanceDetail,
   getHonors,
   getCasePageConfig,
+  getCardPageConfig,
   getBusinessModules,
   getBusinessModulePageConfig,
   getBusinessModuleDetail,

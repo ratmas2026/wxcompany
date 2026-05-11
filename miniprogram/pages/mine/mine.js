@@ -67,13 +67,13 @@ Page({
     Promise.all([
       api.getCards().catch(() => []),
       api.getProjects().catch(() => []),
-      api.getSites().catch(() => [])
-    ]).then(([cards, projects, sites]) => {
+      api.getHonors().catch(() => [])
+    ]).then(([cards, projects, honors]) => {
       this.setData({
         stats: {
           cards: (cards || []).length,
           inquiries: (projects || []).length,
-          collections: (sites || []).length
+          collections: (honors || []).length
         }
       })
     }).catch(() => {})
