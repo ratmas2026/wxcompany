@@ -22,7 +22,7 @@
   function render() {
     profiles = DataStore.getCompanyProfiles().sort((a, b) => (a.sortOrder || a.id) - (b.sortOrder || b.id))
     const config = DataStore.getCompanyProfileConfig()
-    const sections = (config.sections || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    const sections = (config.sections || []).sort((a, b) => { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
     const hasOldFormat = profiles.some(p => !p.cover)
 
     const layoutLabel = { single: '📄 单张展示', 'horizontal-scroll': '🔄 左右滑动轮播', grid: '🔲 四宫格', hero: '📋 顶部栏', tab: '📑 Tab标签页' }
@@ -157,7 +157,7 @@
 
   window.deleteSection = function(idx) {
     const config = DataStore.getCompanyProfileConfig()
-    const sections = [...(config.sections || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    const sections = [...(config.sections || [])].sort((a, b) => { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
     const sec = sections[idx]
     const selectedNames = (sec.selectedIds || []).map(id => {
       const p = profiles.find(p => p.id === id)
@@ -193,7 +193,7 @@
     if (draggedIdx === null || draggedIdx === targetIdx) { draggedIdx = null; return }
 
     const config = DataStore.getCompanyProfileConfig()
-    const sections = [...(config.sections || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    const sections = [...(config.sections || [])].sort((a, b) => { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
 
     // Prevent dropping onto hero or dragging hero
     if (sections[targetIdx].displayLayout === 'hero') { draggedIdx = null; return }
@@ -225,7 +225,7 @@
 
   window.toggleSection = async function(idx) {
     const config = DataStore.getCompanyProfileConfig()
-    const sections = [...(config.sections || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    const sections = [...(config.sections || [])].sort((a, b) => { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
     const sec = sections[idx]
     sec.status = sec.status === false ? true : false
     await DataStore.updateCompanyProfileConfig({ sections })
@@ -235,7 +235,7 @@
 
   window.editSection = function(idx) {
     const config = DataStore.getCompanyProfileConfig()
-    const sections = [...(config.sections || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    const sections = [...(config.sections || [])].sort((a, b) => { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
     const sec = sections[idx]
     if (!sec) return
     // Remove this section, pre-select its cards and layout for re-creation

@@ -310,6 +310,13 @@ app.get('/api/company/profile-config', (req, res) => {
     }
   })
   sections = splitSections
+  // Normalize hero sections to sortOrder 0
+  sections.forEach(sec => {
+    if (sec.displayLayout === 'hero' && sec.sortOrder !== 0) {
+      sec.sortOrder = 0
+      migrated = true
+    }
+  })
   // Always sort: hero sections first, then by sortOrder
   sections.sort((a, b) => {
     if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1
@@ -483,6 +490,13 @@ app.get('/api/company/performance-config', (req, res) => {
     }
   })
   sections = splitSections
+  // Normalize hero sections to sortOrder 0
+  sections.forEach(sec => {
+    if (sec.displayLayout === 'hero' && sec.sortOrder !== 0) {
+      sec.sortOrder = 0
+      migrated = true
+    }
+  })
   sections.sort((a, b) => {
     if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1
     if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1
@@ -668,6 +682,13 @@ app.get('/api/business-modules/page-config', (req, res) => {
     }
   })
   sections = splitSections
+  // Normalize hero sections to sortOrder 0
+  sections.forEach(sec => {
+    if (sec.displayLayout === 'hero' && sec.sortOrder !== 0) {
+      sec.sortOrder = 0
+      migrated = true
+    }
+  })
   // Migrate legacy grid-6 to concrete format
   sections.forEach(sec => {
     if (sec.displayLayout === 'grid-6') {

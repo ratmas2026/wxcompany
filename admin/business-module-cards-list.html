@@ -72,7 +72,7 @@
 
     // Build sections table
     var circledDigits = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩']
-    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sections = (moduleData.sections || []).sort(function(a, b) { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
     // Pre-compute layout counts for duplicate suffix
     var layoutCounts = {}
     sections.forEach(function(sec) {
@@ -599,7 +599,7 @@
   }
 
   window.editSection = async function(idx) {
-    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sections = (moduleData.sections || []).sort(function(a, b) { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
     var sec = sections[idx]
     if (!sec) return
     // Don't remove the section upfront — let saveSection handle the merge.
@@ -608,7 +608,7 @@
   }
 
   window.deleteSection = function(idx) {
-    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sections = (moduleData.sections || []).sort(function(a, b) { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
     var sec = sections[idx]
     if (!sec) { Admin.showToast('方案不存在', 'error'); return }
     var selectedNames = (sec.selectedIds || []).map(function(id) {
@@ -636,7 +636,7 @@
   }
 
   window.toggleSection = async function(idx) {
-    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sections = (moduleData.sections || []).sort(function(a, b) { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
     var sec = sections[idx]
     sec.status = sec.status === false ? true : false
     moduleData.sections = sections
@@ -669,7 +669,7 @@
     document.querySelectorAll('.section-row').forEach(function(r) { r.style.borderTop = '' })
     if (draggedIdx === null || draggedIdx === targetIdx) { draggedIdx = null; return }
 
-    var sections = (moduleData.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
+    var sections = (moduleData.sections || []).sort(function(a, b) { if (a.displayLayout === 'hero' && b.displayLayout !== 'hero') return -1; if (a.displayLayout !== 'hero' && b.displayLayout === 'hero') return 1; return (a.sortOrder || 0) - (b.sortOrder || 0) })
     if (sections[targetIdx].displayLayout === 'hero') { draggedIdx = null; return }
     if (sections[draggedIdx].displayLayout === 'hero') { draggedIdx = null; return }
 
