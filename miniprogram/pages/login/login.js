@@ -2,40 +2,21 @@ const { getUserByPhone } = require('../../utils/api')
 
 Page({
   data: {
-    countdown: 0
+    countdown: 0,
+    agreed: false
   },
 
   onUnload() {
     if (this._timer) clearInterval(this._timer)
   },
 
-  onWechatLogin() {
-    wx.showLoading({ title: '登录中...' })
-    wx.login({
-      success: (res) => {
-        if (res.code) {
-          setTimeout(() => {
-            wx.hideLoading()
-            this.saveLoginState({ nickName: '微信用户', phone: '' })
-            wx.showToast({ title: '登录成功', icon: 'success' })
-            this.navigateBack()
-          }, 800)
-        } else {
-          wx.hideLoading()
-          wx.showToast({ title: '登录失败，请重试', icon: 'none' })
-        }
-      },
-      fail: () => {
-        wx.hideLoading()
-        wx.showToast({ title: '登录失败，请重试', icon: 'none' })
-      }
-    })
+  onToggleAgree() {
+    this.setData({ agreed: !this.data.agreed })
   },
 
   onSendCode() {
     if (this.data.countdown > 0) return
 
-    // 默认验证码
     wx.showToast({ title: '验证码：123456', icon: 'none' })
 
     let countdown = 60
@@ -66,18 +47,24 @@ Page({
       wx.showToast({ title: '验证码错误', icon: 'none' })
       return
     }
+    if (!this.data.agreed) {
+      wx.showToast({ title: '请先阅读并同意用户协议和隐私政策', icon: 'none' })
+      return
+    }
 
     wx.showLoading({ title: '登录中...' })
     getUserByPhone(phone).then(user => {
       wx.hideLoading()
+      if (!user) {
+        wx.showToast({ title: '该手机号未注册', icon: 'none' })
+        return
+      }
       this.saveLoginState(user)
-      wx.showToast({ title: `${user.nickName}，欢迎回来`, icon: 'success' })
+      wx.showToast({ title: `${user.nickName || phone}，欢迎回来`, icon: 'success' })
       this.navigateBack()
     }).catch(() => {
       wx.hideLoading()
-      this.saveLoginState({ nickName: phone, phone })
-      wx.showToast({ title: '登录成功', icon: 'success' })
-      this.navigateBack()
+      wx.showToast({ title: '该手机号未注册', icon: 'none' })
     })
   },
 
