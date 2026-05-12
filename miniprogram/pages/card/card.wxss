@@ -572,7 +572,7 @@
 .profile-section-line {
   flex: 1;
   height: 2rpx;
-  background: #e2e8f0;
+  background: #d1d5db;
 }
 
 /* Profile Card Layouts */
@@ -626,7 +626,7 @@
   position: relative;
   border-radius: 20rpx;
   overflow: hidden;
-  background: linear-gradient(135deg, #e8edf5, #dce3ef);
+  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
   box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.08);
 }
 .profile-card-bg {
@@ -752,6 +752,7 @@
   flex-direction: column;
   justify-content: flex-end;
   gap: 20rpx;
+  background: #6b7280;
 }
 .skeleton-line {
   height: 28rpx;
@@ -772,13 +773,13 @@
   height: 36rpx;
   width: 160rpx;
   border-radius: 8rpx;
-  background: #e2e8f0;
+  background: #d1d5db;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 .skeleton-card {
   height: 386rpx;
   border-radius: 20rpx;
-  background: linear-gradient(135deg, #e8edf5, #dce3ef);
+  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 @keyframes skeleton-pulse {

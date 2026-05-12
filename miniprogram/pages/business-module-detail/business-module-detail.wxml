@@ -4,7 +4,7 @@
   <top-bar title="{{moduleName || '业务模块'}}" showBack="{{true}}" titleAlign="center" />
 
   <!-- Hero 卡片 -->
-  <view wx:if="{{heroCard}}" class="hero-section" style="height:{{heroCard._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#e2e8f0" bindtap="onCardTap" data-card="{{heroCard}}">
+  <view wx:if="{{heroCard}}" class="hero-section" style="height:{{heroCard._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#f3f4f6" bindtap="onCardTap" data-card="{{heroCard}}">
     <image wx:if="{{heroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{heroCard.cover.backgroundImage}}" mode="aspectFill" />
     <view class="hero-content">
       <block wx:for="{{heroCard.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
