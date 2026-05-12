@@ -357,7 +357,7 @@ Page({
         showProjects: types.has('projects'),
         profilesModuleName: moduleNames.profiles || '企业动态',
         businessModuleName: moduleNames.business || '核心业务',
-        performanceModuleName: moduleNames.performance || '企业业绩',
+        performanceModuleName: moduleNames.performance || '公司业绩',
         honorsModuleName: moduleNames.honors || '企业荣誉',
         projectsModuleName: moduleNames.projects || '企业项目'
       })

@@ -55,13 +55,13 @@ const getCompanyProfileConfig = () => request('/company/profile-config')
 // 获取单张企业介绍卡片详情
 const getCompanyProfileDetail = (id) => request('/company/profile/' + id)
 
-// 获取企业业绩列表
+// 获取公司业绩列表
 const getCompanyPerformance = () => request('/company/performance')
 
-// 获取企业业绩展示配置
+// 获取公司业绩展示配置
 const getCompanyPerformanceConfig = () => request('/company/performance-config')
 
-// 获取单张企业业绩卡片详情
+// 获取单张公司业绩卡片详情
 const getCompanyPerformanceDetail = (id) => request('/company/performance/' + id)
 
 // 获取企业荣誉列表

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>企业业绩 - Admin Panel</title>
+<title>公司业绩 - Admin Panel</title>
 <link rel="stylesheet" href="css/common.css"/>
 <script src="js/data.js"></script>
 <script src="js/common.js"></script>
@@ -124,7 +124,7 @@
 
     const html = `
       <div class="page-header">
-        <h1>企业业绩</h1>
+        <h1>公司业绩</h1>
         <div style="display:flex;gap:10px">
           ${hasOldFormat ? '<button class="btn btn-warning btn-sm" onclick="window.runMigration()">🔄 迁移旧数据</button>' : ''}
           <button class="btn btn-secondary" onclick="window.showLayoutConfig()">⚙️ 展示设置</button>
@@ -133,7 +133,7 @@
       </div>
 
       <div class="card-grid">
-        ${cards || '<div class="empty-state"><div class="empty-icon">🏢</div><p>暂无企业业绩内容</p><p style="font-size:13px;color:#a0aec0;margin-top:8px;">点击右上角「新增卡片」按钮添加</p></div>'}
+        ${cards || '<div class="empty-state"><div class="empty-icon">🏢</div><p>暂无公司业绩内容</p><p style="font-size:13px;color:#a0aec0;margin-top:8px;">点击右上角「新增卡片」按钮添加</p></div>'}
       </div>
 
       ${sectionsHTML}
@@ -487,7 +487,7 @@
   }
 
   window.runMigration = function() {
-    Admin.confirmDelete('确定要将旧格式的企业业绩数据迁移到新的卡片格式吗？此操作安全且可重复执行。', async () => {
+    Admin.confirmDelete('确定要将旧格式的公司业绩数据迁移到新的卡片格式吗？此操作安全且可重复执行。', async () => {
       Admin.showToast('正在迁移...', 'info')
       const result = await DataStore.migrateCompanyPerformances()
       Admin.showToast(`迁移完成，已处理 ${result.migrated} 条`, 'success')

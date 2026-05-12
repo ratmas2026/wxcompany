@@ -274,44 +274,7 @@
       </view>
     </block>
 
-    <!-- 暂无卡片时的兜底 -->
-    <block wx:else>
-      <view class="intro-card card">
-        <text class="section-title">定义现代卓越</text>
-        <text class="section-desc">自2015年成立以来，执行官组合深耕智能建造与数字化领域，业务涵盖数字设计、智能生产、智能施工与智能运维四大板块，致力于为建筑行业提供全生命周期智能化解决方案。</text>
-        <view class="stats-grid">
-          <view class="stat-item">
-            <text class="stat-number">{{companyInfo.stats.years || 10}}+</text>
-            <text class="stat-label">年行业经验</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-number">{{companyInfo.stats.centers || 8}}</text>
-            <text class="stat-label">全国中心</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-number">{{companyInfo.stats.patents || 120}}</text>
-            <text class="stat-label">持有专利</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-number">{{companyInfo.stats.retention || '95%'}}</text>
-            <text class="stat-label">客户留存率</text>
-          </view>
-        </view>
-      </view>
-
-      <view class="quote-card">
-        <text class="quote-mark">"</text>
-        <text class="quote-title">领导力洞察</text>
-        <text class="quote-text">"{{companyInfo.leaderQuote || '我们不仅仅是建造结构；我们是在为未来的智能建筑和人机协作设计数字化底座。'}}"</text>
-        <view class="quote-author">
-          <image class="author-avatar" src="{{companyInfo.leaderAvatar || '/images/avatar-ceo.jpg'}}" mode="aspectFill" />
-          <view class="author-info">
-            <text class="author-name">{{companyInfo.leaderName || '张明远'}}</text>
-            <text class="author-role">{{companyInfo.leaderTitle || '首席执行官'}}</text>
-          </view>
-        </view>
-      </view>
-    </block>
+    <!-- 无卡片时不渲染 -->
   </view>
 
   <!-- 荣誉奖项 -->
@@ -351,7 +314,7 @@
     </scroll-view>
   </view>
 
-  <!-- 企业业绩 -->
+  <!-- 公司业绩 -->
   <view wx:if="{{showPerformance}}" class="module-block">
     <view class="section-header">
       <text class="section-headline">{{performanceModuleName}}</text>
@@ -492,7 +455,7 @@
     </block>
     <block wx:else>
       <view class="intro-card card">
-        <text class="section-title">企业业绩</text>
+        <text class="section-title">公司业绩</text>
         <text class="section-desc">展示企业发展历程中的重要里程碑和卓越成就。</text>
       </view>
     </block>

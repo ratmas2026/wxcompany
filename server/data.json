@@ -1431,7 +1431,7 @@
       },
       {
         "id": "company-performance",
-        "name": "企业业绩",
+        "name": "公司业绩",
         "type": "performance",
         "enabled": false,
         "sortOrder": 30
