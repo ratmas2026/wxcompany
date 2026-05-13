@@ -34,6 +34,7 @@ Page({
   },
 
   onLoad() {
+    this._configLoaded = true
     this.fetchCardConfig()
     this.fetchData()
   },
@@ -41,6 +42,10 @@ Page({
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 2 })
+    }
+    if (!this._configLoaded) {
+      this._configLoaded = true
+      this.fetchCardConfig()
     }
   },
 

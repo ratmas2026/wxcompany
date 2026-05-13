@@ -146,13 +146,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.biz-card-count {
-  font-size: 22rpx;
-  color: rgba(255,255,255,0.75);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+
 .biz-card-single {
   width: 100%;
   margin-bottom: 20rpx;

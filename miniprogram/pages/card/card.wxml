@@ -509,7 +509,7 @@
             <image wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
             <view class="biz-card-info">
               <text class="biz-card-name">{{card.name}}</text>
-              <text class="biz-card-count">{{card.cards ? card.cards.length : 0}} 张卡片</text>
+
             </view>
           </view>
         </view>
@@ -526,7 +526,7 @@
               <image wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
               <view class="biz-card-info">
                 <text class="biz-card-name">{{card.name}}</text>
-                <text class="biz-card-count">{{card.cards ? card.cards.length : 0}} 张卡片</text>
+  
               </view>
             </view>
           </swiper-item>
@@ -538,7 +538,7 @@
             <image wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
             <view class="biz-card-info">
               <text class="biz-card-name">{{card.name}}</text>
-              <text class="biz-card-count">{{card.cards ? card.cards.length : 0}} 张卡片</text>
+
             </view>
           </view>
         </view>

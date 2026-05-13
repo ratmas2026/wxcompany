@@ -260,6 +260,7 @@ function migrateFromJSON() {
   insCfg.run(['companyPerformanceConfig', jsonVal((data.companyPerformanceConfig || {}).sections || [])]);
   insCfg.run(['casePageConfig', jsonVal((data.casePageConfig || {}).sections || [])]);
   insCfg.run(['businessModulePageConfig', jsonVal((data.businessModulePageConfig || {}).sections || [])]);
+  insCfg.run(['cardPageConfig', jsonVal((data.cardPageConfig || {}).sections || [])]);
   insCfg.run(['nextId', jsonVal(data.nextId || {})]);
   insCfg.free();
 }
@@ -441,6 +442,7 @@ function readData() {
     companyPerformanceConfig: { sections: configs.companyPerformanceConfig || [] },
     casePageConfig: { sections: configs.casePageConfig || [] },
     businessModulePageConfig: { sections: configs.businessModulePageConfig || [] },
+    cardPageConfig: { sections: configs.cardPageConfig || [] },
     nextId: nextId
   };
 }
@@ -560,6 +562,7 @@ function writeData(data) {
   insCfg.run(['companyPerformanceConfig', jsonVal((data.companyPerformanceConfig || {}).sections || [])]);
   insCfg.run(['casePageConfig', jsonVal((data.casePageConfig || {}).sections || [])]);
   insCfg.run(['businessModulePageConfig', jsonVal((data.businessModulePageConfig || {}).sections || [])]);
+  insCfg.run(['cardPageConfig', jsonVal((data.cardPageConfig || {}).sections || [])]);
   insCfg.run(['nextId', jsonVal(data.nextId || {})]);
   insCfg.free();
 

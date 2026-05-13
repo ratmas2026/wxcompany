@@ -266,14 +266,6 @@
         return true
       })
 
-      // If editing, pool any cards from the old section not in the new selection
-      if (preSection) {
-        (preSection.selectedIds || []).forEach(function(id) {
-          if (!selectionOrder.includes(id) && !orphanSingleIds.includes(id)) {
-            orphanSingleIds.push(id)
-          }
-        })
-      }
 
       // Merge all single cards into one pool
       var existingSingle = sections.find(function(sec) { return sec.displayLayout === 'single' })
