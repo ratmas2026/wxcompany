@@ -107,7 +107,7 @@
         : 'draggable="true" ondragstart="window.onSectionDragStart(event,' + idx + ')" ondragover="window.onSectionDragOver(event)" ondrop="window.onSectionDrop(event,' + idx + ')" ondragend="window.onSectionDragEnd(event)"'
       var statusOn = sec.status !== false
       return '<tr class="section-row" ' + dragAttrs + ' data-idx="' + idx + '" style="' + (isHero ? '' : 'cursor:grab') + '">' +
-        '<td style="white-space:nowrap">' + dragHandle + orderBadge + '</td>' +
+        '<td style="white-space:nowrap"><span style="display:inline-flex;align-items:center">' + dragHandle + orderBadge + '</span></td>' +
         '<td style="font-weight:700;font-size:14px">' + layoutName + '</td>' +
         '<td style="font-size:13px;color:#4a5568">' + cardNames + '</td>' +
         '<td style="text-align:right">' +
