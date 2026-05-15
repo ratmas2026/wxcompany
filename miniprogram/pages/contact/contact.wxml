@@ -44,7 +44,7 @@
       </view>
       <view class="phone-info">
         <text class="phone-label">咨询热线</text>
-        <text class="phone-number">{{companyInfo.phone || '400-888-8888'}}</text>
+        <text class="phone-number">{{companyInfo.phone}}</text>
         <text class="phone-hours">工作日 9:00 - 18:00</text>
       </view>
       <button class="call-btn" bindtap="onCallPhone">
@@ -56,10 +56,10 @@
     <view class="office-card">
       <text class="section-title">办公地址</text>
       <view class="office-address">
-        <text>📍 {{companyInfo.address || '深圳市南山区科技园南路88号智能大厦38层'}}</text>
+        <text>📍 {{companyInfo.address}}</text>
       </view>
       <view class="office-address">
-        <text>✉️ {{companyInfo.email || 'contact@zhixingguan.com'}}</text>
+        <text>✉️ {{companyInfo.email}}</text>
       </view>
     </view>
   </view>

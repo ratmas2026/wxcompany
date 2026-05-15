@@ -327,20 +327,36 @@ function readData() {
 
   // Company Profiles
   var companyProfiles = queryAll('company_profiles', function(p) {
+    var cover = jsonParse(p.cover) || { backgroundImage: '', video: '', zones: {} };
+    if (typeof cover === 'string') {
+      try { cover = JSON.parse(cover); } catch (e) { cover = { backgroundImage: '', video: '', zones: {} }; }
+    }
+    var detail = jsonParse(p.detail) || { title: '', body: '', images: [], video: '', detailEntry: true };
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail); } catch (e) { detail = { title: '', body: '', images: [], video: '', detailEntry: true }; }
+    }
     return {
       id: p.id, title: p.title || '', sortOrder: p.sort_order || 0,
-      cover: jsonParse(p.cover) || { backgroundImage: '', video: '', zones: {} },
-      detail: jsonParse(p.detail) || { title: '', body: '', images: [], video: '', detailEntry: true },
+      cover: cover,
+      detail: detail,
       createdAt: p.created_at || ''
     };
   });
 
   // Company Performances
   var companyPerformances = queryAll('company_performances', function(p) {
+    var cover = jsonParse(p.cover) || { backgroundImage: '', video: '', zones: {} };
+    if (typeof cover === 'string') {
+      try { cover = JSON.parse(cover); } catch (e) { cover = { backgroundImage: '', video: '', zones: {} }; }
+    }
+    var detail = jsonParse(p.detail) || { title: '', body: '', images: [], video: '', detailEntry: true };
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail); } catch (e) { detail = { title: '', body: '', images: [], video: '', detailEntry: true }; }
+    }
     return {
       id: p.id, title: p.title || '', sortOrder: p.sort_order || 0,
-      cover: jsonParse(p.cover) || { backgroundImage: '', video: '', zones: {} },
-      detail: jsonParse(p.detail) || { title: '', body: '', images: [], video: '', detailEntry: true },
+      cover: cover,
+      detail: detail,
       createdAt: p.created_at || ''
     };
   });

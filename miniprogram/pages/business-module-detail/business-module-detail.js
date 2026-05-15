@@ -21,7 +21,19 @@ Page({
       this.setData({ moduleName: mod.name || '' })
 
       const allCards = (mod.cards || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)).map(card => {
+        if (typeof card.cover === 'string') {
+          try { card.cover = JSON.parse(card.cover) } catch (e) { card.cover = { backgroundImage: '', video: '', zones: {} } }
+        }
+        if (typeof card.detail === 'string') {
+          try { card.detail = JSON.parse(card.detail) } catch (e) { card.detail = { title: '', body: '', images: [], video: '', detailEntry: true } }
+        }
         if (card.cover) {
+          const zones = card.cover.zones || {}
+          card.cover.zones = {
+            top: { textBoxes: (zones.top && zones.top.textBoxes) || [] },
+            middle: { textBoxes: (zones.middle && zones.middle.textBoxes) || [] },
+            bottom: { textBoxes: (zones.bottom && zones.bottom.textBoxes) || [] }
+          }
           card.cover.backgroundImage = api.staticUrl(card.cover.backgroundImage)
           card.cover.video = api.staticUrl(card.cover.video)
         }
@@ -58,7 +70,7 @@ Page({
 
       const heroSection = sections.find(sec => sec.displayLayout === 'hero')
       const heroCard = heroSection
-        ? allCards.find(c => c.id === heroSection.selectedIds[0]) || null
+        ? allCards.find(c => c.id === (heroSection.selectedIds || [])[0]) || null
         : null
       if (heroCard) {
         const is43 = heroCard.cover && heroCard.cover.aspectRatio === '4:3'

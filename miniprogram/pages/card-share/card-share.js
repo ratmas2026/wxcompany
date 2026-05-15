@@ -12,7 +12,7 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: '张明远 · 执行官组合 — 企业名片',
+      title: '企业名片',
       path: '/pages/card/card',
       imageUrl: '/images/hero-bg.jpg'
     }

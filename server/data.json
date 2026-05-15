@@ -245,10 +245,10 @@
     "companyPerformances": 2
   },
   "companyInfo": {
-    "name": "执行官组合",
+    "name": "",
     "since": 2015,
-    "headquarters": "中国，深圳",
-    "description": "自2015年成立以来，执行官组合深耕智能建造与数字化领域，业务涵盖数字设计、智能生产、智能施工与智能运维四大板块，致力于为建筑行业提供全生命周期智能化解决方案。",
+    "headquarters": "",
+    "description": "",
     "stats": {
       "years": 10,
       "centers": 8,

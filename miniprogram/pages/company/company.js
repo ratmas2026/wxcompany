@@ -67,7 +67,20 @@ Page({
       } : {}
       // Process all profiles
       const allProfiles = (profiles || []).sort((a, b) => (a.sortOrder || a.id) - (b.sortOrder || b.id)).map(p => {
+        // 防御性解析：服务器可能返回 JSON 字符串
+        if (typeof p.cover === 'string') {
+          try { p.cover = JSON.parse(p.cover) } catch (e) { p.cover = { backgroundImage: '', video: '', zones: {} } }
+        }
+        if (typeof p.detail === 'string') {
+          try { p.detail = JSON.parse(p.detail) } catch (e) { p.detail = { title: '', body: '', images: [], video: '', detailEntry: true } }
+        }
         if (p.cover) {
+          const zones = p.cover.zones || {}
+          p.cover.zones = {
+            top: { textBoxes: (zones.top && zones.top.textBoxes) || [] },
+            middle: { textBoxes: (zones.middle && zones.middle.textBoxes) || [] },
+            bottom: { textBoxes: (zones.bottom && zones.bottom.textBoxes) || [] }
+          }
           p.cover.backgroundImage = api.staticUrl(p.cover.backgroundImage)
           p.cover.video = api.staticUrl(p.cover.video)
         }
@@ -119,9 +132,10 @@ Page({
         heroCard._height = is43 ? 515 : 386
       }
 
-      // Non-hero sections
+      // All sections (hero excluded if standalone heroCard renders)
+      const heroSectionId = heroSection ? heroSection.id : null
       const sectionData = sections
-        .filter(sec => sec.displayLayout !== 'hero')
+        .filter(sec => !heroCard || sec.id !== heroSectionId)
         .map(sec => {
           const parsed = parseGridLayout(sec.displayLayout)
           const cards = (sec.selectedIds || []).map(id => allProfiles.find(p => p.id === id)).filter(Boolean)
@@ -172,7 +186,9 @@ Page({
         }
       })
       this.setData({ sections: sectionData, heroCard, companyInfo: companyInfo || {} })
-    }).catch(() => {})
+    }).catch(err => {
+      console.error('[fetchAll] 企业动态数据加载失败:', err)
+    })
   },
 
   fetchCompanyInfo() {
@@ -230,7 +246,19 @@ Page({
       api.getCompanyPerformance().catch(() => [])
     ]).then(([config, profiles]) => {
       const allProfiles = (profiles || []).sort((a, b) => (a.sortOrder || a.id) - (b.sortOrder || b.id)).map(p => {
+        if (typeof p.cover === 'string') {
+          try { p.cover = JSON.parse(p.cover) } catch (e) { p.cover = { backgroundImage: '', video: '', zones: {} } }
+        }
+        if (typeof p.detail === 'string') {
+          try { p.detail = JSON.parse(p.detail) } catch (e) { p.detail = { title: '', body: '', images: [], video: '', detailEntry: true } }
+        }
         if (p.cover) {
+          const zones = p.cover.zones || {}
+          p.cover.zones = {
+            top: { textBoxes: (zones.top && zones.top.textBoxes) || [] },
+            middle: { textBoxes: (zones.middle && zones.middle.textBoxes) || [] },
+            bottom: { textBoxes: (zones.bottom && zones.bottom.textBoxes) || [] }
+          }
           p.cover.backgroundImage = api.staticUrl(p.cover.backgroundImage)
           p.cover.video = api.staticUrl(p.cover.video)
         }
@@ -329,7 +357,9 @@ Page({
         }
       })
       this.setData({ performanceSections: sectionData, performanceHeroCard: heroCard })
-    }).catch(() => {})
+    }).catch(err => {
+      console.error('[fetchPerformance] 公司业绩数据加载失败:', err)
+    })
   },
 
   fetchCaseConfig() {
@@ -483,7 +513,7 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: '执行官组合 - 企业展示',
+      title: (this.data.companyInfo && this.data.companyInfo.name || '企业展示') + ' - 企业展示',
       path: '/pages/company/company'
     }
   }

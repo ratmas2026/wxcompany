@@ -2,7 +2,7 @@
   <!-- 兜底渐变背景 -->
   <view class="splash-fallback signature-gradient">
     <text class="fallback-icon">🏢</text>
-    <text class="fallback-text">执行官组合</text>
+    <text class="fallback-text">企业展示</text>
   </view>
 
   <!-- 启动图 -->
@@ -22,7 +22,7 @@
 
   <!-- 底部品牌标识（仅在无启动图时显示） -->
   <view wx:if="{{!currentImage}}" class="bottom-area">
-    <text class="logo-name">执行官组合</text>
+    <text class="logo-name">企业展示</text>
     <text class="logo-sub">Executive Portfolio</text>
   </view>
 </view>

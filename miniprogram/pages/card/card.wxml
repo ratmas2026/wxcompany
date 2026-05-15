@@ -112,22 +112,6 @@
       <view wx:if="{{playingCardId === heroCard.id}}" class="inline-video-close" catchtap="closeInlineVideo">✕</view>
     </view>
   </block>
-  <block wx:else>
-    <view class="hero-section signature-gradient">
-      <view class="hero-glass"></view>
-      <view class="hero-content">
-        <view class="hero-badge">
-          <text>世界500强合作伙伴</text>
-        </view>
-        <text class="hero-title">{{companyInfo.name || '执行官组合'}}</text>
-        <text class="hero-desc">{{companyInfo.description || '为下一个世纪的企业卓越表现，开拓智能建造与数字化创新。'}}</text>
-        <view class="hero-hq">
-          <text class="hero-hq-label">总部</text>
-          <text class="hero-hq-value">{{companyInfo.headquarters || '中国，深圳'}}</text>
-        </view>
-      </view>
-    </view>
-  </block>
   </block>
 
   <!-- 企业动态 -->
@@ -139,6 +123,33 @@
       <view wx:for="{{sections}}" wx:key="id" class="profile-section">
         <view wx:if="{{sections.length > 1}}" class="profile-section-divider">
           <view class="profile-section-line"></view>
+        </view>
+        <!-- Hero 卡片 -->
+        <view wx:if="{{item.displayLayout === 'hero'}}">
+          <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
+            class="hero-section" style="height:{{card._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#f3f4f6"
+            bindtap="onCoverCardTap" data-profile="{{card}}">
+            <image wx:if="{{card.cover.backgroundImage}}" class="hero-bg-image" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+            <view class="hero-content" hidden="{{playingCardId === card.id}}">
+              <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <view class="hero-card-middle">
+                <block wx:for="{{card.cover.zones.middle.textBoxes}}" wx:for-item="tb" wx:key="id">
+                  <template is="textBox" data="{{tb}}" />
+                </block>
+              </view>
+              <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
+                <template is="textBox" data="{{tb}}" />
+              </block>
+              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
+              <view wx:if="{{card.cover.video}}" class="hero-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
+                <text class="profile-card-play-icon">▶</text>
+              </view>
+            </view>
+            <video wx:if="{{playingCardId === card.id}}" id="vid-{{card.id}}" style="position:absolute;top:0;left:0;width:100%;height:100%" src="{{card.cover.video}}" object-fit="fill" show-fullscreen-btn="{{false}}" enable-play-gesture="{{false}}" controls />
+            <view wx:if="{{playingCardId === card.id}}" class="inline-video-close" catchtap="closeInlineVideo">✕</view>
+          </view>
         </view>
         <!-- 单张展示 -->
         <view wx:if="{{item.displayLayout === 'single'}}" class="profile-single">

@@ -256,7 +256,14 @@ app.put('/api/company/profile/:id', (req, res) => {
   const data = readData()
   const idx = (data.companyProfiles || []).findIndex(p => p.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.companyProfiles[idx] = { ...data.companyProfiles[idx], ...req.body, id: data.companyProfiles[idx].id }
+  const body = { ...req.body }
+  if (typeof body.cover === 'string') {
+    try { body.cover = JSON.parse(body.cover) } catch (e) { body.cover = { backgroundImage: '', video: '', zones: {} } }
+  }
+  if (typeof body.detail === 'string') {
+    try { body.detail = JSON.parse(body.detail) } catch (e) { body.detail = { title: '', body: '', images: [], video: '', detailEntry: true } }
+  }
+  data.companyProfiles[idx] = { ...data.companyProfiles[idx], ...body, id: data.companyProfiles[idx].id }
 
   // 同步公司名称和地址到所有名片
   const profile = data.companyProfiles[idx]
@@ -449,7 +456,14 @@ app.put('/api/company/performance/:id', (req, res) => {
   const data = readData()
   const idx = (data.companyPerformances || []).findIndex(p => p.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.companyPerformances[idx] = { ...data.companyPerformances[idx], ...req.body, id: data.companyPerformances[idx].id }
+  const body = { ...req.body }
+  if (typeof body.cover === 'string') {
+    try { body.cover = JSON.parse(body.cover) } catch (e) { body.cover = { backgroundImage: '', video: '', zones: {} } }
+  }
+  if (typeof body.detail === 'string') {
+    try { body.detail = JSON.parse(body.detail) } catch (e) { body.detail = { title: '', body: '', images: [], video: '', detailEntry: true } }
+  }
+  data.companyPerformances[idx] = { ...data.companyPerformances[idx], ...body, id: data.companyPerformances[idx].id }
   writeData(data)
   res.json(data.companyPerformances[idx])
 })
