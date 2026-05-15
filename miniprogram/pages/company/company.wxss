@@ -423,12 +423,12 @@
 /* Profile Section Divider */
 .profile-section {
   margin-bottom: 48rpx;
+  padding-top: 32rpx;
 }
 .profile-section-divider {
   display: flex;
   align-items: center;
   padding: 0 32rpx;
-  margin-bottom: 32rpx;
 }
 .profile-section-line {
   flex: 1;
