@@ -348,6 +348,7 @@
       <text class="section-headline">{{performanceModuleName}}</text>
     </view>
     <block wx:if="{{performanceHeroCard}}">
+      <view class="hero-card-wrap">
       <view class="hero-section" style="height:{{performanceHeroCard._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#f3f4f6" bindtap="onPerformanceCardTap" data-profile="{{performanceHeroCard}}">
         <image wx:if="{{performanceHeroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{performanceHeroCard.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === performanceHeroCard.id}}" />
         <view class="hero-content" hidden="{{playingCardId === performanceHeroCard.id}}">
@@ -369,6 +370,7 @@
         </view>
         <video wx:if="{{playingCardId === performanceHeroCard.id}}" id="vid-{{performanceHeroCard.id}}" style="position:absolute;top:0;left:0;width:100%;height:100%" src="{{performanceHeroCard.cover.video}}" object-fit="fill" show-fullscreen-btn="{{false}}" enable-play-gesture="{{false}}" controls />
         <view wx:if="{{playingCardId === performanceHeroCard.id}}" class="inline-video-close" catchtap="closeInlineVideo">✕</view>
+      </view>
       </view>
     </block>
     <block wx:if="{{performanceSections.length > 0}}">
