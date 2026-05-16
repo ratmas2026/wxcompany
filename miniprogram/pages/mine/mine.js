@@ -16,12 +16,7 @@ Page({
       { key: 'myCollections', icon: '⭐', title: '我的收藏', desc: '收藏的项目与案例' }
     ],
     menuGroup2: [
-      { key: 'contact', icon: '📞', title: '联系我们', desc: '客服与商务合作' },
-      { key: 'about', icon: 'ℹ️', title: '关于我们', desc: '企业简介与资质' }
-    ],
-    menuGroup3: [
-      { key: 'settings', icon: '⚙️', title: '设置' },
-      { key: 'feedback', icon: '💬', title: '意见反馈' }
+      { key: 'settings', icon: '⚙️', title: '设置' }
     ]
   },
 
@@ -90,10 +85,7 @@ Page({
       myCards: '/pages/card/card',
       myInquiries: '/pages/inquiry/inquiry',
       myCollections: '/pages/company/company',
-      contact: '/pages/contact/contact',
-      about: '/pages/company/company',
-      settings: null,
-      feedback: null
+      settings: null
     }
 
     if (routeMap[key]) {

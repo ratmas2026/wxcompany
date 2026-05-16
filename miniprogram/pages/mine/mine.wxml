@@ -72,26 +72,6 @@
         </view>
         <view class="menu-info">
           <text class="menu-title">{{item.title}}</text>
-          <text class="menu-desc">{{item.desc}}</text>
-        </view>
-        <text class="menu-arrow">→</text>
-      </view>
-    </view>
-
-    <!-- Section 3 -->
-    <view class="menu-group">
-      <view
-        wx:for="{{menuGroup3}}"
-        wx:key="key"
-        class="menu-item"
-        bindtap="onMenuTap"
-        data-key="{{item.key}}"
-      >
-        <view class="menu-icon" style="background: #f1f4f6;">
-          <text>{{item.icon}}</text>
-        </view>
-        <view class="menu-info">
-          <text class="menu-title">{{item.title}}</text>
         </view>
         <text class="menu-arrow">→</text>
       </view>
