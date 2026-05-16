@@ -156,7 +156,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 24rpx;
+  margin-bottom: 32rpx;
 }
 .section-heading {
   font-size: 36rpx;
@@ -556,7 +556,6 @@
 /* Profile Section Divider */
 .profile-section {
   margin-bottom: 48rpx;
-  padding-top: 32rpx;
 }
 .profile-section-divider {
   display: flex;
