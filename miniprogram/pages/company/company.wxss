@@ -423,7 +423,10 @@
 /* Profile Section Divider */
 .profile-section {
   margin-bottom: 48rpx;
-  padding-top: 32rpx;
+}
+
+.hero-card-wrap {
+  margin-bottom: 48rpx;
 }
 .profile-section-divider {
   display: flex;
