@@ -367,11 +367,10 @@ Page({
       if (types.has('business')) tasks.push(this.fetchBusinessModules())
 
       const pageSections = enabled.map(sec => ({ id: sec.id, type: sec.type, name: sec.name }))
-      this.setData({ pageSections })
 
       Promise.all(tasks).then(() => {
         console.timeEnd('isDataReady')
-        this.setData({ isDataReady: true })
+        this.setData({ pageSections, isDataReady: true })
       })
     }).catch(() => {
       this.setData({ isDataReady: true })
