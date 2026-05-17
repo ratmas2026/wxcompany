@@ -472,10 +472,10 @@ Page({
       if (oldCtx) oldCtx.pause()
     }
     this.setData({ playingCardId: profile.id }, () => {
-      wx.nextTick(() => {
+      setTimeout(() => {
         const ctx = wx.createVideoContext('vid-' + profile.id)
         if (ctx) ctx.play()
-      })
+      }, 100)
     })
   },
 
