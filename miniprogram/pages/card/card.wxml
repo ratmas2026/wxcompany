@@ -70,22 +70,6 @@
     </view>
   </view>
 
-  <!-- 快速操作 -->
-  <view class="quick-actions">
-    <view class="action-item" bindtap="shareCard">
-      <view class="action-icon"><text>📤</text></view>
-      <text>推送</text>
-    </view>
-    <view class="action-item" bindtap="generatePoster">
-      <view class="action-icon"><text>🖼️</text></view>
-      <text>海报</text>
-    </view>
-    <view class="action-item" bindtap="collectCard">
-      <view class="action-icon"><text>❤️</text></view>
-      <text>收藏</text>
-    </view>
-  </view>
-
   <!-- 企业动态 -->
   <view wx:if="{{showProfiles}}" class="module-block">
     <view class="section-header">
