@@ -31,10 +31,11 @@
 
   <!-- 真实内容：数据就绪后渲染 -->
   <block wx:else>
+  <block wx:for="{{pageSections}}" wx:key="id">
   <!-- 企业动态 -->
-  <view wx:if="{{showProfiles}}" class="module-block">
+  <view wx:if="{{item.type === 'profiles'}}" class="module-block">
     <view class="section-header">
-      <text class="section-headline">{{profilesModuleName}}</text>
+      <text class="section-headline">{{item.name}}</text>
     </view>
     <!-- Hero区 - 企业动态ARC卡片 -->
     <block wx:if="{{heroCard}}">
@@ -288,9 +289,9 @@
   </view>
 
   <!-- 荣誉奖项 -->
-  <view wx:if="{{showHonors}}" class="module-block">
+  <view wx:if="{{item.type === 'honors'}}" class="module-block">
     <view class="section-header">
-      <text class="section-headline">{{honorsModuleName}}</text>
+      <text class="section-headline">{{item.name}}</text>
     </view>
     <view class="honors-gallery">
       <view wx:for="{{awards}}" wx:key="name" class="award-item {{item.offset ? 'award-offset' : ''}}">
@@ -304,9 +305,9 @@
   </view>
 
   <!-- 企业项目 -->
-  <view wx:if="{{showProjects}}" class="module-block">
+  <view wx:if="{{item.type === 'projects'}}" class="module-block">
     <view class="section-header">
-      <text class="section-headline">{{projectsModuleName}}</text>
+      <text class="section-headline">{{item.name}}</text>
     </view>
     <scroll-view scroll-x type="custom" class="project-scroll" enable-flex>
       <view wx:for="{{projects}}" wx:key="name" class="project-card">
@@ -325,9 +326,9 @@
   </view>
 
   <!-- 公司业绩 -->
-  <view wx:if="{{showPerformance}}" class="module-block">
+  <view wx:if="{{item.type === 'performance'}}" class="module-block">
     <view class="section-header">
-      <text class="section-headline">{{performanceModuleName}}</text>
+      <text class="section-headline">{{item.name}}</text>
     </view>
     <block wx:if="{{performanceHeroCard}}">
       <view class="hero-card-wrap">
@@ -474,9 +475,9 @@
   </view>
 
   <!-- 核心业务 -->
-  <view wx:if="{{showBusiness}}" class="module-block">
+  <view wx:if="{{item.type === 'business'}}" class="module-block">
     <view class="section-header">
-      <text class="section-headline">{{businessModuleName}}</text>
+      <text class="section-headline">{{item.name}}</text>
     </view>
     <!-- 核心业务 Hero 卡片 -->
     <block wx:if="{{businessHeroCards.length > 0}}">
@@ -550,6 +551,7 @@
   </view>
 
 
+  </block>
   </block>
 
   <view class="scroll-bottom-spacer"></view>

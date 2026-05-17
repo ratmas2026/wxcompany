@@ -4,7 +4,6 @@ const { FONT_SIZE_MAP, parseGridLayout } = require('../../utils/layout')
 Page({
   data: {
     isDataReady: false,
-    hasProfiles: false,
     companyInfo: {},
     sections: [],
     heroCard: null,
@@ -19,16 +18,7 @@ Page({
     businessSections: [],
     businessHeroCards: [],
 
-    showProfiles: false,
-    showBusiness: false,
-    showPerformance: false,
-    showHonors: false,
-    showProjects: false,
-    profilesModuleName: '',
-    businessModuleName: '',
-    performanceModuleName: '',
-    honorsModuleName: '',
-    projectsModuleName: ''
+    pageSections: []
   },
 
   onLoad() {
@@ -368,8 +358,6 @@ Page({
       const sections = (config.sections || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
       const enabled = sections.filter(sec => sec.enabled !== false)
       const types = new Set(enabled.map(sec => sec.type))
-      const moduleNames = {}
-      enabled.forEach(sec => { moduleNames[sec.type] = sec.name })
 
       const tasks = []
       if (types.has('profiles')) tasks.push(this.fetchAll())
@@ -378,19 +366,8 @@ Page({
       if (types.has('projects')) tasks.push(this.fetchProjects())
       if (types.has('business')) tasks.push(this.fetchBusinessModules())
 
-      this.setData({
-        hasProfiles: types.has('profiles'),
-        showProfiles: types.has('profiles'),
-        showBusiness: types.has('business'),
-        showPerformance: types.has('performance'),
-        showHonors: types.has('honors'),
-        showProjects: types.has('projects'),
-        profilesModuleName: moduleNames.profiles || '企业动态',
-        businessModuleName: moduleNames.business || '核心业务',
-        performanceModuleName: moduleNames.performance || '公司业绩',
-        honorsModuleName: moduleNames.honors || '企业荣誉',
-        projectsModuleName: moduleNames.projects || '企业项目'
-      })
+      const pageSections = enabled.map(sec => ({ id: sec.id, type: sec.type, name: sec.name }))
+      this.setData({ pageSections })
 
       Promise.all(tasks).then(() => {
         console.timeEnd('isDataReady')
