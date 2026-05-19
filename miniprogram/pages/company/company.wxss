@@ -561,6 +561,8 @@
 }
 .cover-body-rich {
   text-align: left;
+  color: #ffffff;
+  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.6);
 }
 .profile-card-video-btn {
   position: absolute;

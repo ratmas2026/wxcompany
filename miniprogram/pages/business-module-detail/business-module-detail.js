@@ -64,9 +64,19 @@ Page({
         return card
       })
 
-      const sections = (mod.sections || [])
+      // 无 section 但有卡片时，自动生成默认 single 布局展示所有卡片
+      let sections = (mod.sections || [])
         .filter(sec => sec.status !== false)
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      if (sections.length === 0 && allCards.length > 0) {
+        sections = [{
+          id: 'default',
+          displayLayout: 'single',
+          selectedIds: allCards.map(c => c.id),
+          sortOrder: 0,
+          status: true
+        }]
+      }
 
       const heroSection = sections.find(sec => sec.displayLayout === 'hero')
       const heroCard = heroSection
