@@ -521,14 +521,17 @@
 
       <div class="card" style="margin-top:24px">
         <div class="card-body">
-          <div class="cover-preview" style="position:relative;width:100%;max-width:375px;height:${profile.cover.aspectRatio === '4:3' ? '281px' : '211px'};margin:0;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#e8edf5,#dce3ef)">
-            ${pendingCoverBg ? `<img src="${escapeHtml(pendingCoverBg)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0">` : ''}
-            <div style="position:relative;z-index:1;display:flex;flex-direction:column;height:100%;padding:16px 14px;box-sizing:border-box">
-              ${profile.title ? `<div style="font-size:18px;font-weight:700;color:#1a202c;margin-bottom:4px;flex-shrink:0">${escapeHtml(profile.title)}</div>` : ''}
-              <div style="flex:1;display:flex;flex-direction:column;justify-content:center"></div>
-              ${profile.cover.body ? `<div style="flex-shrink:0;overflow:hidden">${profile.cover.body}</div>` : ''}
-              ${pendingCoverVideo ? `<div style="flex-shrink:0;margin-top:8px;text-align:center"><span style="display:inline-block;width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.4);line-height:44px;text-align:center;color:#fff;font-size:22px">▶</span></div>` : ''}
+          <div class="cover-preview-wrap" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+            <div class="cover-preview" id="coverPreview" style="position:relative;width:375px;height:${profile.cover.aspectRatio === '4:3' ? '281px' : '211px'};margin:0;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#e8edf5,#dce3ef);flex-shrink:0">
+              ${pendingCoverBg ? `<img src="${escapeHtml(pendingCoverBg)}" id="coverPreviewImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none"><div style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.35);pointer-events:none"></div><div id="coverLens" class="cover-lens" style="display:none"></div>` : ''}
+              <div style="position:relative;z-index:2;display:flex;flex-direction:column;height:100%;padding:16px 14px;box-sizing:border-box;pointer-events:none">
+                ${profile.title ? `<div style="font-size:18px;font-weight:700;color:#ffffff;text-shadow:0 2px 8px rgba(0,0,0,0.6);margin-bottom:4px;flex-shrink:0">${escapeHtml(profile.title)}</div>` : ''}
+                <div style="flex:1;display:flex;flex-direction:column;justify-content:center"></div>
+                ${profile.cover.body ? `<div style="flex-shrink:0;overflow:hidden;color:#ffffff;text-shadow:0 2px 8px rgba(0,0,0,0.6)">${profile.cover.body}</div>` : ''}
+                ${pendingCoverVideo ? `<div style="flex-shrink:0;margin-top:8px;text-align:center"><span style="display:inline-block;width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.4);line-height:44px;text-align:center;color:#fff;font-size:22px">&#9654;</span></div>` : ''}
+              </div>
             </div>
+            ${pendingCoverBg ? `<div id="coverZoomResult" class="cover-zoom-result" style="display:none;width:375px;height:${profile.cover.aspectRatio === '4:3' ? '281px' : '211px'};border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.12);flex-shrink:0"><div id="coverZoomInner" style="width:375px;height:${profile.cover.aspectRatio === '4:3' ? '281px' : '211px'};position:relative;transform-origin:0 0"><img src="${escapeHtml(pendingCoverBg)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0"><div style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.35)"></div><div style="position:relative;z-index:2;display:flex;flex-direction:column;height:100%;padding:16px 14px;box-sizing:border-box">${profile.title ? `<div style="font-size:18px;font-weight:700;color:#ffffff;text-shadow:0 2px 8px rgba(0,0,0,0.6);margin-bottom:4px;flex-shrink:0">${escapeHtml(profile.title)}</div>` : ''}<div style="flex:1;display:flex;flex-direction:column;justify-content:center"></div>${profile.cover.body ? `<div style="flex-shrink:0;overflow:hidden;color:#ffffff;text-shadow:0 2px 8px rgba(0,0,0,0.6)">${stripInlineColors(profile.cover.body)}</div>` : ''}</div></div></div>` : ''}
           </div>
         </div>
       </div>
@@ -609,11 +612,61 @@
       setTimeout(function() { initEditor(profile.detail.body) }, 50)
     } else if (activeTab === 'cover') {
       setTimeout(function() { initCoverEditor(profile.title, profile.cover.body) }, 50)
+      setTimeout(function() { initCoverMagnifier() }, 100)
     }
   }
 
   function escapeHtml(str) {
     return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  function stripInlineColors(html) {
+    return (html || '')
+      .replace(/\s*color\s*:\s*[^;'"]+;?/gi, '')
+      .replace(/\s*background-?color\s*:\s*[^;'"]+;?/gi, '')
+  }
+
+  function initCoverMagnifier() {
+    var preview = document.getElementById('coverPreview')
+    var lens = document.getElementById('coverLens')
+    var zoomResult = document.getElementById('coverZoomResult')
+    var zoomInner = document.getElementById('coverZoomInner')
+    if (!preview || !lens || !zoomResult || !zoomInner) return
+
+    var zoomRatio = 3
+
+    preview.addEventListener('mouseenter', function() {
+      lens.style.display = 'block'
+      zoomResult.style.display = 'block'
+    })
+
+    preview.addEventListener('mousemove', function(e) {
+      var rect = preview.getBoundingClientRect()
+      if (rect.width <= 0 || rect.height <= 0) return
+
+      var lensW = Math.round(rect.width / zoomRatio)
+      var lensH = Math.round(rect.height / zoomRatio)
+      lens.style.width = lensW + 'px'
+      lens.style.height = lensH + 'px'
+
+      var x = e.clientX - rect.left
+      var y = e.clientY - rect.top
+
+      var lensLeft = Math.min(Math.max(x - lensW / 2, 0), rect.width - lensW)
+      var lensTop = Math.min(Math.max(y - lensH / 2, 0), rect.height - lensH)
+      lens.style.left = lensLeft + 'px'
+      lens.style.top = lensTop + 'px'
+
+      var tx = -zoomRatio * lensLeft
+      var ty = -zoomRatio * lensTop
+
+      zoomInner.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + zoomRatio + ')'
+    })
+
+    preview.addEventListener('mouseleave', function() {
+      lens.style.display = 'none'
+      zoomResult.style.display = 'none'
+    })
   }
 
   // Sync helpers
@@ -825,6 +878,29 @@
 /* Business card import modal */
 .card-import-row:hover { background: rgba(0,91,191,0.04); }
 .card-import-row.selected { border-color: var(--primary) !important; background: var(--primary-light) !important; }
+
+/* 图片放大镜 */
+.cover-lens {
+  position: absolute;
+  z-index: 10;
+  width: 120px;
+  height: 120px;
+  border: 2px solid rgba(255,255,255,0.85);
+  border-radius: 4px;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15), 0 0 12px rgba(0,0,0,0.35);
+  background: rgba(255,255,255,0.12);
+}
+#coverPreview {
+  cursor: none;
+}
+#coverZoomInner, #coverZoomInner * {
+  color: #ffffff !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+}
+.cover-zoom-result {
+  transition: opacity 0.15s;
+}
 </style>
 </body>
 </html>
