@@ -1,44 +1,57 @@
 // Data Store - localStorage cache synced with API server
 const API_BASE = 'http://localhost:3456/api'
 
+function authFetch(url, options = {}) {
+  const token = sessionStorage.getItem('admin_token')
+  const headers = { ...options.headers }
+  if (token) headers['Authorization'] = 'Bearer ' + token
+  return fetch(url, { ...options, headers }).then(res => {
+    if (res.status === 401) {
+      sessionStorage.removeItem('admin_token')
+      window.location.href = 'login.html'
+    }
+    return res
+  })
+}
+
 const DataStore = {
   _storageKey: 'admin_data_cache',
   _ready: false,
 
   async init() {
     try {
-      const res = await fetch(API_BASE + '/cards')
+      const res = await authFetch(API_BASE + '/cards')
       const cards = await res.json()
-      const res2 = await fetch(API_BASE + '/messages')
+      const res2 = await authFetch(API_BASE + '/messages')
       const messages = await res2.json()
-      const res3 = await fetch(API_BASE + '/positions')
+      const res3 = await authFetch(API_BASE + '/positions')
       const positions = await res3.json()
-      const res4 = await fetch(API_BASE + '/videos')
+      const res4 = await authFetch(API_BASE + '/videos')
       const videos = await res4.json()
-      const res5 = await fetch(API_BASE + '/splash')
+      const res5 = await authFetch(API_BASE + '/splash')
       const splashImages = await res5.json()
-      const res6 = await fetch(API_BASE + '/company/profile')
+      const res6 = await authFetch(API_BASE + '/company/profile')
       const companyProfiles = await res6.json()
-      const res7 = await fetch(API_BASE + '/honors')
+      const res7 = await authFetch(API_BASE + '/honors')
       const honors = await res7.json()
-      const res9 = await fetch(API_BASE + '/projects')
+      const res9 = await authFetch(API_BASE + '/projects')
       const projects = await res9.json()
-      const res11 = await fetch(API_BASE + '/company/profile-config')
+      const res11 = await authFetch(API_BASE + '/company/profile-config')
       const companyProfileConfig = await res11.json()
-      const res12 = await fetch(API_BASE + '/business-modules')
+      const res12 = await authFetch(API_BASE + '/business-modules')
       const businessModules = await res12.json()
-      const res13 = await fetch(API_BASE + '/company/performance')
+      const res13 = await authFetch(API_BASE + '/company/performance')
       const companyPerformances = await res13.json()
-      const res14 = await fetch(API_BASE + '/company/performance-config')
+      const res14 = await authFetch(API_BASE + '/company/performance-config')
       const companyPerformanceConfig = await res14.json()
-      const res15 = await fetch(API_BASE + '/company/case-page-config')
+      const res15 = await authFetch(API_BASE + '/company/case-page-config')
       const casePageConfig = await res15.json()
 
-      const res16 = await fetch(API_BASE + '/business-modules/page-config')
+      const res16 = await authFetch(API_BASE + '/business-modules/page-config')
       const businessModulePageConfig = await res16.json()
-      const res17 = await fetch(API_BASE + '/card-page-config')
+      const res17 = await authFetch(API_BASE + '/card-page-config')
       const cardPageConfig = await res17.json()
-      const res18 = await fetch(API_BASE + '/company-infos')
+      const res18 = await authFetch(API_BASE + '/company-infos')
       const companyInfos = await res18.json()
 
       localStorage.setItem(this._storageKey, JSON.stringify({ cards, messages, positions, videos, splashImages, companyProfiles, companyProfileConfig, companyPerformances, companyPerformanceConfig, casePageConfig, cardPageConfig, honors, projects, businessModules, businessModulePageConfig, companyInfos }))
@@ -85,7 +98,7 @@ const DataStore = {
   async _sync(type, method, url, body) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } }
     if (body) opts.body = JSON.stringify(body)
-    const res = await fetch(API_BASE + url, opts)
+    const res = await authFetch(API_BASE + url, opts)
     if (!res.ok) throw new Error('Server responded with ' + res.status)
   },
 
@@ -99,7 +112,7 @@ const DataStore = {
       if (idx >= 0) { cache.cards[idx] = card; this._setCache(cache); await this._sync('cards', 'PUT', '/cards/' + card.id, card) }
     } else {
       try {
-        const res = await fetch(API_BASE + '/cards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(card) })
+        const res = await authFetch(API_BASE + '/cards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(card) })
         const saved = await res.json()
         cache.cards.unshift(saved)
         this._setCache(cache)
@@ -161,7 +174,7 @@ const DataStore = {
       if (idx >= 0) { cache.positions[idx] = pos; this._setCache(cache); await this._sync('positions', 'PUT', '/positions/' + pos.id, pos) }
     } else {
       try {
-        const res = await fetch(API_BASE + '/positions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pos) })
+        const res = await authFetch(API_BASE + '/positions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pos) })
         const saved = await res.json()
         cache.positions.push(saved)
         this._setCache(cache)
@@ -184,7 +197,7 @@ const DataStore = {
   async uploadVideo(file) {
     const fd = new FormData()
     fd.append('video', file)
-    const res = await fetch(API_BASE + '/upload/video', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/video', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -192,7 +205,7 @@ const DataStore = {
   async uploadCover(file) {
     const fd = new FormData()
     fd.append('cover', file)
-    const res = await fetch(API_BASE + '/upload/cover', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/cover', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -200,7 +213,7 @@ const DataStore = {
   async uploadAvatar(file) {
     const fd = new FormData()
     fd.append('avatar', file)
-    const res = await fetch(API_BASE + '/upload/avatar', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/avatar', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -215,7 +228,7 @@ const DataStore = {
       if (idx >= 0) { cache.videos[idx] = video; this._setCache(cache); await this._sync('videos', 'PUT', '/videos/' + video.id, video) }
     } else {
       try {
-        const res = await fetch(API_BASE + '/videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(video) })
+        const res = await authFetch(API_BASE + '/videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(video) })
         const saved = await res.json()
         cache.videos.push(saved)
         this._setCache(cache)
@@ -236,7 +249,7 @@ const DataStore = {
 
   async reset() {
     try {
-      await fetch(API_BASE + '/reset', { method: 'POST' })
+      await authFetch(API_BASE + '/reset', { method: 'POST' })
     } catch (e) { /* ignore */ }
     localStorage.removeItem(this._storageKey)
     await this.init()
@@ -248,7 +261,7 @@ const DataStore = {
   async uploadSplash(file) {
     const fd = new FormData()
     fd.append('splash', file)
-    const res = await fetch(API_BASE + '/upload/splash', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/splash', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -273,7 +286,7 @@ const DataStore = {
       if (idx >= 0) { await this._sync('companyProfiles', 'PUT', '/company/profile/' + profile.id, profile); cache.companyProfiles[idx] = profile; this._setCache(cache) }
     } else {
       try {
-        const res = await fetch(API_BASE + '/company/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) })
+        const res = await authFetch(API_BASE + '/company/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) })
         const saved = await res.json()
         cache.companyProfiles.unshift(saved)
         this._setCache(cache)
@@ -295,7 +308,7 @@ const DataStore = {
   async uploadProfileImage(file) {
     const fd = new FormData()
     fd.append('profile', file)
-    const res = await fetch(API_BASE + '/upload/profile', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/profile', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -303,7 +316,7 @@ const DataStore = {
   async uploadEditorFile(file) {
     const fd = new FormData()
     fd.append('file', file)
-    const res = await fetch(API_BASE + '/upload/editor', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/editor', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -331,7 +344,7 @@ const DataStore = {
   },
 
   async migrateCompanyProfiles() {
-    const res = await fetch(API_BASE + '/company/profile/migrate', { method: 'POST' })
+    const res = await authFetch(API_BASE + '/company/profile/migrate', { method: 'POST' })
     const result = await res.json()
     await this.init()
     return result
@@ -350,7 +363,7 @@ const DataStore = {
       if (idx >= 0) { await this._sync('companyPerformances', 'PUT', '/company/performance/' + profile.id, profile); cache.companyPerformances[idx] = profile; this._setCache(cache) }
     } else {
       try {
-        const res = await fetch(API_BASE + '/company/performance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) })
+        const res = await authFetch(API_BASE + '/company/performance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) })
         const saved = await res.json()
         cache.companyPerformances.unshift(saved)
         this._setCache(cache)
@@ -372,7 +385,7 @@ const DataStore = {
   async uploadPerformanceImage(file) {
     const fd = new FormData()
     fd.append('performance', file)
-    const res = await fetch(API_BASE + '/upload/performance', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/performance', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -400,7 +413,7 @@ const DataStore = {
   },
 
   async migrateCompanyPerformances() {
-    const res = await fetch(API_BASE + '/company/performance/migrate', { method: 'POST' })
+    const res = await authFetch(API_BASE + '/company/performance/migrate', { method: 'POST' })
     const result = await res.json()
     await this.init()
     return result
@@ -445,7 +458,7 @@ const DataStore = {
       this._setCache(cache)
     } else {
       try {
-        const res = await fetch(API_BASE + '/business-modules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
+        const res = await authFetch(API_BASE + '/business-modules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
         const saved = await res.json()
         cache.businessModules.push(saved)
         this._setCache(cache)
@@ -480,7 +493,7 @@ const DataStore = {
       }
     } else {
       try {
-        const res = await fetch(API_BASE + '/business-modules/' + moduleId + '/cards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(card) })
+        const res = await authFetch(API_BASE + '/business-modules/' + moduleId + '/cards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(card) })
         const saved = await res.json()
         mod.cards.push(saved)
         this._setCache(cache)
@@ -519,7 +532,7 @@ const DataStore = {
   async uploadBusinessModuleImage(file) {
     const fd = new FormData()
     fd.append('file', file)
-    const res = await fetch(API_BASE + '/upload/business-module', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/business-module', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -547,7 +560,7 @@ const DataStore = {
       if (idx >= 0) { cache.honors[idx] = item; this._setCache(cache); await this._sync('honors', 'PUT', '/honors/' + item.id, item) }
     } else {
       try {
-        const res = await fetch(API_BASE + '/honors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
+        const res = await authFetch(API_BASE + '/honors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
         const saved = await res.json()
         cache.honors.push(saved)
         this._setCache(cache)
@@ -569,7 +582,7 @@ const DataStore = {
   async uploadHonorImage(file) {
     const fd = new FormData()
     fd.append('honors', file)
-    const res = await fetch(API_BASE + '/upload/honors', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/honors', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -587,7 +600,7 @@ const DataStore = {
       if (idx >= 0) { cache.projects[idx] = item; this._setCache(cache); await this._sync('projects', 'PUT', '/projects/' + item.id, item) }
     } else {
       try {
-        const res = await fetch(API_BASE + '/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
+        const res = await authFetch(API_BASE + '/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
         const saved = await res.json()
         cache.projects.push(saved)
         this._setCache(cache)
@@ -609,7 +622,7 @@ const DataStore = {
   async uploadProjectImage(file) {
     const fd = new FormData()
     fd.append('projects', file)
-    const res = await fetch(API_BASE + '/upload/projects', { method: 'POST', body: fd })
+    const res = await authFetch(API_BASE + '/upload/projects', { method: 'POST', body: fd })
     const data = await res.json()
     return data.url
   },
@@ -631,7 +644,7 @@ const DataStore = {
       }
     } else {
       try {
-        const res = await fetch(API_BASE + '/company-infos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
+        const res = await authFetch(API_BASE + '/company-infos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
         const saved = await res.json()
         cache.companyInfos.push(saved)
         this._setCache(cache)

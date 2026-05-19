@@ -3,6 +3,10 @@ const Admin = {
   currentPage: '',
 
   init(page) {
+    if (!sessionStorage.getItem('admin_token')) {
+      window.location.href = 'login.html'
+      return
+    }
     this.currentPage = page
     this.injectLayout()
     this.setActiveNav(page)
@@ -69,8 +73,7 @@ const Admin = {
           <input type="text" id="globalSearch" placeholder="全局搜索...">
         </div>
         <div class="topbar-right">
-          <div class="topbar-icon" title="通知">&#x1F514;</div>
-          <div class="topbar-icon" title="设置">&#x2699;</div>
+          <div class="topbar-icon" title="退出登录" onclick="Admin.logout()" style="cursor:pointer">&#x1F6AA;</div>
           <div class="topbar-user">
             <div class="topbar-avatar">A</div>
             <span class="topbar-name">Admin</span>
@@ -228,5 +231,10 @@ const Admin = {
     a.download = `${filename}.csv`
     a.click()
     URL.revokeObjectURL(url)
+  },
+
+  logout() {
+    sessionStorage.removeItem('admin_token')
+    window.location.href = 'login.html'
   }
 }

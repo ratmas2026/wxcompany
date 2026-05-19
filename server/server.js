@@ -4,6 +4,13 @@ const fs = require('fs')
 const path = require('path')
 const multer = require('multer')
 const db = require('./db')
+const crypto = require('crypto')
+
+// 登录鉴权
+const ADMIN_USER = 'ratmas'
+const ADMIN_PASS = 'laoshuren'
+const authTokens = new Map() // token -> { username, createdAt }
+const TOKEN_TTL = 24 * 60 * 60 * 1000 // 24小时
 
 const app = express()
 const PORT = 3456
@@ -137,6 +144,55 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ error: err.message })
   }
   next(err)
+})
+
+// --- Auth Middleware ---
+function authMiddleware(req, res, next) {
+  // 白名单：login 和 auth-check 不需要鉴权
+  if (req.path === '/api/login' || req.path === '/api/auth-check') return next()
+  // 非 API 路径放行（静态文件等）
+  if (!req.path.startsWith('/api/') && req.path !== '/api') return next()
+
+  const auth = req.headers.authorization
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized', code: 'NO_TOKEN' })
+  }
+  const token = auth.slice(7)
+  const session = authTokens.get(token)
+  if (!session) {
+    return res.status(401).json({ error: 'Unauthorized', code: 'INVALID_TOKEN' })
+  }
+  if (Date.now() - session.createdAt > TOKEN_TTL) {
+    authTokens.delete(token)
+    return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' })
+  }
+  next()
+}
+
+app.use(authMiddleware)
+
+// Login
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body || {}
+  if (username !== ADMIN_USER || password !== ADMIN_PASS) {
+    return res.status(401).json({ ok: false, error: '用户名或密码错误' })
+  }
+  const token = crypto.randomUUID()
+  authTokens.set(token, { username, createdAt: Date.now() })
+  res.json({ ok: true, token })
+})
+
+// Auth check
+app.get('/api/auth-check', (req, res) => {
+  const auth = req.headers.authorization
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return res.status(401).json({ ok: false })
+  }
+  const session = authTokens.get(auth.slice(7))
+  if (!session || Date.now() - session.createdAt > TOKEN_TTL) {
+    return res.status(401).json({ ok: false })
+  }
+  res.json({ ok: true, username: session.username })
 })
 
 // --- Helpers ---
