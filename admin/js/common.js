@@ -11,6 +11,16 @@ const Admin = {
     this.injectLayout()
     this.setActiveNav(page)
     this.bindSearch()
+    if (!this._dropdownBound) {
+      this._dropdownBound = true
+      document.addEventListener('click', function(e) {
+        var user = document.getElementById('topbarUser')
+        var dd = document.getElementById('userDropdown')
+        if (dd && dd.classList.contains('show') && (!user || !user.contains(e.target))) {
+          dd.classList.remove('show')
+        }
+      })
+    }
   },
 
   injectLayout() {
@@ -73,10 +83,13 @@ const Admin = {
           <input type="text" id="globalSearch" placeholder="全局搜索...">
         </div>
         <div class="topbar-right">
-          <div class="topbar-icon" title="退出登录" onclick="Admin.logout()" style="cursor:pointer">&#x1F6AA;</div>
-          <div class="topbar-user">
+          <div class="topbar-user" id="topbarUser" onclick="Admin.toggleUserMenu()">
             <div class="topbar-avatar">A</div>
             <span class="topbar-name">Admin</span>
+            <span class="topbar-arrow">&#x25BC;</span>
+            <div class="user-dropdown" id="userDropdown">
+              <div class="user-dropdown-item" onclick="Admin.logout();event.stopPropagation()">退出登录</div>
+            </div>
           </div>
         </div>
       </header>
@@ -236,5 +249,10 @@ const Admin = {
   logout() {
     sessionStorage.removeItem('admin_token')
     window.location.href = 'login.html'
+  },
+
+  toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown')
+    if (dropdown) dropdown.classList.toggle('show')
   }
 }

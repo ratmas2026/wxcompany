@@ -198,6 +198,42 @@ a:hover { text-decoration: underline; }
   font-weight: 600;
   color: var(--on-surface);
 }
+.topbar-user {
+  position: relative;
+}
+.topbar-arrow {
+  font-size: 10px;
+  color: var(--on-surface-variant);
+  margin-left: 2px;
+  transition: transform 0.2s;
+}
+.user-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  min-width: 140px;
+  z-index: 1000;
+  overflow: hidden;
+}
+.user-dropdown.show {
+  display: block;
+}
+.user-dropdown-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.user-dropdown-item:hover {
+  background: var(--surface-container);
+}
 
 /* Page Content */
 .page-content {
