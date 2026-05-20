@@ -357,6 +357,21 @@
         })
       }
 
+      // 四宫格统一卡片比例
+      if (layout === 'grid' && selectionOrder.length >= 2) {
+        const gridCards = selectionOrder.map(id => sorted.find(p => p.id === id)).filter(Boolean)
+        const ratios = [...new Set(gridCards.map(c => c.cover && c.cover.aspectRatio || '16:9'))]
+        if (ratios.length > 1) {
+          const target = ratios[0]
+          const fixes = gridCards.filter(c => (c.cover && c.cover.aspectRatio || '16:9') !== target)
+          for (const card of fixes) {
+            card.cover.aspectRatio = target
+            await DataStore.saveCompanyPerformance(card)
+          }
+          Admin.showToast(`已将 ${fixes.length} 张卡片比例统一为 ${target}`, 'info')
+        }
+      }
+
       await DataStore.updateCompanyPerformanceConfig({ sections })
       Admin.showToast('展示方案已保存', 'success')
       render()
