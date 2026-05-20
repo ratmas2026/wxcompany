@@ -148,10 +148,12 @@ app.use((err, req, res, next) => {
 
 // --- Auth Middleware ---
 function authMiddleware(req, res, next) {
-  // 白名单：login 和 auth-check 不需要鉴权
+  // 登录和鉴权检查始终放行
   if (req.path === '/api/login' || req.path === '/api/auth-check') return next()
   // 非 API 路径放行（静态文件等）
   if (!req.path.startsWith('/api/') && req.path !== '/api') return next()
+  // GET 请求放行（小程序公开接口）
+  if (req.method === 'GET') return next()
 
   const auth = req.headers.authorization
   if (!auth || !auth.startsWith('Bearer ')) {
