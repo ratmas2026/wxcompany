@@ -339,7 +339,13 @@ app.put('/api/company/profile/:id', (req, res) => {
 
 app.delete('/api/company/profile/:id', (req, res) => {
   const data = readData()
-  data.companyProfiles = (data.companyProfiles || []).filter(p => p.id !== parseInt(req.params.id))
+  const id = parseInt(req.params.id)
+  data.companyProfiles = (data.companyProfiles || []).filter(p => p.id !== id)
+  // 清理展示方案中被删除卡片的引用
+  const config = data.companyProfileConfig || { sections: [] };
+  (config.sections || []).forEach(sec => {
+    sec.selectedIds = (sec.selectedIds || []).filter(sid => sid !== id)
+  })
   writeData(data)
   res.json({ ok: true })
 })
@@ -528,7 +534,13 @@ app.put('/api/company/performance/:id', (req, res) => {
 
 app.delete('/api/company/performance/:id', (req, res) => {
   const data = readData()
-  data.companyPerformances = (data.companyPerformances || []).filter(p => p.id !== parseInt(req.params.id))
+  const id = parseInt(req.params.id)
+  data.companyPerformances = (data.companyPerformances || []).filter(p => p.id !== id)
+  // 清理展示方案中被删除卡片的引用
+  const config = data.companyPerformanceConfig || { sections: [] };
+  (config.sections || []).forEach(sec => {
+    sec.selectedIds = (sec.selectedIds || []).filter(sid => sid !== id)
+  })
   writeData(data)
   res.json({ ok: true })
 })
@@ -840,7 +852,13 @@ app.put('/api/business-modules/:id', (req, res) => {
 
 app.delete('/api/business-modules/:id', (req, res) => {
   const data = readData()
-  data.businessModules = (data.businessModules || []).filter(m => m.id !== parseInt(req.params.id))
+  const id = parseInt(req.params.id)
+  data.businessModules = (data.businessModules || []).filter(m => m.id !== id)
+  // 清理展示方案中被删除模块的引用
+  const pageConfig = data.businessModulePageConfig || { sections: [] };
+  (pageConfig.sections || []).forEach(sec => {
+    sec.selectedIds = (sec.selectedIds || []).filter(sid => sid !== id)
+  })
   writeData(data)
   res.json({ ok: true })
 })

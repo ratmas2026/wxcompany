@@ -301,8 +301,18 @@ const DataStore = {
   async deleteCompanyProfile(id) {
     const cache = this._getCache()
     cache.companyProfiles = (cache.companyProfiles || []).filter(p => p.id !== id)
+    // 清理展示方案中被删除卡片的引用，防止 selectedIds 残留
+    const config = cache.companyProfileConfig || { sections: [] }
+    const sections = config.sections || []
+    let cleaned = false
+    sections.forEach(sec => {
+      const before = (sec.selectedIds || []).length
+      sec.selectedIds = (sec.selectedIds || []).filter(sid => sid !== id)
+      if (sec.selectedIds.length !== before) cleaned = true
+    })
     this._setCache(cache)
     await this._sync('companyProfiles', 'DELETE', '/company/profile/' + id)
+    if (cleaned) await this.updateCompanyProfileConfig(config)
   },
 
   async uploadProfileImage(file) {
@@ -378,8 +388,18 @@ const DataStore = {
   async deleteCompanyPerformance(id) {
     const cache = this._getCache()
     cache.companyPerformances = (cache.companyPerformances || []).filter(p => p.id !== id)
+    // 清理展示方案中被删除卡片的引用
+    const config = cache.companyPerformanceConfig || { sections: [] }
+    const sections = config.sections || []
+    let cleaned = false
+    sections.forEach(sec => {
+      const before = (sec.selectedIds || []).length
+      sec.selectedIds = (sec.selectedIds || []).filter(sid => sid !== id)
+      if (sec.selectedIds.length !== before) cleaned = true
+    })
     this._setCache(cache)
     await this._sync('companyPerformances', 'DELETE', '/company/performance/' + id)
+    if (cleaned) await this.updateCompanyPerformanceConfig(config)
   },
 
   async uploadPerformanceImage(file) {
@@ -473,8 +493,18 @@ const DataStore = {
   async deleteBusinessModule(id) {
     const cache = this._getCache()
     cache.businessModules = (cache.businessModules || []).filter(m => m.id !== id)
+    // 清理展示方案中被删除模块的引用
+    const config = cache.businessModulePageConfig || { sections: [] }
+    const sections = config.sections || []
+    let cleaned = false
+    sections.forEach(sec => {
+      const before = (sec.selectedIds || []).length
+      sec.selectedIds = (sec.selectedIds || []).filter(sid => sid !== id)
+      if (sec.selectedIds.length !== before) cleaned = true
+    })
     this._setCache(cache)
     await this._sync('businessModules', 'DELETE', '/business-modules/' + id)
+    if (cleaned) await this.updateBusinessModulePageConfig(config)
   },
 
   async saveBusinessModuleCard(moduleId, card) {

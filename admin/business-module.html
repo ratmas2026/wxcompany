@@ -275,7 +275,7 @@
 
   function showLayoutConfigForEdit(preSelected, preLayout, preSection) {
     var sorted = [...modules]
-    var selectionOrder = [...(preSelected || [])]
+    var selectionOrder = [...(preSelected || [])].filter(function(id) { return sorted.some(function(m) { return m.id === id }) })
 
     // 收集已被其他分区使用的模块 ID（编辑模式下排除自身）
     var pageConfig = DataStore.getBusinessModulePageConfig()

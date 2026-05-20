@@ -252,7 +252,7 @@
   function showLayoutConfigForEdit(preSelected, preLayout, preSection) {
     const config = DataStore.getCompanyPerformanceConfig()
     const sorted = [...profiles]
-    let selectionOrder = [...(preSelected || [])]
+    let selectionOrder = [...(preSelected || [])].filter(id => sorted.some(p => p.id === id))
 
     // 收集已被其他分区使用的卡片 ID（编辑模式下排除自身）
     const allSections = config.sections || []
