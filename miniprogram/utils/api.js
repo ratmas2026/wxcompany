@@ -1,6 +1,6 @@
-// 接口封装
-const BASE_URL = 'http://localhost:3456/api'
-const STATIC_BASE = 'http://localhost:3456'
+const config = require('./config.js')
+const BASE_URL = config.BASE_URL
+const STATIC_BASE = config.STATIC_BASE
 
 const request = (url, options = {}) => {
   return new Promise((resolve, reject) => {
