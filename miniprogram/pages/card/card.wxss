@@ -562,11 +562,12 @@
   padding-bottom: 16rpx;
 }
 .profile-scroll-inner {
-  display: flex;
+  display: inline-flex;
   gap: 24rpx;
   padding: 0 32rpx;
 }
 .profile-card-hscroll {
+  flex-shrink: 0;
   min-width: 80vw;
 }
 
