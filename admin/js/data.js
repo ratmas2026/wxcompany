@@ -1,5 +1,5 @@
 // Data Store - localStorage cache synced with API server
-const API_BASE = 'http://localhost:3456/api'
+const API_BASE = '/api'
 
 function authFetch(url, options = {}) {
   const token = sessionStorage.getItem('admin_token')
