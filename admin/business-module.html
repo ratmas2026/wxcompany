@@ -291,7 +291,7 @@
         var isUsed = usedIds.includes(m.id)
         var checked = selectionOrder.includes(m.id) ? 'checked' : ''
         var orderNum = selectionOrder.indexOf(m.id)
-        var orderBadge = orderNum >= 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;margin-left:8px">' + (orderNum + 1) + '</span>' : ''
+        var orderBadge = orderNum >= 0 ? '<span class="order-badge" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;margin-left:8px">' + (orderNum + 1) + '</span>' : ''
         var disabledAttr = isUsed ? 'disabled' : ''
         var usedLabel = isUsed ? '<span style="font-size:11px;color:#e53e3e;margin-left:8px">已使用</span>' : ''
         var cursorStyle = isUsed ? 'cursor:not-allowed' : 'cursor:pointer'

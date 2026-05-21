@@ -267,7 +267,7 @@
         const isUsed = usedIds.includes(p.id)
         const checked = selectionOrder.includes(p.id) ? 'checked' : ''
         const orderNum = selectionOrder.indexOf(p.id)
-        const orderBadge = orderNum >= 0 ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;margin-left:8px">${orderNum + 1}</span>` : ''
+        const orderBadge = orderNum >= 0 ? `<span class="order-badge" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;margin-left:8px">${orderNum + 1}</span>` : ''
         const disabledAttr = isUsed ? 'disabled' : ''
         const usedLabel = isUsed ? '<span style="font-size:11px;color:#e53e3e;margin-left:8px">已使用</span>' : ''
         const cursorStyle = isUsed ? 'cursor:not-allowed' : 'cursor:pointer'
