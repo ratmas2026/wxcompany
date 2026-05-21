@@ -9,7 +9,8 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       AMAP_KEY: '',
-      AMAP_SECURITY_CODE: ''
+      AMAP_SECURITY_CODE: '',
+      ADMIN_SECRET: ''
     },
     log_date_format: 'YYYY-MM-DD HH:mm:ss',
     error_file: '/opt/wxcompany/logs/error.log',

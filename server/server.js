@@ -13,8 +13,27 @@ const ADMIN_PASS = 'laoshuren'
 // 高德地图配置（从环境变量读取，避免硬编码密钥提交到仓库）
 const AMAP_KEY = process.env.AMAP_KEY || ''
 const AMAP_SECURITY_CODE = process.env.AMAP_SECURITY_CODE || ''
-const authTokens = new Map() // token -> { username, createdAt }
+const ADMIN_SECRET = process.env.ADMIN_SECRET || crypto.randomBytes(32).toString('hex')
 const TOKEN_TTL = 24 * 60 * 60 * 1000 // 24小时
+
+function createToken() {
+  const expiry = Date.now() + TOKEN_TTL
+  const payload = 'admin:' + expiry.toString()
+  const hmac = crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('hex')
+  return Buffer.from(payload + ':' + hmac).toString('base64')
+}
+
+function validateToken(token) {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString()
+    const parts = decoded.split(':')
+    const hmac = parts.pop()
+    const payload = parts.join(':')
+    if (Date.now() > parseInt(payload.split(':')[1])) return false
+    const expectedHmac = crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('hex')
+    return hmac === expectedHmac
+  } catch (e) { return false }
+}
 
 const app = express()
 const PORT = 3456
@@ -164,13 +183,8 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized', code: 'NO_TOKEN' })
   }
   const token = auth.slice(7)
-  const session = authTokens.get(token)
-  if (!session) {
+  if (!validateToken(token)) {
     return res.status(401).json({ error: 'Unauthorized', code: 'INVALID_TOKEN' })
-  }
-  if (Date.now() - session.createdAt > TOKEN_TTL) {
-    authTokens.delete(token)
-    return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' })
   }
   next()
 }
@@ -183,8 +197,7 @@ app.post('/api/login', (req, res) => {
   if (username !== ADMIN_USER || password !== ADMIN_PASS) {
     return res.status(401).json({ ok: false, error: '用户名或密码错误' })
   }
-  const token = crypto.randomUUID()
-  authTokens.set(token, { username, createdAt: Date.now() })
+  const token = createToken()
   res.json({ ok: true, token })
 })
 
@@ -194,11 +207,10 @@ app.get('/api/auth-check', (req, res) => {
   if (!auth || !auth.startsWith('Bearer ')) {
     return res.status(401).json({ ok: false })
   }
-  const session = authTokens.get(auth.slice(7))
-  if (!session || Date.now() - session.createdAt > TOKEN_TTL) {
+  if (!validateToken(auth.slice(7))) {
     return res.status(401).json({ ok: false })
   }
-  res.json({ ok: true, username: session.username })
+  res.json({ ok: true, username: 'admin' })
 })
 
 // 高德地图配置（仅限已认证管理员访问）
@@ -207,8 +219,7 @@ app.get('/api/config/amap', (req, res) => {
   if (!auth || !auth.startsWith('Bearer ')) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' })
   }
-  const session = authTokens.get(auth.slice(7))
-  if (!session || Date.now() - session.createdAt > TOKEN_TTL) {
+  if (!validateToken(auth.slice(7))) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' })
   }
   if (!AMAP_KEY) {
