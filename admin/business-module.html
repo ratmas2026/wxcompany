@@ -374,15 +374,6 @@
         return true
       })
 
-      // If editing, pool any modules from the old section not in the new selection
-      if (preSection) {
-        (preSection.selectedIds || []).forEach(function(id) {
-          if (!selectionOrder.includes(id) && !orphanSingleIds.includes(id)) {
-            orphanSingleIds.push(id)
-          }
-        })
-      }
-
       // Merge all singles into one pool
       var existingSingle = sections.find(function(sec) { return sec.displayLayout === 'single' })
       sections = sections.filter(function(sec) { return sec.displayLayout !== 'single' })
@@ -571,7 +562,9 @@
     var sections = (config.sections || []).sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) })
     var sec = sections[idx]
     if (!sec) return
-    // Don't remove the section upfront — let saveSection handle the merge.
+    // Remove this section, pre-select its cards and layout for re-creation
+    sections.splice(idx, 1)
+    DataStore.updateBusinessModulePageConfig({ sections: sections })
     showLayoutConfigForEdit(sec.selectedIds || [], sec.displayLayout, sec)
   }
 

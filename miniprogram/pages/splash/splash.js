@@ -31,20 +31,20 @@ Page({
       this.setData({ currentImage: random })
     }
 
-    // 从后台图库随机选一张，失败或无效则用本地兜底
+    // 首帧立即加载本地兜底图，避免蓝底"企业展示"文字闪现
+    pickLocalFallback()
+
+    // 异步获取后台图库，有则替换为服务器图片
     api.getSplashImages().then(images => {
       if (images && images.length) {
         const valid = images.filter(img => img.url && img.url.length > 0)
         if (valid.length) {
           const random = valid[Math.floor(Math.random() * valid.length)]
           this.setData({ currentImage: api.staticUrl(random.url) })
-          return
         }
       }
-      pickLocalFallback()
     }).catch(err => {
-      console.warn('启动图加载失败，使用本地兜底', err)
-      pickLocalFallback()
+      console.warn('启动图加载失败，继续使用本地兜底', err)
     })
   },
 

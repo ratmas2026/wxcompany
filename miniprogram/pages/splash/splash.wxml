@@ -1,6 +1,6 @@
 <view class="splash-container">
-  <!-- 兜底渐变背景 -->
-  <view class="splash-fallback signature-gradient">
+  <!-- 兜底渐变背景（仅在没有图片时显示） -->
+  <view wx:if="{{!currentImage}}" class="splash-fallback signature-gradient">
     <text class="fallback-icon">🏢</text>
     <text class="fallback-text">企业展示</text>
   </view>
