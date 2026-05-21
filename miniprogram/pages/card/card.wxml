@@ -93,7 +93,6 @@
           <block wx:for="{{heroCard.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
             <template is="textBox" data="{{tb}}" />
           </block>
-          <rich-text wx:if="{{heroCard.cover.body}}" nodes="{{heroCard.cover.body}}" class="cover-body-rich"></rich-text>
           <view wx:if="{{heroCard.cover.video}}" class="hero-video-btn" data-profile="{{heroCard}}" catchtap="onCoverVideoTap">
             <text class="profile-card-play-icon">▶</text>
           </view>
@@ -126,7 +125,6 @@
               <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
               </block>
-              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
               <view wx:if="{{card.cover.video}}" class="hero-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                 <text class="profile-card-play-icon">▶</text>
               </view>
@@ -159,7 +157,6 @@
               <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
               </block>
-              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
               <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                 <text class="profile-card-play-icon">▶</text>
               </view>
@@ -194,7 +191,6 @@
                 <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
                   <template is="textBox" data="{{tb}}" />
                 </block>
-                <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
                 <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                   <text class="profile-card-play-icon">▶</text>
                 </view>
@@ -232,7 +228,6 @@
               <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
               </block>
-              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
               <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                 <text class="profile-card-play-icon">▶</text>
               </view>
@@ -278,7 +273,6 @@
                 <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
                   <template is="textBox" data="{{tb}}" />
                 </block>
-                <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
                 <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                   <text class="profile-card-play-icon">▶</text>
                 </view>
@@ -308,7 +302,6 @@
                 <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
                   <template is="textBox" data="{{tb}}" />
                 </block>
-                <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
                 <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                   <text class="profile-card-play-icon">▶</text>
                 </view>
@@ -348,7 +341,6 @@
           <block wx:for="{{performanceHeroCard.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
             <template is="textBox" data="{{tb}}" />
           </block>
-          <rich-text wx:if="{{performanceHeroCard.cover.body}}" nodes="{{performanceHeroCard.cover.body}}" class="cover-body-rich"></rich-text>
           <view wx:if="{{performanceHeroCard.cover.video}}" class="hero-video-btn" data-profile="{{performanceHeroCard}}" catchtap="onCoverVideoTap">
             <text class="profile-card-play-icon">▶</text>
           </view>
@@ -386,7 +378,6 @@
               <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
               </block>
-              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
               <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                 <text class="profile-card-play-icon">▶</text>
               </view>
@@ -420,7 +411,6 @@
                 <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
                   <template is="textBox" data="{{tb}}" />
                 </block>
-                <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
                 <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                   <text class="profile-card-play-icon">▶</text>
                 </view>
@@ -457,7 +447,6 @@
               <block wx:for="{{card.cover.zones.bottom.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
               </block>
-              <rich-text wx:if="{{card.cover.body}}" nodes="{{card.cover.body}}" class="cover-body-rich"></rich-text>
               <view wx:if="{{card.cover.video}}" class="profile-card-video-btn" data-profile="{{card}}" catchtap="onCoverVideoTap">
                 <text class="profile-card-play-icon">▶</text>
               </view>
