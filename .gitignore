@@ -2,3 +2,4 @@ node_modules/
 server/uploads/
 project.private.config.json
 server/data.db
+.env
