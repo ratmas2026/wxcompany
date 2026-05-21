@@ -201,13 +201,19 @@
     window.__AMAP_INSTANCE__ = map
   }
 
-  function loadMapScript() {
+  async function loadMapScript() {
     if (window.AMap) { mapLoaded = true; setTimeout(autoInitMap, 100); return }
+
+    const amap = await DataStore.getAmapConfig()
+    if (!amap || !amap.key) {
+      Admin.showToast('地图服务未配置，请联系管理员', 'error')
+      return
+    }
     window._AMapSecurityConfig = {
-      securityJsCode: 'b0c338635c3cfd4bc40175ec55e15e74'
+      securityJsCode: amap.securityJsCode
     }
     const script = document.createElement('script')
-    script.src = 'https://webapi.amap.com/maps?v=2.0&key=8d88196ae5d470ac5b4181a6908fd0b0&plugin=AMap.PlaceSearch,AMap.Geolocation,AMap.AutoComplete,AMap.Geocoder'
+    script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(amap.key) + '&plugin=AMap.PlaceSearch,AMap.Geolocation,AMap.AutoComplete,AMap.Geocoder'
     script.onload = function() { mapLoaded = true; autoInitMap() }
     script.onerror = function() { Admin.showToast('地图加载失败', 'error') }
     document.head.appendChild(script)

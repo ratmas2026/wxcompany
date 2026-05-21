@@ -9,6 +9,10 @@ const crypto = require('crypto')
 // 登录鉴权
 const ADMIN_USER = 'ratmas'
 const ADMIN_PASS = 'laoshuren'
+
+// 高德地图配置（从环境变量读取，避免硬编码密钥提交到仓库）
+const AMAP_KEY = process.env.AMAP_KEY || ''
+const AMAP_SECURITY_CODE = process.env.AMAP_SECURITY_CODE || ''
 const authTokens = new Map() // token -> { username, createdAt }
 const TOKEN_TTL = 24 * 60 * 60 * 1000 // 24小时
 
@@ -195,6 +199,22 @@ app.get('/api/auth-check', (req, res) => {
     return res.status(401).json({ ok: false })
   }
   res.json({ ok: true, username: session.username })
+})
+
+// 高德地图配置（仅限已认证管理员访问）
+app.get('/api/config/amap', (req, res) => {
+  const auth = req.headers.authorization
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' })
+  }
+  const session = authTokens.get(auth.slice(7))
+  if (!session || Date.now() - session.createdAt > TOKEN_TTL) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' })
+  }
+  if (!AMAP_KEY) {
+    return res.status(500).json({ ok: false, error: 'AMap key not configured on server' })
+  }
+  res.json({ ok: true, key: AMAP_KEY, securityJsCode: AMAP_SECURITY_CODE })
 })
 
 // --- Helpers ---

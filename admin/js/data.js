@@ -691,5 +691,21 @@ const DataStore = {
     cache.companyInfos = (cache.companyInfos || []).filter(ci => ci.id !== id)
     this._setCache(cache)
     await this._sync('companyInfos', 'DELETE', '/company-infos/' + id)
+  },
+
+  // 获取高德地图配置（Key 和 securityJsCode 从服务端获取，不硬编码在前端源码中）
+  async getAmapConfig() {
+    try {
+      const res = await authFetch(API_BASE + '/config/amap')
+      if (!res.ok) return null
+      const data = await res.json()
+      if (data.ok && data.key) {
+        return { key: data.key, securityJsCode: data.securityJsCode || '' }
+      }
+      return null
+    } catch (e) {
+      console.warn('Failed to fetch AMap config:', e.message)
+      return null
+    }
   }
 }
