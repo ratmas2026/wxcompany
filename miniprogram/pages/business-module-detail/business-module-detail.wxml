@@ -30,10 +30,6 @@
   <!-- 非 Hero Sections -->
   <block wx:if="{{sections.length > 0}}">
     <view wx:for="{{sections}}" wx:key="id" class="profile-section">
-      <view wx:if="{{sections.length > 1}}" class="profile-section-divider">
-        <view class="profile-section-line"></view>
-      </view>
-
       <!-- 单张 -->
       <view wx:if="{{item.displayLayout === 'single'}}" class="profile-single">
         <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
