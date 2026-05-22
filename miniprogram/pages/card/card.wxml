@@ -2,7 +2,7 @@
   <block wx:if="{{tb.role && tb.role.name}}">
     <view class="profile-card-role" style="text-align:{{tb.textAlign}}">
       <view class="profile-card-role-inner">
-        <image wx:if="{{tb.role.avatar}}" class="profile-card-role-avatar" src="{{tb.role.avatar}}" mode="aspectFill" />
+        <image lazy-load="{{true}}"wx:if="{{tb.role.avatar}}" class="profile-card-role-avatar" src="{{tb.role.avatar}}" mode="aspectFill" />
         <view class="profile-card-role-text">
           <view class="profile-card-text" style="font-family:{{tb.fontFamily}};font-size:{{tb.fontSizeRpx}}">{{tb.role.name}}</view>
           <view class="profile-card-role-title" style="font-family:{{tb.fontFamily}}">{{tb.role.title}}</view>
@@ -36,7 +36,7 @@
     <view class="business-card signature-gradient">
       <view class="card-bg-blur"></view>
       <view class="card-avatar">
-        <image class="avatar-img" src="{{cardData.avatar || '/images/avatar-executive.jpg'}}" mode="aspectFill" />
+        <image lazy-load="{{true}}"class="avatar-img" src="{{cardData.avatar || '/images/avatar-executive.jpg'}}" mode="aspectFill" />
       </view>
       <view class="card-info">
         <text class="card-name">{{cardData.name}}</text>
@@ -80,7 +80,7 @@
     <block wx:if="{{heroCard}}">
       <view class="hero-card-wrap">
       <view class="hero-section" style="height:{{heroCard._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#f3f4f6" bindtap="onCoverCardTap" data-profile="{{heroCard}}">
-        <image wx:if="{{heroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{heroCard.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === heroCard.id}}" />
+        <image lazy-load="{{true}}"wx:if="{{heroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{heroCard.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === heroCard.id}}" />
         <view class="hero-content" hidden="{{playingCardId === heroCard.id}}">
           <block wx:for="{{heroCard.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
             <template is="textBox" data="{{tb}}" />
@@ -109,7 +109,7 @@
           <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
             class="hero-section" style="height:{{card._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#f3f4f6"
             bindtap="onCoverCardTap" data-profile="{{card}}">
-            <image wx:if="{{card.cover.backgroundImage}}" class="hero-bg-image" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+            <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="hero-bg-image" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
             <view class="hero-content" hidden="{{playingCardId === card.id}}">
               <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
@@ -141,7 +141,7 @@
             data-profile="{{card}}"
             bindtap="onCoverCardTap"
           >
-            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+            <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
             <view class="profile-card-overlay" hidden="{{playingCardId === card.id}}">
               <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
@@ -175,7 +175,7 @@
               data-profile="{{card}}"
               bindtap="onCoverCardTap"
             >
-              <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+              <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
               <view class="profile-card-overlay" hidden="{{playingCardId === card.id}}">
                 <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                   <template is="textBox" data="{{tb}}" />
@@ -212,7 +212,7 @@
             data-profile="{{card}}"
             bindtap="onCoverCardTap"
           >
-            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+            <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
             <view class="profile-card-overlay" hidden="{{playingCardId === card.id}}">
               <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
@@ -257,7 +257,7 @@
             <view wx:for="{{item.currentTabCards}}" wx:for-item="card" wx:key="id"
               class="profile-card profile-card-single" style="height:{{card._height}}rpx"
               data-profile="{{card}}" bindtap="onCoverCardTap">
-              <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+              <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
               <view class="profile-card-overlay" hidden="{{playingCardId === card.id}}">
                 <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                   <template is="textBox" data="{{tb}}" />
@@ -286,7 +286,7 @@
             <view wx:for="{{item.currentTabCards}}" wx:for-item="card" wx:key="id"
               class="profile-card profile-card-grid" style="height:{{card._height}}rpx"
               data-profile="{{card}}" bindtap="onCoverCardTap">
-              <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+              <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
               <view class="profile-card-overlay" hidden="{{playingCardId === card.id}}">
                 <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                   <template is="textBox" data="{{tb}}" />
@@ -325,7 +325,7 @@
     <block wx:if="{{performanceHeroCard}}">
       <view class="hero-card-wrap">
       <view class="hero-section" style="height:{{performanceHeroCard._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#f3f4f6" bindtap="onPerformanceCardTap" data-profile="{{performanceHeroCard}}">
-        <image wx:if="{{performanceHeroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{performanceHeroCard.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === performanceHeroCard.id}}" />
+        <image lazy-load="{{true}}"wx:if="{{performanceHeroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{performanceHeroCard.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === performanceHeroCard.id}}" />
         <view class="hero-content" hidden="{{playingCardId === performanceHeroCard.id}}">
           <block wx:for="{{performanceHeroCard.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
             <template is="textBox" data="{{tb}}" />
@@ -359,7 +359,7 @@
             data-profile="{{card}}"
             bindtap="onPerformanceCardTap"
           >
-            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+            <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
             <view class="profile-card-overlay" hidden="{{playingCardId === card.id}}">
               <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
@@ -392,7 +392,7 @@
               data-profile="{{card}}"
               bindtap="onPerformanceCardTap"
             >
-              <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+              <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
               <view class="profile-card-overlay" hidden="{{playingCardId === card.id}}">
                 <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                   <template is="textBox" data="{{tb}}" />
@@ -428,7 +428,7 @@
             data-profile="{{card}}"
             bindtap="onPerformanceCardTap"
           >
-            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
+            <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" hidden="{{playingCardId === card.id}}" />
             <view class="profile-card-overlay" hidden="{{playingCardId === card.id}}">
               <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
@@ -470,7 +470,7 @@
         class="hero-section"
         style="height:{{hero._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#f3f4f6"
         bindtap="onBizCardTap" data-module-id="{{hero.id}}">
-        <image wx:if="{{hero.coverImage}}" class="hero-bg-image" src="{{hero.coverImage}}" mode="aspectFill" />
+        <image lazy-load="{{true}}"wx:if="{{hero.coverImage}}" class="hero-bg-image" src="{{hero.coverImage}}" mode="aspectFill" />
         <view class="hero-content">
           <view class="hero-card-middle">
             <view class="profile-card-text" style="font-size:32rpx;text-align:center;color:#fff">{{hero.name}}</view>
@@ -485,7 +485,7 @@
           <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
             class="biz-card biz-card-single" style="height:{{card._height}}rpx"
             bindtap="onBizCardTap" data-module-id="{{card.id}}">
-            <image wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
+            <image lazy-load="{{true}}"wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
             <view class="biz-card-info">
               <text class="biz-card-name">{{card.name}}</text>
 
@@ -502,7 +502,7 @@
           <swiper-item wx:for="{{item.cards}}" wx:for-item="card" wx:key="id">
             <view class="biz-card biz-card-swiper" style="height:{{card._height}}rpx"
               bindtap="onBizCardTap" data-module-id="{{card.id}}">
-              <image wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
+              <image lazy-load="{{true}}"wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
               <view class="biz-card-info">
                 <text class="biz-card-name">{{card.name}}</text>
   
@@ -514,7 +514,7 @@
           <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
             class="biz-card biz-card-grid" style="height:{{card._height}}rpx"
             bindtap="onBizCardTap" data-module-id="{{card.id}}">
-            <image wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
+            <image lazy-load="{{true}}"wx:if="{{card.coverImage}}" class="biz-card-cover" src="{{card.coverImage}}" mode="aspectFill" />
             <view class="biz-card-info">
               <text class="biz-card-name">{{card.name}}</text>
 
@@ -538,7 +538,7 @@
     </view>
     <view class="honors-gallery">
       <view wx:for="{{awards}}" wx:key="name" class="award-item {{item.offset ? 'award-offset' : ''}}">
-        <image class="award-image" src="{{item.image}}" mode="aspectFill" />
+        <image lazy-load="{{true}}"class="award-image" src="{{item.image}}" mode="aspectFill" />
         <view class="award-caption">
           <text class="award-name">{{item.name}}</text>
           <text class="award-desc">{{item.desc}}</text>
@@ -554,7 +554,7 @@
     </view>
     <scroll-view scroll-x type="custom" class="project-scroll" enable-flex>
       <view wx:for="{{projects}}" wx:key="name" class="project-card">
-        <image class="project-image" src="{{item.image}}" mode="aspectFill" />
+        <image lazy-load="{{true}}"class="project-image" src="{{item.image}}" mode="aspectFill" />
         <view class="project-badge">{{item.location}}，{{item.year}}</view>
         <view class="project-body">
           <text class="project-name">{{item.name}}</text>

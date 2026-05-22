@@ -11,7 +11,7 @@
       circular
     >
       <swiper-item wx:for="{{project.images}}" wx:key="index">
-        <image class="swiper-image" src="{{item}}" mode="aspectFill" />
+        <image lazy-load="{{true}}"class="swiper-image" src="{{item}}" mode="aspectFill" />
       </swiper-item>
     </swiper>
     <view class="swiper-overlay">
@@ -87,7 +87,7 @@
           bindtap="onOpenProject"
           data-id="{{item.id}}"
         >
-          <image class="related-thumb" src="{{item.thumb || item.image}}" mode="aspectFill" />
+          <image lazy-load="{{true}}"class="related-thumb" src="{{item.thumb || item.image}}" mode="aspectFill" />
           <text class="related-name">{{item.name}}</text>
           <text class="related-loc">{{item.location}}</text>
         </view>

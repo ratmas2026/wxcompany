@@ -4,7 +4,7 @@
   <view wx:if="{{card && card.detail}}" class="detail-content">
     <!-- 视频 -->
     <view wx:if="{{card.detail.video}}" class="detail-video" bindtap="onPlayVideo">
-      <image class="detail-video-thumb" src="{{card.cover.backgroundImage || '/images/company-video.jpg'}}" mode="aspectFill" />
+      <image lazy-load="{{true}}"class="detail-video-thumb" src="{{card.cover.backgroundImage || '/images/company-video.jpg'}}" mode="aspectFill" />
       <view class="detail-video-overlay">
         <view class="detail-play-btn">
           <text class="detail-play-icon">▶</text>

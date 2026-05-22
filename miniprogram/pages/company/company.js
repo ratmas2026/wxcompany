@@ -438,17 +438,13 @@ Page({
   onTabSwitch(e) {
     const sectionId = e.currentTarget.dataset.sectionId
     const tabIndex = e.currentTarget.dataset.tabIndex
-    const sections = this.data.sections.map(sec => {
-      if (sec.id === sectionId) {
-        return {
-          ...sec,
-          activeTab: tabIndex,
-          currentTabCards: sec.tabs[tabIndex] ? sec.tabs[tabIndex].cards : []
-        }
-      }
-      return sec
+    const idx = this.data.sections.findIndex(sec => sec.id === sectionId)
+    if (idx < 0) return
+    const sec = this.data.sections[idx]
+    this.setData({
+      ['sections[' + idx + '].activeTab']: tabIndex,
+      ['sections[' + idx + '].currentTabCards']: sec.tabs[tabIndex] ? sec.tabs[tabIndex].cards : []
     })
-    this.setData({ sections })
   },
 
   onPerformanceCardTap(e) {

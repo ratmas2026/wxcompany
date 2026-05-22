@@ -2,27 +2,57 @@ const config = require('./config.js')
 const BASE_URL = config.BASE_URL
 const STATIC_BASE = config.STATIC_BASE
 
-const request = (url, options = {}) => {
-  return new Promise((resolve, reject) => {
+// 防重缓存：第一层 inflight（并发去重），第二层 response（短时缓存）
+const _inflight = new Map()
+const _cache = new Map()
+const CACHE_TTL = 30000 // GET 响应缓存 30 秒
+
+function _cacheKey(url, options) {
+  const method = (options.method || 'GET').toUpperCase()
+  return method + ':' + url + ':' + JSON.stringify(options.data || {})
+}
+
+function request(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase()
+  const key = _cacheKey(url, options)
+
+  // 第一层：in-flight 去重
+  if (_inflight.has(key)) return _inflight.get(key)
+
+  // 第二层：GET 响应缓存（带 TTL）
+  if (method === 'GET' && _cache.has(key)) {
+    const entry = _cache.get(key)
+    if (Date.now() - entry.ts < CACHE_TTL) return Promise.resolve(entry.data)
+    _cache.delete(key)
+  }
+
+  const p = new Promise((resolve, reject) => {
     wx.request({
       url: BASE_URL + url,
-      method: options.method || 'GET',
+      method: method,
       data: options.data || {},
       timeout: 15000,
-      header: {
-        'Content-Type': 'application/json',
-        ...options.header
-      },
+      header: { 'Content-Type': 'application/json', ...options.header },
       success: (res) => {
         if (res.statusCode === 200) {
+          if (method === 'GET') _cache.set(key, { data: res.data, ts: Date.now() })
           resolve(res.data)
         } else {
           reject(res)
         }
       },
-      fail: reject
+      fail: (err) => {
+        // 失败不清缓存，下次可能恢复；但清除 inflight 让后续请求重试
+        reject(err)
+      },
+      complete: () => {
+        _inflight.delete(key)
+      }
     })
   })
+
+  _inflight.set(key, p)
+  return p
 }
 
 // 获取企业信息列表（含经纬度坐标）

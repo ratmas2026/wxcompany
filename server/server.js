@@ -5,6 +5,7 @@ const path = require('path')
 const multer = require('multer')
 const db = require('./db')
 const crypto = require('crypto')
+const compression = require('compression')
 
 // 登录鉴权
 const ADMIN_USER = 'ratmas'
@@ -149,11 +150,19 @@ var performanceStorage = multer.diskStorage({
 var uploadPerformance = multer({ storage: performanceStorage, limits: { fileSize: 5 * 1048576 } })
 
 app.use(cors())
+app.use(compression())
 app.use(express.json({ limit: '10mb' }))
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '..', 'admin')))
-app.use('/uploads', express.static(UPLOADS_DIR))
+app.use('/uploads', express.static(UPLOADS_DIR, {
+  maxAge: '7d',
+  setHeaders(res, filePath) {
+    if (/\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|ico)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable')
+    }
+  }
+}))
 
 // Multer error handling
 app.use((err, req, res, next) => {

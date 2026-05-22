@@ -9,13 +9,15 @@ Page({
 
   onLoad(options) {
     if (options.id) {
-      api.getProjectDetail(options.id).then(project => {
+      Promise.all([
+        api.getProjectDetail(options.id),
+        api.getProjects()
+      ]).then(([project, projects]) => {
         wx.setNavigationBarTitle({ title: project.name || '项目详情' })
         if (project.image) project.image = api.staticUrl(project.image)
         if (project.images) project.images = project.images.map(img => api.staticUrl(img))
         if (project.detailImages) project.detailImages = project.detailImages.map(img => api.staticUrl(img))
-        this.setData({ project })
-        this.loadRelated()
+        this.setData({ project, relatedProjects: (projects || []).slice(0, 4) })
       }).catch(() => {})
     } else {
       api.getProjects().then(projects => {

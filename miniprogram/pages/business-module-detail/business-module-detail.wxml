@@ -6,7 +6,7 @@
   <!-- Hero 卡片 -->
   <view wx:if="{{heroCard}}" class="hero-card-wrap">
   <view class="hero-section" style="height:{{heroCard._height}}rpx; padding:32rpx 28rpx; box-sizing:border-box; background-color:#f3f4f6" bindtap="onCardTap" data-card="{{heroCard}}">
-    <image wx:if="{{heroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{heroCard.cover.backgroundImage}}" mode="aspectFill" />
+    <image lazy-load="{{true}}"wx:if="{{heroCard.cover.backgroundImage}}" class="hero-bg-image" src="{{heroCard.cover.backgroundImage}}" mode="aspectFill" />
     <view class="hero-content">
       <block wx:for="{{heroCard.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
         <template is="textBox" data="{{tb}}" />
@@ -35,7 +35,7 @@
         <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
           class="profile-card profile-card-single" style="height:{{card._height}}rpx"
           data-card="{{card}}" bindtap="onCardTap">
-          <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+          <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
           <view class="profile-card-overlay">
             <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
               <template is="textBox" data="{{tb}}" />
@@ -69,7 +69,7 @@
         <swiper-item wx:for="{{item.cards}}" wx:for-item="card" wx:key="id">
           <view class="profile-card profile-card-swiper" style="height:{{card._height}}rpx"
             data-card="{{card}}" bindtap="onCardTap">
-            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
             <view class="profile-card-overlay">
               <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
@@ -98,7 +98,7 @@
         <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
           class="profile-card profile-card-grid" style="height:{{card._height}}rpx"
           data-card="{{card}}" bindtap="onCardTap">
-          <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+          <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
           <view class="profile-card-overlay">
             <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
               <template is="textBox" data="{{tb}}" />
@@ -144,7 +144,7 @@
           <view wx:for="{{item.currentTabCards}}" wx:for-item="card" wx:key="id"
             class="profile-card profile-card-single" style="height:{{card._height}}rpx"
             data-card="{{card}}" bindtap="onCardTap">
-            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
             <view class="profile-card-overlay">
               <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
@@ -171,7 +171,7 @@
           <view wx:for="{{item.currentTabCards}}" wx:for-item="card" wx:key="id"
             class="profile-card profile-card-grid" style="height:{{card._height}}rpx"
             data-card="{{card}}" bindtap="onCardTap">
-            <image wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
+            <image lazy-load="{{true}}"wx:if="{{card.cover.backgroundImage}}" class="profile-card-bg" src="{{card.cover.backgroundImage}}" mode="aspectFill" />
             <view class="profile-card-overlay">
               <block wx:for="{{card.cover.zones.top.textBoxes}}" wx:for-item="tb" wx:key="id">
                 <template is="textBox" data="{{tb}}" />
