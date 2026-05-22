@@ -8,8 +8,6 @@ module.exports = {
     max_memory_restart: '300M',
     env: {
       NODE_ENV: 'production',
-      AMAP_KEY: '',
-      AMAP_SECURITY_CODE: '',
       ADMIN_SECRET: ''
     },
     log_date_format: 'YYYY-MM-DD HH:mm:ss',
