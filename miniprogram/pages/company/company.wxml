@@ -65,9 +65,6 @@
     </block>
     <block wx:if="{{sections.length > 0}}">
       <view wx:for="{{sections}}" wx:key="id" class="profile-section">
-        <view wx:if="{{sections.length > 1}}" class="profile-section-divider">
-          <view class="profile-section-line"></view>
-        </view>
         <!-- Hero 卡片 -->
         <view wx:if="{{item.displayLayout === 'hero'}}">
           <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
@@ -350,9 +347,6 @@
     </block>
     <block wx:if="{{performanceSections.length > 0}}">
       <view wx:for="{{performanceSections}}" wx:key="id" class="profile-section">
-        <view wx:if="{{performanceSections.length > 1}}" class="profile-section-divider">
-          <view class="profile-section-line"></view>
-        </view>
         <view wx:if="{{item.displayLayout === 'single'}}" class="profile-single">
           <view
             wx:for="{{item.cards}}"
@@ -486,9 +480,6 @@
     </block>
     <block wx:if="{{businessSections.length > 0}}">
       <view wx:for="{{businessSections}}" wx:key="id" class="profile-section">
-        <view wx:if="{{businessSections.length > 1}}" class="profile-section-divider">
-          <view class="profile-section-line"></view>
-        </view>
         <view wx:if="{{item.displayLayout === 'single'}}" class="profile-single">
           <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id"
             class="biz-card biz-card-single" style="height:{{card._height}}rpx"
