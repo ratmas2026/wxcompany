@@ -61,10 +61,12 @@
               <div style="display:flex;align-items:center;gap:6px">
                 <span style="font-size:12px">📞</span>
                 <span style="font-weight:600;font-size:13px">${c.phone}</span>
+                <span class="copy-btn" data-copy="${c.phone}" onclick="copyToClipboard(this.dataset.copy)" title="复制到剪贴板">📋</span>
               </div>
               <div style="display:flex;align-items:center;gap:6px">
                 <span style="font-size:12px">✉️</span>
                 <span style="font-size:11px;color:var(--on-surface-variant)">${c.email}</span>
+                <span class="copy-btn" data-copy="${c.email}" onclick="copyToClipboard(this.dataset.copy)" title="复制到剪贴板">📋</span>
               </div>
             </div>
           </div>
@@ -156,6 +158,27 @@
   }
 
   // Global handlers
+  window.copyToClipboard = function(text) {
+    if (!text) return
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        Admin.showToast('已复制到剪贴板', 'success')
+      }).catch(() => {
+        Admin.showToast('复制失败，请手动复制', 'info')
+      })
+    } else {
+      // Fallback for HTTP or older browsers
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'; ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      Admin.showToast('已复制到剪贴板', 'success')
+    }
+  }
+
   window.toggleSelectAll = function(el) {
     document.querySelectorAll('.row-check').forEach(cb => { cb.checked = el.checked })
   }

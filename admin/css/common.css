@@ -301,6 +301,18 @@ a:hover { text-decoration: underline; }
 .btn-sm { padding: 5px 12px; font-size: 12px; }
 .btn-lg { padding: 12px 28px; font-size: 15px; }
 
+/* Copy button */
+.copy-btn {
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  user-select: none;
+  padding: 2px;
+}
+.copy-btn:hover { opacity: 1; }
+.copy-btn:active { transform: scale(0.9); }
+
 /* ========== Tables ========== */
 .table-wrap {
   overflow-x: auto;
