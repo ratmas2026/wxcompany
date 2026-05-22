@@ -5,7 +5,7 @@ const FONT_SIZE_MAP = {
 
 function parseGridLayout(displayLayout) {
   const raw = (displayLayout || 'single').trim()
-  if (raw === 'carousel') return { layout: 'horizontal-scroll', gridCols: 0, gridClass: '' }
+  if (raw === 'carousel' || raw === 'horizontal-scroll') return { layout: 'horizontal-scroll', gridCols: 0, gridClass: '' }
   if (raw === 'tab' || raw === 'hero' || raw === 'single') return { layout: raw, gridCols: 0, gridClass: '' }
 
   if (raw === 'grid-6-2x3') return { layout: 'grid', gridCols: 2, gridClass: 'grid-6-2x3' }
