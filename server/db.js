@@ -136,6 +136,8 @@ function initDatabase() {
     // Migration: drop legacy business table (replaced by business_modules)
     db.run('DROP TABLE IF EXISTS business');
 
+    save();  // Persist DDL changes (new tables/columns) to disk
+
     const row = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='cards'");
     const hasData = row.length > 0 && db.exec("SELECT COUNT(*) AS c FROM cards")[0].values[0][0] > 0;
 
