@@ -347,16 +347,6 @@ app.put('/api/company/profile/:id', (req, res) => {
   }
   data.companyProfiles[idx] = { ...data.companyProfiles[idx], ...body, id: data.companyProfiles[idx].id }
 
-  // 同步公司名称和地址到所有名片
-  const profile = data.companyProfiles[idx]
-  if (profile.title || profile.address) {
-    data.cards = (data.cards || []).map(card => ({
-      ...card,
-      company: profile.title || card.company,
-      address: profile.address !== undefined ? profile.address : card.address
-    }))
-  }
-
   writeData(data)
   res.json(data.companyProfiles[idx])
 })
