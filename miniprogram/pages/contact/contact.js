@@ -14,7 +14,7 @@ Page({
   },
 
   onCallPhone() {
-    const phone = this.data.companyInfo.phone || '4008888888'
+    const phone = this.data.companyInfo.phone || ''
     wx.makePhoneCall({ phoneNumber: phone })
   }
 })

@@ -11,16 +11,16 @@
     <view class="mini-card signature-gradient">
       <view class="card-glow"></view>
       <view class="card-content">
-        <image class="card-avatar" src="/images/hero-bg.jpg" mode="aspectFill" />
-        <text class="card-name">张明远</text>
-        <text class="card-title">首席执行官</text>
+        <image class="card-avatar" src="{{cardData.avatar || '/images/avatar-executive.jpg'}}" mode="aspectFill" />
+        <text class="card-name">{{cardData.name || ''}}</text>
+        <text class="card-title">{{cardData.title || ''}}</text>
         <view class="card-divider"></view>
         <view class="card-contact">
-          <text>📱 138-8888-8888</text>
-          <text>✉️ zhangmy@zhixingguan.com</text>
+          <text wx:if="{{cardData.phone}}">📱 {{cardData.phone}}</text>
+          <text wx:if="{{cardData.email}}">✉️ {{cardData.email}}</text>
         </view>
         <view class="card-company">
-          <text>企业名片</text>
+          <text>{{companyInfo.name || cardData.company || ''}}</text>
         </view>
       </view>
     </view>

@@ -42,7 +42,7 @@
         <text class="card-name">{{cardData.name}}</text>
         <text class="card-title">{{cardData.title}}</text>
         <view class="card-badge">
-          <text>{{cardData.department || companyInfo.name || '高级管理合伙人'}}</text>
+          <text>{{cardData.department || companyInfo.name || ''}}</text>
         </view>
       </view>
       <!-- 自己的名片：标签 + 文本 + 发名片按钮 -->
@@ -76,7 +76,7 @@
         <text>📍</text>
         <view class="location-info">
           <text class="location-company">{{matchedCI.name || cardData.company}}</text>
-          <text class="location-addr">{{matchedCI.address || cardData.address || companyInfo.address || '深圳市南山区科技园南路88号智能大厦38层'}}</text>
+          <text class="location-addr">{{matchedCI.address || cardData.address || companyInfo.address || ''}}</text>
         </view>
         <text class="location-arrow">›</text>
       </view>

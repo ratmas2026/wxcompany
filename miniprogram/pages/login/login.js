@@ -17,6 +17,7 @@ Page({
   onSendCode() {
     if (this.data.countdown > 0) return
 
+    // FIXME: 调试用万能验证码，接入真实短信后移除
     wx.showToast({ title: '验证码：123456', icon: 'none' })
 
     let countdown = 60
@@ -43,6 +44,7 @@ Page({
       wx.showToast({ title: '请输入验证码', icon: 'none' })
       return
     }
+    // FIXME: 调试用万能验证码，接入真实短信后移除
     if (code !== '123456') {
       wx.showToast({ title: '验证码错误', icon: 'none' })
       return
