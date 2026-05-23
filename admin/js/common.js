@@ -54,6 +54,7 @@ const Admin = {
 
       { page: 'case-custom', icon: '&#x1F39B;', label: '案例自定义' },
       { page: 'card-custom', icon: '&#x1F4C7;', label: '名片自定义' },
+      { page: 'card-template', icon: '&#x1F4C4;', label: '名片模板' },
       { page: 'message', icon: '&#x1F4E9;', label: '留言管理' }
     ]
 

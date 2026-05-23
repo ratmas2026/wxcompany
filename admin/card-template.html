@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>名片模板 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('card-template')
+  await DataStore.init()
+
+  // State
+  let templates = []
+  let editingTpl = null          // currently editing template object
+  let selectedFieldIdx = -1      // index into editingTpl.fields
+  let dragFieldIdx = -1
+  let dragStartX = 0, dragStartY = 0
+  let fieldStartX = 0, fieldStartY = 0
+
+  const CANVAS_W = 280  // preview canvas width (px), maps to 360rpx
+  const CANVAS_H = 498  // preview canvas height (px), maps to 640rpx
+  const SCALE = CANVAS_W / 360  // rpx to px scale
+
+  const DEFAULT_FIELDS = [
+    { key: 'company',  label: '公司名称', x: 31, y: 31,  fontSize: 20, color: '#717777', visible: true },
+    { key: 'name',     label: '姓名',     x: 31, y: 78,  fontSize: 36, color: '#ed3731', visible: true },
+    { key: 'title',    label: '职务',     x: 31, y: 117, fontSize: 24, color: '#fb7765', visible: true },
+    { key: 'phone',    label: '手机',     x: 31, y: 187, fontSize: 22, color: '#717777', visible: true },
+    { key: 'email',    label: '邮箱',     x: 31, y: 226, fontSize: 22, color: '#717777', visible: true },
+    { key: 'address',  label: '地址',     x: 31, y: 273, fontSize: 20, color: '#717777', visible: true }
+  ]
+
+  const COLORS = ['#ed3731', '#fb7765', '#f16653', '#ff4433', '#717777', '#b3b0b1', '#ffffff', '#000000']
+
+  function loadTemplates() {
+    templates = DataStore.getCardTemplates()
+  }
+
+  // ---- Render ----
+  function render() {
+    loadTemplates()
+    if (editingTpl) {
+      renderEditor()
+      return
+    }
+    renderList()
+  }
+
+  function renderList() {
+    const cardsHtml = templates.length === 0
+      ? '<div class="card" style="text-align:center;padding:60px 24px;color:#a0aec0"><p style="font-size:48px;margin:0 0 12px">🎨</p><p>暂无模板，点击右上角"添加模板"创建</p></div>'
+      : templates.map(tpl => {
+          const bg = tpl.background || '#030909'
+          const previewHtml = renderPreviewCanvas(tpl, 240, 426)
+          return `
+            <div class="card" style="padding:16px">
+              <div style="display:flex;gap:16px;align-items:flex-start">
+                <div style="flex-shrink:0;width:120px;height:213px;background:${bg};border-radius:8px;overflow:hidden;position:relative;border:1px solid #e2e8f0">
+                  ${previewHtml}
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:700;font-size:15px;margin-bottom:4px">${escHtml(tpl.name)}</div>
+                  <div style="font-size:12px;color:#718096;margin-bottom:8px">${(tpl.fields || []).length} 个字段 · ${tpl.createdAt || ''}</div>
+                  <div style="display:flex;gap:8px">
+                    <button class="btn btn-outline btn-sm" onclick="window.editTemplate(${tpl.id})">✏️ 编辑</button>
+                    <button class="btn btn-outline btn-sm" onclick="window.duplicateTemplate(${tpl.id})">📋 复制</button>
+                    <button class="btn btn-sm" style="color:#e53e3e;border:1px solid #e53e3e;background:transparent" onclick="window.deleteTemplate(${tpl.id})">🗑 删除</button>
+                  </div>
+                </div>
+              </div>
+            </div>`
+        }).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>名片模板</h1>
+        <button class="btn btn-primary" onclick="window.addTemplate()">+ 添加模板</button>
+      </div>
+      <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr))">
+        ${cardsHtml}
+      </div>
+    `
+    Admin.setPageContent(html)
+  }
+
+  function renderPreviewCanvas(tpl, w, h) {
+    if (!tpl || !tpl.fields) return ''
+    const scaleX = w / CANVAS_W
+    const scaleY = h / CANVAS_H
+    const lines = (tpl.fields || []).filter(f => f.visible !== false).map(f => {
+      const left = f.x * SCALE * scaleX
+      const top = f.y * SCALE * scaleY
+      const fs = Math.round(f.fontSize * scaleX)
+      return `<div style="position:absolute;left:${left}px;top:${top}px;font-size:${fs}px;color:${escHtml(f.color || '#717777')};white-space:nowrap;line-height:1.2">${escHtml(f.label)}</div>`
+    }).join('')
+    return lines
+  }
+
+  // ---- Editor ----
+  function renderEditor() {
+    const tpl = editingTpl
+    const bg = tpl.background || '#030909'
+    const fields = tpl.fields || []
+
+    // Build field elements for canvas
+    const fieldEls = fields.map((f, idx) => {
+      if (!f.visible) return ''
+      const left = f.x * SCALE
+      const top = f.y * SCALE
+      const selected = idx === selectedFieldIdx
+      return `<div class="tpl-field ${selected ? 'tpl-field-selected' : ''}"
+        style="left:${left}px;top:${top}px;font-size:${f.fontSize * SCALE}px;color:${escHtml(f.color)}"
+        data-idx="${idx}"
+        onmousedown="window.fieldMouseDown(event, ${idx})">${escHtml(f.label)}</div>`
+    }).join('')
+
+    // Property panel for selected field
+    let propPanel = ''
+    if (selectedFieldIdx >= 0 && selectedFieldIdx < fields.length) {
+      const sf = fields[selectedFieldIdx]
+      const colorBtns = COLORS.map(c =>
+        `<button class="color-swatch ${sf.color === c ? 'color-swatch-active' : ''}"
+          style="background:${c}" title="${c}"
+          onclick="window.setFieldProp('color','${c}')"></button>`
+      ).join('')
+      propPanel = `
+        <div class="card" style="margin-top:16px">
+          <h3 style="margin:0 0 16px;font-size:15px">✏️ 属性：${escHtml(sf.label)}</h3>
+          <div class="form-group">
+            <label class="form-label">字号</label>
+            <input type="range" min="16" max="48" value="${sf.fontSize}" style="width:100%"
+              oninput="window.setFieldProp('fontSize', parseInt(this.value))">
+            <span style="font-size:12px;color:#718096">${sf.fontSize} rpx</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">颜色</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">${colorBtns}</div>
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:12px">
+            <label class="switch">
+              <input type="checkbox" ${sf.visible ? 'checked' : ''} onchange="window.setFieldProp('visible', this.checked)">
+              <span class="switch-slider"></span>
+            </label>
+            <span style="font-size:13px">显示此字段</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">X 坐标: ${sf.x} rpx</label>
+            <input type="range" min="0" max="340" value="${sf.x}" style="width:100%"
+              oninput="window.setFieldProp('x', parseInt(this.value))">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Y 坐标: ${sf.y} rpx</label>
+            <input type="range" min="0" max="620" value="${sf.y}" style="width:100%"
+              oninput="window.setFieldProp('y', parseInt(this.value))">
+          </div>
+        </div>
+      `
+    }
+
+    const html = `
+      <div class="page-header">
+        <button class="btn btn-outline" onclick="window.cancelEdit()">← 返回列表</button>
+        <h1>${tpl.id ? '编辑模板' : '新建模板'}</h1>
+        <button class="btn btn-primary" onclick="window.saveTemplate()">💾 保存模板</button>
+      </div>
+
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <!-- Canvas -->
+        <div class="card" style="flex:1;min-width:340px;display:flex;flex-direction:column;align-items:center">
+          <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
+            <label class="form-label" style="margin:0">模板名称：</label>
+            <input type="text" class="form-input" style="width:220px" value="${escHtml(tpl.name)}"
+              oninput="editingTpl.name = this.value" placeholder="输入模板名称">
+            <label class="form-label" style="margin:0 0 0 16px">背景色：</label>
+            <input type="color" value="${bg}" style="width:36px;height:36px;border:none;cursor:pointer"
+              oninput="editingTpl.background = this.value; renderEditor()">
+          </div>
+          <div class="tpl-canvas" style="background:${bg};width:${CANVAS_W}px;height:${CANVAS_H}px"
+            onmousedown="window.canvasMouseDown(event)">
+            ${fieldEls}
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:#a0aec0">底板 360×640 rpx · 点击字段选中 · 拖拽调整位置</div>
+        </div>
+
+        <!-- Side Panel -->
+        <div style="width:280px;flex-shrink:0">
+          <div class="card">
+            <h3 style="margin:0 0 12px;font-size:15px">📋 字段列表</h3>
+            <div style="font-size:12px;color:#718096;margin-bottom:8px">点击底板字段或下方列表选中</div>
+            ${fields.map((f, idx) => `
+              <div class="field-list-item ${idx === selectedFieldIdx ? 'field-list-item-active' : ''}"
+                style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:4px;border-radius:6px;cursor:pointer;font-size:13px;${idx === selectedFieldIdx ? 'background:#ebf4ff;color:#3a5f94;font-weight:600' : 'background:#f7fafc'}"
+                onclick="window.selectField(${idx})">
+                <span>${f.visible ? '👁' : '🚫'} ${escHtml(f.label)}</span>
+                <span style="font-size:11px;color:#a0aec0">${f.x},${f.y}</span>
+              </div>
+            `).join('')}
+          </div>
+          ${propPanel}
+        </div>
+      </div>
+    `
+    Admin.setPageContent(html)
+  }
+
+  // ---- Helpers ----
+  function escHtml(s) {
+    if (!s) return ''
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+  }
+
+  // ---- Actions ----
+  window.addTemplate = function() {
+    editingTpl = {
+      id: 0,
+      name: '赛博风格',
+      background: '#030909',
+      logoUrl: '',
+      colors: { primary: '#ed3731', secondary: '#717777' },
+      fields: JSON.parse(JSON.stringify(DEFAULT_FIELDS))
+    }
+    selectedFieldIdx = -1
+    render()
+  }
+
+  window.editTemplate = function(id) {
+    const tpl = templates.find(t => t.id === id)
+    if (!tpl) return
+    editingTpl = JSON.parse(JSON.stringify(tpl))
+    if (!editingTpl.fields || editingTpl.fields.length === 0) {
+      editingTpl.fields = JSON.parse(JSON.stringify(DEFAULT_FIELDS))
+    }
+    selectedFieldIdx = -1
+    render()
+  }
+
+  window.duplicateTemplate = async function(id) {
+    const tpl = templates.find(t => t.id === id)
+    if (!tpl) return
+    const copy = JSON.parse(JSON.stringify(tpl))
+    copy.id = 0
+    copy.name = (copy.name || '模板') + ' 副本'
+    await DataStore.saveCardTemplate(copy)
+    Admin.showToast('模板已复制', 'success')
+    render()
+  }
+
+  window.deleteTemplate = function(id) {
+    Admin.confirmDelete('确定删除此模板？', async () => {
+      await DataStore.deleteCardTemplate(id)
+      Admin.showToast('已删除', 'success')
+      render()
+    })
+  }
+
+  window.cancelEdit = function() {
+    editingTpl = null
+    selectedFieldIdx = -1
+    render()
+  }
+
+  window.saveTemplate = async function() {
+    if (!editingTpl.name.trim()) {
+      Admin.showToast('请输入模板名称', 'error')
+      return
+    }
+    await DataStore.saveCardTemplate(editingTpl)
+    Admin.showToast('模板已保存', 'success')
+    editingTpl = null
+    selectedFieldIdx = -1
+    render()
+  }
+
+  // ---- Field selection ----
+  window.selectField = function(idx) {
+    selectedFieldIdx = idx
+    renderEditor()
+  }
+
+  // ---- Canvas mousedown (deselect) ----
+  window.canvasMouseDown = function(e) {
+    if (e.target.classList.contains('tpl-field')) return
+    selectedFieldIdx = -1
+    renderEditor()
+  }
+
+  // ---- Field drag ----
+  window.fieldMouseDown = function(e, idx) {
+    e.preventDefault()
+    selectedFieldIdx = idx
+    dragFieldIdx = idx
+    dragStartX = e.clientX
+    dragStartY = e.clientY
+    const f = editingTpl.fields[idx]
+    fieldStartX = f.x
+    fieldStartY = f.y
+    document.addEventListener('mousemove', onFieldDrag)
+    document.addEventListener('mouseup', onFieldUp)
+    renderEditor()
+  }
+
+  function onFieldDrag(e) {
+    if (dragFieldIdx < 0) return
+    const dx = (e.clientX - dragStartX) / SCALE
+    const dy = (e.clientY - dragStartY) / SCALE
+    let nx = Math.round(fieldStartX + dx)
+    let ny = Math.round(fieldStartY + dy)
+    // Boundary clamp
+    const f = editingTpl.fields[dragFieldIdx]
+    const fsPx = f.fontSize * SCALE
+    const approxW = f.label.length * f.fontSize * 0.6  // rough text width in rpx
+    nx = Math.max(0, Math.min(360 - approxW, nx))
+    ny = Math.max(0, Math.min(640 - f.fontSize, ny))
+    f.x = nx
+    f.y = ny
+    renderEditor()
+  }
+
+  function onFieldUp() {
+    dragFieldIdx = -1
+    document.removeEventListener('mousemove', onFieldDrag)
+    document.removeEventListener('mouseup', onFieldUp)
+  }
+
+  // ---- Field property set ----
+  window.setFieldProp = function(prop, value) {
+    if (selectedFieldIdx < 0 || !editingTpl || !editingTpl.fields) return
+    editingTpl.fields[selectedFieldIdx][prop] = value
+    renderEditor()
+  }
+
+  // ---- Global search ----
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+
+<style>
+.tpl-canvas {
+  position: relative;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  cursor: crosshair;
+  user-select: none;
+  overflow: hidden;
+}
+.tpl-field {
+  position: absolute;
+  white-space: nowrap;
+  cursor: move;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  line-height: 1.2;
+  transition: border-color 0.15s;
+}
+.tpl-field:hover {
+  border-color: rgba(255,255,255,0.3);
+}
+.tpl-field-selected {
+  border-color: #3a5f94 !important;
+  background: rgba(58,95,148,0.15);
+  outline: 2px solid #3a5f94;
+  outline-offset: 1px;
+  z-index: 10;
+}
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.color-swatch:hover {
+  border-color: #a0aec0;
+}
+.color-swatch-active {
+  border-color: #3a5f94 !important;
+  box-shadow: 0 0 0 2px #3a5f94;
+}
+.field-list-item:hover {
+  background: #edf2f7 !important;
+}
+</style>
+</body>
+</html>

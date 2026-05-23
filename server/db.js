@@ -94,6 +94,16 @@ CREATE TABLE IF NOT EXISTS config (
   key TEXT PRIMARY KEY,
   value TEXT
 );
+
+CREATE TABLE IF NOT EXISTS card_templates (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  background TEXT DEFAULT '#030909',
+  logo_url TEXT DEFAULT '',
+  colors TEXT DEFAULT '{"primary":"#ed3731","secondary":"#717777"}',
+  fields TEXT DEFAULT '[]',
+  created_at TEXT
+);
 `;
 
 function jsonVal(v) {
@@ -325,6 +335,17 @@ function readData() {
     return { id: s.id, url: s.url || '', sort: s.sort, updatedAt: s.updated_at || '' };
   });
 
+  // Card Templates
+  var cardTemplates = queryAll('card_templates', function(t) {
+    return {
+      id: t.id, name: t.name || '', background: t.background || '#030909',
+      logoUrl: t.logo_url || '',
+      colors: jsonParse(t.colors) || { primary: '#ed3731', secondary: '#717777' },
+      fields: jsonParse(t.fields) || [],
+      createdAt: t.created_at || ''
+    };
+  });
+
   // Company Profiles
   var companyProfiles = queryAll('company_profiles', function(p) {
     var cover = jsonParse(p.cover) || { backgroundImage: '', video: '', zones: {} };
@@ -432,7 +453,8 @@ function readData() {
   var defaultNextId = {
     cards: 1, messages: 1, positions: 1, videos: 1,
     honors: 1, projects: 1, sites: 1, splashImages: 4,
-    companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1
+    companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1,
+    cardTemplates: 1
   };
   var nextId = configs.nextId || defaultNextId;
 
@@ -459,6 +481,7 @@ function readData() {
     casePageConfig: { sections: configs.casePageConfig || [] },
     businessModulePageConfig: { sections: configs.businessModulePageConfig || [] },
     cardPageConfig: { sections: configs.cardPageConfig || [] },
+    cardTemplates: cardTemplates,
     nextId: nextId
   };
 }
@@ -569,6 +592,14 @@ function writeData(data) {
     function(ci) { return [ci.id, ci.name||'', ci.legalPerson||'', ci.phone||'', ci.address||'',
       ci.longitude||null, ci.latitude||null, ci.website||'', ci.description||'',
       ci.sortOrder||0, ci.status?1:0, ci.createdAt||'', ci.updatedAt||'']; }
+  );
+
+  // Card Templates
+  syncTable('card_templates',
+    ['id','name','background','logo_url','colors','fields','created_at'],
+    data.cardTemplates,
+    function(t) { return [t.id, t.name||'', t.background||'#030909', t.logoUrl||'',
+      jsonVal(t.colors), jsonVal(t.fields), t.createdAt||'']; }
   );
 
   // Configs
