@@ -19,7 +19,7 @@
           <text wx:if="{{cardData.phone}}">📱 {{cardData.phone}}</text>
           <text wx:if="{{cardData.email}}">✉️ {{cardData.email}}</text>
         </view>
-        <view class="card-company">
+        <view class="card-company" wx:if="{{companyInfo.name || cardData.company}}">
           <text>{{companyInfo.name || cardData.company || ''}}</text>
         </view>
       </view>

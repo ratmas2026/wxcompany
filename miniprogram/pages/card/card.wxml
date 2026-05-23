@@ -41,18 +41,18 @@
       <view class="card-info">
         <text class="card-name">{{cardData.name}}</text>
         <text class="card-title">{{cardData.title}}</text>
-        <view class="card-badge">
+        <view class="card-badge" wx:if="{{cardData.department || companyInfo.name}}">
           <text>{{cardData.department || companyInfo.name || ''}}</text>
         </view>
       </view>
       <!-- 自己的名片：标签 + 文本 + 发名片按钮 -->
       <block wx:if="{{isOwnCard}}">
-        <view class="card-contact-vertical">
-          <view class="contact-info-row">
+        <view class="card-contact-vertical" wx:if="{{cardData.phone || cardData.email}}">
+          <view class="contact-info-row" wx:if="{{cardData.phone}}">
             <text class="contact-label">手机</text>
             <text class="contact-value">{{cardData.phone}}</text>
           </view>
-          <view class="contact-info-row">
+          <view class="contact-info-row" wx:if="{{cardData.email}}">
             <text class="contact-label">邮箱</text>
             <text class="contact-value">{{cardData.email}}</text>
           </view>
@@ -61,18 +61,18 @@
 
       <!-- 他人的名片：标签 + 可点击操作 -->
       <block wx:else>
-        <view class="card-contact-vertical">
-          <view class="contact-info-row" bindtap="callPhone">
+        <view class="card-contact-vertical" wx:if="{{cardData.phone || cardData.email}}">
+          <view class="contact-info-row" wx:if="{{cardData.phone}}" bindtap="callPhone">
             <text class="contact-label">手机</text>
             <text class="contact-value">{{cardData.phone}}</text>
           </view>
-          <view class="contact-info-row" bindtap="sendEmail">
+          <view class="contact-info-row" wx:if="{{cardData.email}}" bindtap="sendEmail">
             <text class="contact-label">邮箱</text>
             <text class="contact-value">{{cardData.email}}</text>
           </view>
         </view>
       </block>
-      <view class="card-location" bindtap="openMap">
+      <view class="card-location" bindtap="openMap" wx:if="{{matchedCI.name || cardData.company || matchedCI.address || cardData.address || companyInfo.address}}">
         <text>📍</text>
         <view class="location-info">
           <text class="location-company">{{matchedCI.name || cardData.company}}</text>
@@ -80,7 +80,7 @@
         </view>
         <text class="location-arrow">›</text>
       </view>
-      <view class="recipient-actions" wx:if="{{!isOwnCard}}">
+      <view class="recipient-actions" wx:if="{{!isOwnCard && cardData.phone}}">
         <button class="action-btn action-call" bindtap="callPhone">
           <text>📞</text>
           <text>拨打电话</text>
