@@ -352,10 +352,13 @@
   cursor: crosshair;
   user-select: none;
   overflow: hidden;
-  --grid-color: rgba(237,55,49,0.06);
+  --grid-fine: rgba(47,25,27,0.35);
+  --grid-accent: rgba(237,55,49,0.12);
   background-image:
-    repeating-linear-gradient(0deg, var(--grid-color), var(--grid-color) 1px, transparent 1px, transparent 18px),
-    repeating-linear-gradient(90deg, var(--grid-color), var(--grid-color) 1px, transparent 1px, transparent 18px);
+    repeating-linear-gradient(0deg, var(--grid-fine), var(--grid-fine) 1px, transparent 1px, transparent 18px),
+    repeating-linear-gradient(90deg, var(--grid-fine), var(--grid-fine) 1px, transparent 1px, transparent 18px),
+    repeating-linear-gradient(0deg, var(--grid-accent), var(--grid-accent) 1px, transparent 1px, transparent 72px),
+    repeating-linear-gradient(90deg, var(--grid-accent), var(--grid-accent) 1px, transparent 1px, transparent 72px);
 }
 .tpl-field {
   position: absolute;
