@@ -45,39 +45,31 @@
           <text>{{cardData.department || companyInfo.name || '高级管理合伙人'}}</text>
         </view>
       </view>
-      <!-- 自己的名片：文本 + 发名片按钮 -->
+      <!-- 自己的名片：标签 + 文本 + 发名片按钮 -->
       <block wx:if="{{isOwnCard}}">
-        <view class="card-contact">
-          <view class="contact-row">
-            <view class="contact-icon">
-              <text>📞</text>
-            </view>
-            <text>{{cardData.phone}}</text>
+        <view class="card-contact-vertical">
+          <view class="contact-info-row">
+            <text class="contact-label">手机</text>
+            <text class="contact-value">{{cardData.phone}}</text>
           </view>
-          <view class="contact-row">
-            <view class="contact-icon">
-              <text>📧</text>
-            </view>
-            <text>{{cardData.email}}</text>
+          <view class="contact-info-row">
+            <text class="contact-label">邮箱</text>
+            <text class="contact-value">{{cardData.email}}</text>
           </view>
         </view>
         <button class="share-card-btn" open-type="share">发名片</button>
       </block>
 
-      <!-- 他人的名片：操作按钮 -->
+      <!-- 他人的名片：标签 + 可点击操作 -->
       <block wx:else>
-        <view class="card-contact">
-          <view class="contact-row" bindtap="callPhone">
-            <view class="contact-icon">
-              <text>📞</text>
-            </view>
-            <text>立即通话</text>
+        <view class="card-contact-vertical">
+          <view class="contact-info-row" bindtap="callPhone">
+            <text class="contact-label">手机</text>
+            <text class="contact-value">{{cardData.phone}}</text>
           </view>
-          <view class="contact-row" bindtap="sendEmail">
-            <view class="contact-icon">
-              <text>📧</text>
-            </view>
-            <text>发送邮件</text>
+          <view class="contact-info-row" bindtap="sendEmail">
+            <text class="contact-label">邮箱</text>
+            <text class="contact-value">{{cardData.email}}</text>
           </view>
         </view>
       </block>
