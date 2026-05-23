@@ -45,20 +45,42 @@
           <text>{{cardData.department || companyInfo.name || '高级管理合伙人'}}</text>
         </view>
       </view>
-      <view class="card-contact">
-        <view class="contact-row" bindtap="callPhone">
-          <view class="contact-icon">
-            <text>📞</text>
+      <!-- 自己的名片：文本 + 发名片按钮 -->
+      <block wx:if="{{isOwnCard}}">
+        <view class="card-contact">
+          <view class="contact-row">
+            <view class="contact-icon">
+              <text>📞</text>
+            </view>
+            <text>{{cardData.phone}}</text>
           </view>
-          <text>立即通话</text>
-        </view>
-        <view class="contact-row" bindtap="sendEmail">
-          <view class="contact-icon">
-            <text>📧</text>
+          <view class="contact-row">
+            <view class="contact-icon">
+              <text>📧</text>
+            </view>
+            <text>{{cardData.email}}</text>
           </view>
-          <text>发送邮件</text>
         </view>
-      </view>
+        <button class="share-card-btn" open-type="share">发名片</button>
+      </block>
+
+      <!-- 他人的名片：操作按钮 -->
+      <block wx:else>
+        <view class="card-contact">
+          <view class="contact-row" bindtap="callPhone">
+            <view class="contact-icon">
+              <text>📞</text>
+            </view>
+            <text>立即通话</text>
+          </view>
+          <view class="contact-row" bindtap="sendEmail">
+            <view class="contact-icon">
+              <text>📧</text>
+            </view>
+            <text>发送邮件</text>
+          </view>
+        </view>
+      </block>
       <view class="card-location" bindtap="openMap">
         <text>📍</text>
         <view class="location-info">

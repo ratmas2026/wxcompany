@@ -5,7 +5,7 @@
       "name": "鼠大",
       "title": "首席执行官",
       "company": "今天药吃了",
-      "phone": "13888888888",
+      "phone": "13775194009",
       "email": "zhangmy@zhixingguan.com",
       "department": "管理层",
       "status": true,
@@ -236,8 +236,8 @@
     "messages": 12,
     "positions": 9,
     "videos": 8,
-    "honors": 4,
-    "projects": 4,
+    "honors": 1,
+    "projects": 1,
     "sites": 9,
     "splashImages": 4,
     "companyProfiles": 12,
@@ -263,93 +263,8 @@
     "email": "contact@zhixingguan.com",
     "address": "深圳市南山区科技园南路88号智能大厦38层"
   },
-  "honors": [
-    {
-      "id": 2,
-      "name": "老鼠人大奖",
-      "desc": "跑得快",
-      "date": "20240601",
-      "image": "/uploads/honors/honor_1777802556279_443.jpg",
-      "createdAt": "2026-05-03"
-    },
-    {
-      "id": 3,
-      "name": "老鼠人哈哈哈",
-      "desc": "老鼠人开心了",
-      "date": "20240622",
-      "image": "/uploads/honors/honor_1777802631736_478.jfif",
-      "createdAt": "2026-05-03"
-    }
-  ],
-  "projects": [
-    {
-      "id": 1,
-      "name": "Nexus 绿色天篷",
-      "location": "新加坡",
-      "year": "2023",
-      "desc": "一个集成了40,000种原生植物的高密度住宅垂直森林。通过自然蒸腾作用将冷却成本降低了40%。",
-      "tags": [
-        "亲生物设计",
-        "能源等级 A+",
-        "城市更新"
-      ],
-      "image": "/uploads/projects/project_1777806680069_865.jpg",
-      "images": [
-        "/uploads/projects/project_1777806686863_997.jpg"
-      ],
-      "address": "新加坡滨海湾花园路88号",
-      "scale": "总建筑面积 85,000㎡，地上45层，地下3层",
-      "period": "2021年6月 - 2023年12月",
-      "investment": "约 12.8 亿新加坡元",
-      "highlights": [
-        "全球首个超高层垂直森林住宅项目",
-        "集成40,000种原生植物，自然蒸腾降温40%",
-        "获新加坡Green Mark铂金认证",
-        "亲生物设计理念引领城市更新潮流"
-      ],
-      "detail": "Nexus 绿色天篷是公司在新加坡承建的标杆性超高层生态建筑项目。项目采用亲生物设计理念，将40,000种原生植物融入建筑结构，形成独特的垂直森林生态系统。\n\n通过自然蒸腾作用，项目实现了被动降温，冷却成本降低40%。同时集成智能灌溉系统和植物健康监测平台，确保绿植墙体的可持续养护。\n\n项目获新加坡Green Mark铂金认证，成为城市更新与生态建筑融合的全球典范。",
-      "detailImages": [
-        "/images/hero-bg.jpg",
-        "/images/office-bg.jpg"
-      ],
-      "results": []
-    },
-    {
-      "id": 2,
-      "name": "AeroFlow 4号航站楼",
-      "location": "迪拜",
-      "year": "2022",
-      "desc": "通过算法人群管理和非接触式生物识别通道重新定义旅客流量。专为5000万年客流量设计。",
-      "tags": [
-        "基础设施",
-        "AI 驱动",
-        "出行"
-      ],
-      "image": "/uploads/projects/project_1777806242707_842.jpg",
-      "images": [
-        "/uploads/projects/project_1777806253990_477.jfif",
-        "/uploads/projects/project_1777806253998_662.jpg",
-        "/uploads/projects/project_1777806254008_294.jfif",
-        "/uploads/projects/project_1777806254019_315.jfif"
-      ],
-      "address": "迪拜阿勒马克图姆国际机场区",
-      "scale": "总建筑面积 680,000㎡，年客流量5000万",
-      "period": "2020年1月 - 2022年9月",
-      "investment": "约 42 亿迪拉姆",
-      "highlights": [
-        "全球首个全AI驱动的旅客流程管理系统",
-        "非接触式生物识别通道覆盖全航站楼",
-        "算法人群管理提升旅客通行效率35%",
-        "获国际机场协会最佳创新奖"
-      ],
-      "detail": "AeroFlow 4号航站楼是迪拜新一代智慧机场的旗舰项目。项目全面应用AI人群管理算法和非接触式生物识别技术，重新定义了旅客出行体验。\n\n航站楼部署超过5,000个AI传感器节点，实时分析旅客流量并动态调整安检和通关资源。非接触式生物识别通道实现\"无感通行\"，从值机到登机全程无需出示证件。\n\n项目专为5000万年客流量设计，实际运营首年旅客满意度提升28%。",
-      "detailImages": [
-        "/images/hero-bg.jpg",
-        "/images/office-bg.jpg"
-      ],
-      "results": []
-    }
-  ],
+  "honors": [],
+  "projects": [],
   "sites": [
     {
       "id": 1,

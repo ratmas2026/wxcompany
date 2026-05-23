@@ -1,5 +1,6 @@
 const api = require('../../utils/api')
 const { FONT_SIZE_MAP, parseGridLayout } = require('../../utils/layout')
+const app = getApp()
 
 Page({
   data: {
@@ -20,10 +21,13 @@ Page({
     businessSections: [],
     businessHeroCards: [],
 
-    pageSections: []
+    pageSections: [],
+    isOwnCard: false,
+    isSharedCard: false
   },
 
-  onLoad() {
+  onLoad(options) {
+    this._cardId = options.cardId ? parseInt(options.cardId) : null
     this._configLoaded = true
     this.fetchCardConfig()
     this.fetchData()
@@ -379,21 +383,36 @@ Page({
   },
 
   fetchData() {
+    const userPhone = (app.globalData.userInfo && app.globalData.userInfo.phone) || ''
+
+    // 未登录且无 cardId → 跳转登录
+    if (!this._cardId && !userPhone) {
+      wx.redirectTo({ url: '/pages/login/login' })
+      return
+    }
+
     Promise.all([
       api.getCards(),
       api.getCompanyInfos()
     ]).then(([cards, companyInfos]) => {
-      const card = (cards || []).find(c => c.status === true) || (cards && cards[0]) || {}
+      let card
+      if (this._cardId) {
+        card = (cards || []).find(c => c.id === this._cardId) || {}
+      } else {
+        card = (cards || []).find(c => c.phone === userPhone && c.status === true) || {}
+      }
       if (card.avatar) card.avatar = api.staticUrl(card.avatar)
       const infos = (companyInfos || []).filter(ci => ci.status !== false)
       const matched = card.company ? infos.find(ci => ci.name === card.company) || null : null
       const matchedCI = matched || (infos.length > 0 ? infos[0] : null)
       const fallbackCI = infos.length > 0 ? infos[0] : {}
+      const isOwnCard = !!(userPhone && card.phone && userPhone === card.phone)
       this.setData({
         cardData: card,
         companyInfo: fallbackCI,
         companyInfos: infos,
-        matchedCI: matchedCI
+        matchedCI: matchedCI,
+        isOwnCard: isOwnCard
       })
     }).catch(() => {})
   },
@@ -496,7 +515,7 @@ Page({
   onShareAppMessage() {
     return {
       title: `${this.data.cardData.name || '企业名片'} - 企业名片`,
-      path: '/pages/card/card'
+      path: `/pages/card/card?cardId=${this.data.cardData.id}`
     }
   }
 })
