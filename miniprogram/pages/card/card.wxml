@@ -80,6 +80,16 @@
         </view>
         <text class="location-arrow">›</text>
       </view>
+      <view class="recipient-actions" wx:if="{{!isOwnCard}}">
+        <button class="action-btn action-call" bindtap="callPhone">
+          <text>📞</text>
+          <text>拨打电话</text>
+        </button>
+        <button class="action-btn action-save" bindtap="saveContact" wx:if="{{canAddContact}}">
+          <text>📇</text>
+          <text>保存联系人</text>
+        </button>
+      </view>
       <button wx:if="{{isOwnCard}}" class="share-card-btn" open-type="share">发名片</button>
     </view>
   </view>

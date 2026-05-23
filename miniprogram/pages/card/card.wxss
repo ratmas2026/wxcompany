@@ -108,6 +108,35 @@
 .share-card-btn::after {
   border: none;
 }
+.recipient-actions {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 32rpx;
+}
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  border: none;
+  line-height: 1.5;
+}
+.action-btn::after {
+  border: none;
+}
+.action-call {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+}
+.action-save {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
 .card-location {
   display: flex;
   align-items: center;

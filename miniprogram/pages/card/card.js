@@ -23,12 +23,16 @@ Page({
 
     pageSections: [],
     isOwnCard: false,
-    isSharedCard: false
+    isSharedCard: false,
+    canAddContact: false
   },
 
   onLoad(options) {
     this._cardId = options.cardId ? parseInt(options.cardId) : null
     this._configLoaded = true
+    if (wx.canIUse && wx.canIUse('addPhoneContact')) {
+      this.setData({ canAddContact: true })
+    }
     this.fetchCardConfig()
     this.fetchData()
   },
@@ -408,12 +412,14 @@ Page({
       const matchedCI = matched || (infos.length > 0 ? infos[0] : null)
       const fallbackCI = infos.length > 0 ? infos[0] : {}
       const isOwnCard = !!(userPhone && card.phone && userPhone === card.phone)
+      const isSharedCard = !!(this._cardId && !isOwnCard)
       this.setData({
         cardData: card,
         companyInfo: fallbackCI,
         companyInfos: infos,
         matchedCI: matchedCI,
-        isOwnCard: isOwnCard
+        isOwnCard: isOwnCard,
+        isSharedCard: isSharedCard
       })
     }).catch(() => {})
   },
@@ -486,8 +492,22 @@ Page({
     }
   },
 
+  saveContact() {
+    const card = this.data.cardData
+    const ci = this.data.matchedCI || this.data.companyInfo
+    if (!card.phone) return
+    wx.addPhoneContact({
+      firstName: card.name || '',
+      mobilePhoneNumber: card.phone,
+      organization: ci.name || card.company || '',
+      title: card.title || '',
+      success: () => wx.showToast({ title: '已打开通讯录', icon: 'success' }),
+      fail: () => wx.showToast({ title: '添加失败', icon: 'none' })
+    })
+  },
+
   openMap() {
-    const ci = this.data.matchedCI
+    const ci = this.data.matchedCI || this.data.companyInfo
     if (ci && ci.longitude && ci.latitude) {
       wx.openLocation({
         latitude: ci.latitude,
@@ -497,7 +517,13 @@ Page({
         scale: 16
       })
     } else {
-      wx.showToast({ title: '暂无定位信息', icon: 'none' })
+      const addr = ci && ci.address
+      if (addr) {
+        wx.setClipboardData({ data: addr })
+        wx.showToast({ title: '地址已复制', icon: 'none' })
+      } else {
+        wx.showToast({ title: '暂无定位信息', icon: 'none' })
+      }
     }
   },
 
