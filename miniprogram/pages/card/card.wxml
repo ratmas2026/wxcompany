@@ -57,7 +57,6 @@
             <text class="contact-value">{{cardData.email}}</text>
           </view>
         </view>
-        <button class="share-card-btn" open-type="share">发名片</button>
       </block>
 
       <!-- 他人的名片：标签 + 可点击操作 -->
@@ -81,6 +80,7 @@
         </view>
         <text class="location-arrow">›</text>
       </view>
+      <button wx:if="{{isOwnCard}}" class="share-card-btn" open-type="share">发名片</button>
     </view>
   </view>
 
