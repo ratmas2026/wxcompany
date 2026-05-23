@@ -41,6 +41,7 @@ Page({
       this._configLoaded = true
       this.fetchCardConfig()
     }
+    this.fetchData()
   },
 
   fetchCardConfig() {
