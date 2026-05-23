@@ -24,20 +24,21 @@
   let dragStartX = 0, dragStartY = 0
   let fieldStartX = 0, fieldStartY = 0
 
-  const CANVAS_W = 280  // preview canvas width (px), maps to 360rpx
-  const CANVAS_H = 498  // preview canvas height (px), maps to 640rpx
-  const SCALE = CANVAS_W / 360  // rpx to px scale
+  const CANVAS_W = 360  // preview canvas width (px), maps to 360rpx (1:1)
+  const CANVAS_H = 216  // preview canvas height (px), standard card ratio ~1.67, landscape
+  const SCALE = 1.0     // rpx to px scale (1:1)
 
+  // Default cyberpunk layout — matches cyber.png field positions
   const DEFAULT_FIELDS = [
-    { key: 'company',  label: '公司名称', x: 31, y: 31,  fontSize: 20, color: '#717777', visible: true },
-    { key: 'name',     label: '姓名',     x: 31, y: 78,  fontSize: 36, color: '#ed3731', visible: true },
-    { key: 'title',    label: '职务',     x: 31, y: 117, fontSize: 24, color: '#fb7765', visible: true },
-    { key: 'phone',    label: '手机',     x: 31, y: 187, fontSize: 22, color: '#717777', visible: true },
-    { key: 'email',    label: '邮箱',     x: 31, y: 226, fontSize: 22, color: '#717777', visible: true },
-    { key: 'address',  label: '地址',     x: 31, y: 273, fontSize: 20, color: '#717777', visible: true }
+    { key: 'company',  label: '公司名称', x: 20, y: 23,  fontSize: 22, color: '#ef6a59', visible: true },
+    { key: 'name',     label: '姓名',     x: 20, y: 64,  fontSize: 38, color: '#db7063', visible: true },
+    { key: 'title',    label: '职务',     x: 20, y: 100, fontSize: 28, color: '#d46a60', visible: true },
+    { key: 'address',  label: '地址',     x: 20, y: 156, fontSize: 20, color: '#b6483f', visible: true },
+    { key: 'phone',    label: '手机',     x: 200, y: 156, fontSize: 20, color: '#d1594c', visible: true },
+    { key: 'email',    label: '邮箱',     x: 200, y: 178, fontSize: 20, color: '#d1574b', visible: true }
   ]
 
-  const COLORS = ['#ed3731', '#fb7765', '#f16653', '#ff4433', '#717777', '#b3b0b1', '#ffffff', '#000000']
+  const COLORS = ['#ef6a59', '#db7063', '#d46a60', '#d1594c', '#b6483f', '#ed3731', '#fb7765', '#ffffff']
 
   function loadTemplates() {
     templates = DataStore.getCardTemplates()
@@ -58,11 +59,11 @@
       ? '<div class="card" style="text-align:center;padding:60px 24px;color:#a0aec0"><p style="font-size:48px;margin:0 0 12px">🎨</p><p>暂无模板，点击右上角"添加模板"创建</p></div>'
       : templates.map(tpl => {
           const bg = tpl.background || '#030909'
-          const previewHtml = renderPreviewCanvas(tpl, 240, 426)
+          const previewHtml = renderPreviewCanvas(tpl, 200, 120)
           return `
             <div class="card" style="padding:16px">
               <div style="display:flex;gap:16px;align-items:flex-start">
-                <div style="flex-shrink:0;width:120px;height:213px;background:${bg};border-radius:8px;overflow:hidden;position:relative;border:1px solid #e2e8f0">
+                <div style="flex-shrink:0;width:200px;height:120px;background:${bg};border-radius:8px;overflow:hidden;position:relative;border:1px solid #e2e8f0">
                   ${previewHtml}
                 </div>
                 <div style="flex:1;min-width:0">
@@ -157,7 +158,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Y 坐标: ${sf.y} rpx</label>
-            <input type="range" min="0" max="620" value="${sf.y}" style="width:100%"
+            <input type="range" min="0" max="200" value="${sf.y}" style="width:100%"
               oninput="window.setFieldProp('y', parseInt(this.value))">
           </div>
         </div>
@@ -186,7 +187,7 @@
             onmousedown="window.canvasMouseDown(event)">
             ${fieldEls}
           </div>
-          <div style="margin-top:8px;font-size:11px;color:#a0aec0">底板 360×640 rpx · 点击字段选中 · 拖拽调整位置</div>
+          <div style="margin-top:8px;font-size:11px;color:#a0aec0">底板 360×216 rpx · 横版名片 · 点击字段选中 · 拖拽调整位置</div>
         </div>
 
         <!-- Side Panel -->
@@ -220,10 +221,10 @@
   window.addTemplate = function() {
     editingTpl = {
       id: 0,
-      name: '赛博风格',
+      name: '赛博风格（横版）',
       background: '#030909',
       logoUrl: '',
-      colors: { primary: '#ed3731', secondary: '#717777' },
+      colors: { primary: '#db7063', secondary: '#b6483f' },
       fields: JSON.parse(JSON.stringify(DEFAULT_FIELDS))
     }
     selectedFieldIdx = -1
@@ -317,7 +318,7 @@
     const fsPx = f.fontSize * SCALE
     const approxW = f.label.length * f.fontSize * 0.6  // rough text width in rpx
     nx = Math.max(0, Math.min(360 - approxW, nx))
-    ny = Math.max(0, Math.min(640 - f.fontSize, ny))
+    ny = Math.max(0, Math.min(CANVAS_H - f.fontSize, ny))
     f.x = nx
     f.y = ny
     renderEditor()
@@ -351,6 +352,10 @@
   cursor: crosshair;
   user-select: none;
   overflow: hidden;
+  --grid-color: rgba(237,55,49,0.06);
+  background-image:
+    repeating-linear-gradient(0deg, var(--grid-color), var(--grid-color) 1px, transparent 1px, transparent 18px),
+    repeating-linear-gradient(90deg, var(--grid-color), var(--grid-color) 1px, transparent 1px, transparent 18px);
 }
 .tpl-field {
   position: absolute;
