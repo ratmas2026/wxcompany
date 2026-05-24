@@ -247,6 +247,10 @@
     if (!editingTpl.fields || editingTpl.fields.length === 0) {
       editingTpl.fields = JSON.parse(JSON.stringify(DEFAULT_FIELDS))
     }
+    // Auto-migrate old portrait-layout coordinates to landscape canvas
+    if (editingTpl.fields.some(f => f.y > CANVAS_H)) {
+      editingTpl.fields = JSON.parse(JSON.stringify(DEFAULT_FIELDS))
+    }
     selectedFieldIdx = -1
     render()
   }
