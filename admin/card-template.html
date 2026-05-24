@@ -365,13 +365,28 @@
   cursor: crosshair;
   user-select: none;
   overflow: hidden;
-  --grid-fine: rgba(255,255,255,0.08);
-  --grid-accent: rgba(255,255,255,0.15);
+  --line-fine: rgba(90,42,35,0.30);
+  --line-accent: rgba(140,55,48,0.18);
+  --line-h1: rgba(158,68,60,0.22);
+  --line-h2: rgba(107,47,41,0.18);
+  --line-dark: rgba(38,15,16,0.25);
   background-image:
-    repeating-linear-gradient(0deg, var(--grid-fine), var(--grid-fine) 1px, transparent 1px, transparent 18px),
-    repeating-linear-gradient(90deg, var(--grid-fine), var(--grid-fine) 1px, transparent 1px, transparent 18px),
-    repeating-linear-gradient(0deg, var(--grid-accent), var(--grid-accent) 1px, transparent 1px, transparent 72px),
-    repeating-linear-gradient(90deg, var(--grid-accent), var(--grid-accent) 1px, transparent 1px, transparent 72px);
+    repeating-linear-gradient(0deg, var(--line-fine) 0px, var(--line-fine) 1px, transparent 1px, transparent 18px),
+    repeating-linear-gradient(90deg, var(--line-fine) 0px, var(--line-fine) 1px, transparent 1px, transparent 18px),
+    linear-gradient(to bottom,
+      transparent 9%,  var(--line-h1) 10%,   transparent 11%,
+      transparent 12%, var(--line-h1) 13%,   transparent 14%,
+      transparent 21%, var(--line-h1) 22%,   transparent 23%,
+      transparent 23%, var(--line-h1) 24%,   transparent 25%,
+      transparent 39%, var(--line-dark) 40%, transparent 41%,
+      transparent 47%, var(--line-dark) 48%, transparent 49%,
+      transparent 50%, var(--line-dark) 51%, transparent 52%,
+      transparent 52%, var(--line-dark) 53%, transparent 54%,
+      transparent 75%, var(--line-h2) 76%,   transparent 77%,
+      transparent 83%, var(--line-h2) 84%,   transparent 85%
+    ),
+    repeating-linear-gradient(0deg, var(--line-accent) 0px, var(--line-accent) 1px, transparent 1px, transparent 72px),
+    repeating-linear-gradient(90deg, var(--line-accent) 0px, var(--line-accent) 1px, transparent 1px, transparent 72px);
 }
 .tpl-field {
   position: absolute;
