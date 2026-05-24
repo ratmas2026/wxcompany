@@ -34,14 +34,14 @@
   // Default cyberpunk Red Neon layout — matched to cyber1.docx spec
   const DEFAULT_FIELDS = [
     { key: 'company',  label: '公司名称', x: 20, y: 20,  fontSize: 20, color: '#FF3D2E', fontFamily: 'Orbitron', visible: true },
-    { key: 'name',     label: '姓名',     x: 80, y: 70,  fontSize: 18, color: '#FF3D2E', fontFamily: 'Orbitron', visible: true },
-    { key: 'title',    label: '职务',     x: 70, y: 95,  fontSize: 12, color: '#FF5544', fontFamily: 'Rajdhani', visible: true },
-    { key: 'address',  label: '地址',     x: 20, y: 145, fontSize: 11, color: '#FF5544', fontFamily: 'Rajdhani', visible: true },
-    { key: 'phone',    label: '手机',     x: 195, y: 145, fontSize: 11, color: '#FF5544', fontFamily: 'Rajdhani', visible: true },
-    { key: 'email',    label: '邮箱',     x: 195, y: 163, fontSize: 11, color: '#FF5544', fontFamily: 'Rajdhani', visible: true }
+    { key: 'name',     label: '姓名',     x: 80, y: 68,  fontSize: 18, color: '#FF3D2E', fontFamily: 'Orbitron', visible: true },
+    { key: 'title',    label: '职务',     x: 70, y: 95,  fontSize: 14, color: '#FF6B5A', fontFamily: 'Rajdhani', visible: true },
+    { key: 'address',  label: '地址',     x: 20, y: 148, fontSize: 14, color: '#FF6B5A', fontFamily: 'Rajdhani', visible: true },
+    { key: 'phone',    label: '手机',     x: 195, y: 148, fontSize: 14, color: '#FF6B5A', fontFamily: 'Rajdhani', visible: true },
+    { key: 'email',    label: '邮箱',     x: 195, y: 168, fontSize: 14, color: '#FF6B5A', fontFamily: 'Rajdhani', visible: true }
   ]
 
-  const COLORS = ['#FF3D2E', '#FF5544', '#FF6B5A', '#FF8A7A', '#ffffff', '#FFD700', '#FF4500', '#DC143C']
+  const COLORS = ['#FF3D2E', '#FF6B5A', '#FF8A7A', '#FFB0A0', '#ffffff', '#FFD700', '#FF4500', '#DC143C']
 
   function loadTemplates() {
     templates = DataStore.getCardTemplates()
@@ -103,7 +103,7 @@
       const top = f.y * SCALE * scaleY
       const fs = Math.round(f.fontSize * scaleX)
       const ff = f.fontFamily || 'Rajdhani'
-      return `<div style="position:absolute;left:${left}px;top:${top}px;font-size:${fs}px;color:${escHtml(f.color || '#717777')};font-family:${escHtml(ff)},sans-serif;white-space:nowrap;line-height:1.2;text-shadow:0 0 2px currentColor,0 0 4px currentColor">${escHtml(f.label)}</div>`
+      return `<div style="position:absolute;left:${left}px;top:${top}px;font-size:${fs}px;color:${escHtml(f.color || '#717777')};font-family:${escHtml(ff)},sans-serif;white-space:nowrap;line-height:1.2;text-shadow:0 0 1px currentColor,0 0 3px currentColor">${escHtml(f.label)}</div>`
     }).join('')
     return lines
   }
@@ -228,7 +228,7 @@
       name: 'Red Neon（横版）',
       background: '#0A0B0D',
       logoUrl: '',
-      colors: { primary: '#FF3D2E', secondary: '#FF5544' },
+      colors: { primary: '#FF3D2E', secondary: '#FF6B5A' },
       fields: JSON.parse(JSON.stringify(DEFAULT_FIELDS))
     }
     selectedFieldIdx = -1
@@ -373,7 +373,7 @@
   border-radius: 4px;
   line-height: 1.2;
   transition: border-color 0.15s;
-  text-shadow: 0 0 2px currentColor, 0 0 6px currentColor, 0 0 14px currentColor;
+  text-shadow: 0 0 1px currentColor, 0 0 3px currentColor, 0 0 6px currentColor;
 }
 .tpl-field:hover {
   border-color: rgba(255,255,255,0.3);
