@@ -1,28 +1,23 @@
 .login-page {
   min-height: 100vh;
-  background: #efefef;
+  background: #F5F7FA;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 48rpx;
+  padding: 0 32rpx;
 }
 
-/* Brand */
-.brand-bg {
-  background: linear-gradient(135deg, #3a5f94, #375c91);
-}
-
-/* Header */
+/* Title */
 .login-header {
   width: 100%;
   padding-top: 160rpx;
   padding-bottom: 80rpx;
+  text-align: center;
 }
 .header-title {
-  display: block;
-  font-size: 40rpx;
+  font-size: 48rpx;
   font-weight: 700;
-  color: #2b3437;
+  color: #333333;
 }
 
 /* Login Form */
@@ -37,16 +32,18 @@
 }
 .form-input {
   width: 100%;
-  height: 96rpx;
+  height: 100rpx;
   padding: 0 32rpx;
-  background: #ffffff;
-  border-radius: 16rpx;
+  background: #FFFFFF;
+  border-radius: 50rpx;
   font-size: 30rpx;
+  color: #333333;
   border: none;
   box-sizing: border-box;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
 }
 .input-placeholder {
-  color: #b0b7bd;
+  color: #999999;
 }
 
 /* Code Row */
@@ -54,55 +51,64 @@
   display: flex;
   gap: 16rpx;
   margin-bottom: 48rpx;
+  align-items: center;
 }
 .code-input-wrap {
-  flex: 3;
+  flex: 7;
 }
 .code-btn {
-  flex: 1;
-  padding: 0 4rpx;
-  background: #e8f4e8;
-  color: #4caf50;
+  flex: 3;
+  padding: 0;
+  height: 100rpx;
+  background: #FFFFFF;
+  color: #1890FF;
   border-radius: 16rpx;
-  font-size: 20rpx;
-  font-weight: 600;
+  font-size: 26rpx;
+  font-weight: 500;
   white-space: nowrap;
-  border: none;
+  border: 2rpx solid #1890FF;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
 }
 .code-btn--disabled {
-  color: #abb3b7;
-  background: #f1f4f6;
+  color: #C0C4CC;
+  border-color: #E4E7ED;
+  background: #F5F7FA;
 }
 
 /* Login Button */
 .login-btn {
   width: 100%;
-  padding: 28rpx;
-  color: #ffffff;
-  border-radius: 48rpx;
-  font-size: 34rpx;
+  height: 100rpx;
+  padding: 0;
+  color: #FFFFFF;
+  background: #1890FF;
+  border-radius: 50rpx;
+  font-size: 32rpx;
   font-weight: 700;
   border: none;
-  box-shadow: 0 8rpx 24rpx rgba(58, 95, 148, 0.3);
+  box-shadow: 0 8rpx 24rpx rgba(24,144,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Agreement */
 .agreement-row {
   text-align: center;
   margin-top: auto;
-  padding: 32rpx 0 48rpx;
+  padding: 32rpx 0 24rpx;
   font-size: 24rpx;
   color: #999999;
   white-space: nowrap;
 }
 .agree-circle {
-  width: 32rpx;
-  height: 32rpx;
+  width: 28rpx;
+  height: 28rpx;
   border-radius: 50%;
-  border: 2rpx solid #c5cad0;
+  border: 2rpx solid #C0C4CC;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -111,14 +117,44 @@
   margin-right: 8rpx;
 }
 .agree-circle--checked {
-  background: #3a5f94;
-  border-color: #3a5f94;
+  background: #1890FF;
+  border-color: #1890FF;
 }
 .agree-check {
-  color: #ffffff;
-  font-size: 20rpx;
+  color: #FFFFFF;
+  font-size: 18rpx;
   font-weight: 700;
 }
 .agree-link {
-  color: #3a5f94;
+  color: #1890FF;
+}
+
+/* WeChat Bottom Entry (Secondary) */
+.wx-bottom-section {
+  width: 100%;
+  padding: 0 0 48rpx;
+}
+.wx-bottom-btn {
+  width: 100%;
+  height: 80rpx;
+  padding: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  font-size: 28rpx;
+  color: #999999;
+  line-height: 1;
+}
+.wx-bottom-btn[disabled] {
+  opacity: 0.4;
+}
+.wx-bottom-icon {
+  font-size: 28rpx;
+}
+.wx-bottom-text {
+  font-size: 28rpx;
+  color: #999999;
 }

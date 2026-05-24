@@ -148,6 +148,10 @@
   color: #abb3b7;
 }
 
+.logout-title {
+  color: #e04040;
+}
+
 /* Version */
 .version-text {
   text-align: center;

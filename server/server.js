@@ -7,6 +7,50 @@ const db = require('./db')
 const crypto = require('crypto')
 const compression = require('compression')
 
+// SMS config from env
+const SMS_ACCESS_KEY_ID = process.env.SMS_ACCESS_KEY_ID || ''
+const SMS_ACCESS_KEY_SECRET = process.env.SMS_ACCESS_KEY_SECRET || ''
+const SMS_SIGN_NAME = process.env.SMS_SIGN_NAME || ''
+const SMS_TEMPLATE_CODE = process.env.SMS_TEMPLATE_CODE || ''
+
+// WeChat Mini Program config
+const WX_APPID = process.env.WX_APPID || ''
+const WX_APPSECRET = process.env.WX_APPSECRET || ''
+
+// 验证码存储（phone → {code, expires, lastSent}）
+const codeStore = new Map()
+
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+function cleanExpiredCodes() {
+  const now = Date.now()
+  for (const [phone, entry] of codeStore) {
+    if (entry.expires < now) codeStore.delete(phone)
+  }
+}
+
+async function sendSMS(phone, code) {
+  const Core = require('@alicloud/pop-core')
+  const client = new Core({
+    accessKeyId: SMS_ACCESS_KEY_ID,
+    accessKeySecret: SMS_ACCESS_KEY_SECRET,
+    endpoint: 'https://dysmsapi.aliyuncs.com',
+    apiVersion: '2017-05-25'
+  })
+  const res = await client.request('SendSms', {
+    PhoneNumbers: phone,
+    SignName: SMS_SIGN_NAME,
+    TemplateCode: SMS_TEMPLATE_CODE,
+    TemplateParam: JSON.stringify({ code })
+  }, { method: 'POST' })
+  if (res.Code !== 'OK') {
+    throw new Error(res.Message || 'SMS send failed')
+  }
+  return res
+}
+
 // 登录鉴权
 const ADMIN_USER = 'ratmas'
 const ADMIN_PASS = 'laoshuren'
@@ -177,8 +221,8 @@ app.use((err, req, res, next) => {
 
 // --- Auth Middleware ---
 function authMiddleware(req, res, next) {
-  // 登录和鉴权检查始终放行
-  if (req.path === '/api/login' || req.path === '/api/auth-check') return next()
+  // 登录和鉴权检查始终放行 + 短信接口放行
+  if (req.path === '/api/login' || req.path === '/api/auth-check' || req.path === '/api/sms/send' || req.path === '/api/login/phone') return next()
   // 模板 GET 接口放行
   if (req.path.startsWith('/api/card-templates') && req.method === 'GET') return next()
   // 非 API 路径放行（静态文件等）
@@ -199,14 +243,122 @@ function authMiddleware(req, res, next) {
 
 app.use(authMiddleware)
 
-// Login
+// Login (后台 username/password)
 app.post('/api/login', (req, res) => {
-  const { username, password } = req.body || {}
+  const { username, password, phone, code } = req.body || {}
+
+  // 手机号+验证码登录（小程序）
+  if (phone && code) {
+    const entry = codeStore.get(phone)
+    if (!entry) {
+      return res.status(401).json({ ok: false, error: '请先获取验证码' })
+    }
+    if (Date.now() > entry.expires) {
+      codeStore.delete(phone)
+      return res.status(401).json({ ok: false, error: '验证码已过期' })
+    }
+    if (entry.code !== code) {
+      return res.status(401).json({ ok: false, error: '验证码错误' })
+    }
+    codeStore.delete(phone)
+
+    const data = readData()
+    const user = (data.cards || []).find(c => c.phone === phone)
+    if (!user) {
+      return res.json({ ok: true, user: null })
+    }
+    return res.json({ ok: true, user: { nickName: user.name, title: user.title, company: user.company, department: user.department, phone: user.phone, avatar: user.avatar } })
+  }
+
+  // 后台 username/password 登录
   if (username !== ADMIN_USER || password !== ADMIN_PASS) {
     return res.status(401).json({ ok: false, error: '用户名或密码错误' })
   }
   const token = createToken()
   res.json({ ok: true, token })
+})
+
+// 微信手机号一键登录（getPhoneNumber）
+app.post('/api/login/phone', async (req, res) => {
+  const { encryptedData, iv, code } = req.body || {}
+  if (!encryptedData || !iv || !code) {
+    return res.status(400).json({ ok: false, error: '参数不完整' })
+  }
+  if (!WX_APPID || !WX_APPSECRET) {
+    return res.status(500).json({ ok: false, error: '微信配置未设置' })
+  }
+  try {
+    const sessionRes = await fetch(
+      `https://api.weixin.qq.com/sns/jscode2session?appid=${WX_APPID}&secret=${WX_APPSECRET}&js_code=${code}&grant_type=authorization_code`
+    )
+    const sessionData = await sessionRes.json()
+    if (sessionData.errcode) {
+      console.error('[WX] jscode2session error:', sessionData.errcode, sessionData.errmsg)
+      return res.status(400).json({ ok: false, error: '微信授权失败，请重试' })
+    }
+    const sessionKey = Buffer.from(sessionData.session_key, 'base64')
+    const ivBuffer = Buffer.from(iv, 'base64')
+    const decipher = crypto.createDecipheriv('aes-128-cbc', sessionKey, ivBuffer)
+    decipher.setAutoPadding(true)
+    let decoded = decipher.update(encryptedData, 'base64', 'utf8')
+    decoded += decipher.final('utf8')
+    const phoneData = JSON.parse(decoded)
+    const phone = phoneData.purePhoneNumber || phoneData.phoneNumber
+    if (!phone) {
+      return res.status(400).json({ ok: false, error: '未能获取手机号' })
+    }
+    const data = readData()
+    const user = (data.cards || []).find(c => c.phone === phone)
+    if (!user) {
+      return res.json({ ok: true, user: null })
+    }
+    return res.json({
+      ok: true,
+      user: {
+        nickName: user.name,
+        title: user.title,
+        company: user.company,
+        department: user.department,
+        phone: user.phone,
+        avatar: user.avatar
+      }
+    })
+  } catch (err) {
+    console.error('[WX] decrypt error:', err.message)
+    return res.status(500).json({ ok: false, error: '解密失败，请使用短信登录' })
+  }
+})
+
+// 发送短信验证码
+app.post('/api/sms/send', (req, res) => {
+  const { phone } = req.body || {}
+  if (!phone || !/^1\d{10}$/.test(phone)) {
+    return res.status(400).json({ ok: false, error: '请输入正确的11位手机号' })
+  }
+
+  const entry = codeStore.get(phone)
+  if (entry && (Date.now() - entry.lastSent) < 60000) {
+    return res.status(429).json({ ok: false, error: '发送过于频繁，请60秒后再试' })
+  }
+
+  cleanExpiredCodes()
+
+  const code = generateCode()
+  const now = Date.now()
+  codeStore.set(phone, { code, expires: now + 300000, lastSent: now })
+
+  if (!SMS_ACCESS_KEY_ID || !SMS_ACCESS_KEY_SECRET) {
+    console.log('[SMS] SDK未配置，验证码：' + code)
+    return res.json({ ok: true })
+  }
+
+  sendSMS(phone, code).then(() => {
+    res.json({ ok: true })
+  }).catch(err => {
+    codeStore.delete(phone)
+    console.error('[SMS] Send error:', err.message)
+    res.status(500).json({ ok: false, error: '短信发送失败，请稍后重试' })
+  })
 })
 
 // Auth check

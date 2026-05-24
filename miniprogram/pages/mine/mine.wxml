@@ -76,6 +76,18 @@
         <text class="menu-arrow">→</text>
       </view>
     </view>
+
+    <!-- Section 3: 退出登录 -->
+    <view class="menu-group" wx:if="{{isLoggedIn}}">
+      <view class="menu-item" bindtap="onLogout">
+        <view class="menu-icon" style="background: #fde8e8;">
+          <text>🚪</text>
+        </view>
+        <view class="menu-info">
+          <text class="menu-title logout-title">退出登录</text>
+        </view>
+      </view>
+    </view>
   </view>
 
   <!-- Version -->

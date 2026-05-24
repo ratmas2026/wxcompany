@@ -32,6 +32,10 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 1 })
     }
+    if (!getApp().globalData.isLogin) {
+      wx.navigateTo({ url: '/pages/login/login' })
+      return
+    }
   },
 
   onInput(e) {

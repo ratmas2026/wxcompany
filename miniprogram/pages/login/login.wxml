@@ -1,10 +1,10 @@
 <view class="login-page">
-  <!-- Header -->
+  <!-- Title -->
   <view class="login-header">
     <text class="header-title">手机号码登录</text>
   </view>
 
-  <!-- Login Form -->
+  <!-- SMS Login Form (Primary) -->
   <view class="login-form">
     <form bindsubmit="onPhoneLogin">
       <!-- Phone Number -->
@@ -16,12 +16,15 @@
           placeholder="请输入11位手机号"
           maxlength="11"
           placeholder-class="input-placeholder"
+          bindinput="onPhoneInput"
+          cursor-spacing="100"
+          focus="{{autoFocus}}"
         />
       </view>
 
       <!-- Verification Code -->
       <view class="code-row">
-        <view class="input-wrap code-input-wrap">
+        <view class="code-input-wrap">
           <input
             class="form-input"
             name="code"
@@ -29,19 +32,21 @@
             placeholder="6位验证码"
             maxlength="6"
             placeholder-class="input-placeholder"
+            cursor-spacing="100"
           />
         </view>
         <button
-          class="code-btn {{countdown > 0 ? 'code-btn--disabled' : ''}}"
+          class="code-btn {{countdown > 0 || sendingCode ? 'code-btn--disabled' : ''}}"
           bindtap="onSendCode"
-          disabled="{{countdown > 0}}"
+          disabled="{{countdown > 0 || sendingCode}}"
+          loading="{{sendingCode}}"
         >
           {{countdown > 0 ? countdown + 's后重发' : '获取验证码'}}
         </button>
       </view>
 
       <!-- Login Button -->
-      <button class="login-btn brand-bg" form-type="submit">登录</button>
+      <button class="login-btn" form-type="submit" loading="{{loggingIn}}" disabled="{{loggingIn}}">登录</button>
     </form>
   </view>
 
@@ -54,5 +59,19 @@
     <text class="agree-link" bindtap="onViewTerms">《用户协议》</text>
     <text>与</text>
     <text class="agree-link" bindtap="onViewPrivacy">《隐私政策》</text>
+  </view>
+
+  <!-- WeChat Phone Login (Secondary, bottom) -->
+  <view class="wx-bottom-section">
+    <button
+      class="wx-bottom-btn"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="onGetPhoneNumber"
+      bindgetphonenumbererror="onGetPhoneNumberError"
+      disabled="{{!agreed}}"
+    >
+      <text class="wx-bottom-icon">💬</text>
+      <text class="wx-bottom-text">微信账号一键登录</text>
+    </button>
   </view>
 </view>

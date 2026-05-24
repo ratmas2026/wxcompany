@@ -31,6 +31,10 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 })
     }
+    if (!getApp().globalData.isLogin) {
+      wx.navigateTo({ url: '/pages/login/login' })
+      return
+    }
     if (!this._configLoaded) {
       this._configLoaded = true
       this.fetchCaseConfig()

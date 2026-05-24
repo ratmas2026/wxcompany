@@ -41,6 +41,11 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 2 })
     }
+    const userPhone = (getApp().globalData.userInfo && getApp().globalData.userInfo.phone) || ''
+    if (!this._cardId && !userPhone) {
+      wx.navigateTo({ url: '/pages/login/login' })
+      return
+    }
     if (!this._configLoaded) {
       this._configLoaded = true
       this.fetchCardConfig()
@@ -389,12 +394,6 @@ Page({
 
   fetchData() {
     const userPhone = (app.globalData.userInfo && app.globalData.userInfo.phone) || ''
-
-    // 未登录且无 cardId → 跳转登录
-    if (!this._cardId && !userPhone) {
-      wx.redirectTo({ url: '/pages/login/login' })
-      return
-    }
 
     Promise.all([
       api.getCards(),

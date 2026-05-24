@@ -20,10 +20,13 @@
   // State
   let templates = []
   let editingTpl = null          // currently editing template object
-  let selectedFieldIdx = -1      // index into editingTpl.fields
+  let selectedFieldIndices = []  // multi-select: array of indices into editingTpl.fields
   let dragFieldIdx = -1
   let dragStartX = 0, dragStartY = 0
   let fieldStartX = 0, fieldStartY = 0
+  let snapGuideLines = []        // {axis:'x'|'y', pos:Number} for alignment guide rendering
+  let rafId = null               // requestAnimationFrame id for drag throttling
+  let guideTimeoutId = null      // setTimeout id for guide line fade-out
 
   const CANVAS_W = 360  // preview canvas width (px), maps to 360rpx (1:1)
   const CANVAS_H = 216  // preview canvas height (px), standard card ratio ~1.67, landscape
@@ -124,19 +127,19 @@
       if (!f.visible) return ''
       const left = f.x * SCALE
       const top = f.y * SCALE
-      const selected = idx === selectedFieldIdx
+      const selected = selectedFieldIndices.includes(idx)
       const ta = f.textAlign || 'left'
       const fw = f.width || null
       return `<div class="tpl-field ${selected ? 'tpl-field-selected' : ''}"
         style="left:${left}px;top:${top}px;font-size:${f.fontSize * SCALE}px;color:${escHtml(f.color)};font-family:${escHtml(f.fontFamily || 'Share Tech Mono')},monospace;text-align:${escHtml(ta)};${fw ? 'width:'+fw+'px' : ''}"
         data-idx="${idx}"
-        onmousedown="window.fieldMouseDown(event, ${idx})">${escHtml(f.label)}</div>`
+        onpointerdown="window.fieldMouseDown(event, ${idx})">${escHtml(f.label)}</div>`
     }).join('')
 
-    // Property panel for selected field
+    // Property panel for selected field (single selection only)
     let propPanel = ''
-    if (selectedFieldIdx >= 0 && selectedFieldIdx < fields.length) {
-      const sf = fields[selectedFieldIdx]
+    if (selectedFieldIndices.length === 1) {
+      const sf = fields[selectedFieldIndices[0]]
       const colorBtns = COLORS.map(c =>
         `<button class="color-swatch ${sf.color === c ? 'color-swatch-active' : ''}"
           style="background:${c}" title="${c}"
@@ -204,13 +207,18 @@
               oninput="editingTpl.background = this.value; renderEditor()">
           </div>
           <div class="tpl-canvas" style="background-color:${bg};width:${CANVAS_W}px;height:${CANVAS_H}px"
-            onmousedown="window.canvasMouseDown(event)">
+            onpointerdown="window.canvasMouseDown(event)">
             <div class="tpl-scanline"></div>
             <div class="tpl-deco-circle"></div>
             <div class="tpl-hex-pattern">⬡ ⬡<br>⬡ ⬡<br>⬡</div>
+            ${snapGuideLines.map(g => {
+              const fading = dragFieldIdx < 0 ? ' tpl-guide-fading' : ''
+              if (g.axis === 'x') return `<div class="tpl-guide-line tpl-guide-v${fading}" style="left:${g.pos}px"></div>`
+              return `<div class="tpl-guide-line tpl-guide-h${fading}" style="top:${g.pos}px"></div>`
+            }).join('')}
             ${fieldEls}
           </div>
-          <div style="margin-top:8px;font-size:11px;color:#a0aec0">底板 360×216 rpx · 横版名片 · 点击字段选中 · 拖拽调整位置</div>
+          <div style="margin-top:8px;font-size:11px;color:#a0aec0">底板 360×216 rpx · 横版名片 · 点击选中 · Ctrl+点击多选 · 拖拽吸附</div>
         </div>
 
         <!-- Side Panel -->
@@ -219,14 +227,28 @@
             <h3 style="margin:0 0 12px;font-size:15px">📋 字段列表</h3>
             <div style="font-size:12px;color:#718096;margin-bottom:8px">点击底板字段或下方列表选中</div>
             ${fields.map((f, idx) => `
-              <div class="field-list-item ${idx === selectedFieldIdx ? 'field-list-item-active' : ''}"
-                style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:4px;border-radius:6px;cursor:pointer;font-size:13px;${idx === selectedFieldIdx ? 'background:#ebf4ff;color:#3a5f94;font-weight:600' : 'background:#f7fafc'}"
-                onclick="window.selectField(${idx})">
+              <div class="field-list-item ${selectedFieldIndices.includes(idx) ? 'field-list-item-active' : ''}"
+                style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:4px;border-radius:6px;cursor:pointer;font-size:13px;${selectedFieldIndices.includes(idx) ? 'background:#ebf4ff;color:#3a5f94;font-weight:600' : 'background:#f7fafc'}"
+                onclick="window.selectField(${idx}, event)">
                 <span>${f.visible ? '👁' : '🚫'} ${escHtml(f.label)}</span>
                 <span style="font-size:11px;color:#a0aec0">${f.x},${f.y}</span>
               </div>
             `).join('')}
           </div>
+          ${selectedFieldIndices.length >= 2 ? `
+          <div class="card" style="margin-top:16px">
+            <h3 style="margin:0 0 8px;font-size:13px">🔧 对齐工具（${selectedFieldIndices.length} 个选中）</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              <button class="tpl-align-btn" onclick="window.alignFields('left')" title="左对齐">⬅</button>
+              <button class="tpl-align-btn" onclick="window.alignFields('centerH')" title="水平居中">↕</button>
+              <button class="tpl-align-btn" onclick="window.alignFields('right')" title="右对齐">➡</button>
+              <button class="tpl-align-btn" onclick="window.alignFields('top')" title="顶对齐">⬆</button>
+              <button class="tpl-align-btn" onclick="window.alignFields('middle')" title="垂直居中">↔</button>
+              <button class="tpl-align-btn" onclick="window.alignFields('bottom')" title="底对齐">⬇</button>
+              <button class="tpl-align-btn" onclick="window.alignFields('distributeH')" title="水平分布" style="width:auto;padding:4px 8px;font-size:11px">↔分布</button>
+            </div>
+          </div>
+          ` : ''}
           ${propPanel}
         </div>
       </div>
@@ -250,7 +272,7 @@
       colors: { primary: '#ff4b4b', secondary: '#ff6b6b' },
       fields: JSON.parse(JSON.stringify(DEFAULT_FIELDS))
     }
-    selectedFieldIdx = -1
+    selectedFieldIndices = []
     render()
   }
 
@@ -265,7 +287,7 @@
     if (editingTpl.fields.some(f => f.y > CANVAS_H)) {
       editingTpl.fields = JSON.parse(JSON.stringify(DEFAULT_FIELDS))
     }
-    selectedFieldIdx = -1
+    selectedFieldIndices = []
     render()
   }
 
@@ -290,7 +312,7 @@
 
   window.cancelEdit = function() {
     editingTpl = null
-    selectedFieldIdx = -1
+    selectedFieldIndices = []
     render()
   }
 
@@ -302,65 +324,230 @@
     await DataStore.saveCardTemplate(editingTpl)
     Admin.showToast('模板已保存', 'success')
     editingTpl = null
-    selectedFieldIdx = -1
+    selectedFieldIndices = []
     render()
   }
 
-  // ---- Field selection ----
-  window.selectField = function(idx) {
-    selectedFieldIdx = idx
+  // ---- Field selection (Ctrl/Cmd+click for multi-select) ----
+  window.selectField = function(idx, e) {
+    if (e && (e.ctrlKey || e.metaKey)) {
+      const pos = selectedFieldIndices.indexOf(idx)
+      if (pos >= 0) selectedFieldIndices.splice(pos, 1)
+      else selectedFieldIndices.push(idx)
+    } else {
+      selectedFieldIndices = [idx]
+    }
     renderEditor()
   }
 
-  // ---- Canvas mousedown (deselect) ----
+  // ---- Canvas pointerdown (deselect) ----
   window.canvasMouseDown = function(e) {
     if (e.target.classList.contains('tpl-field')) return
-    selectedFieldIdx = -1
+    selectedFieldIndices = []
     renderEditor()
   }
 
-  // ---- Field drag ----
+  // ---- Field drag (pointer events + rAF + smart snapping) ----
   window.fieldMouseDown = function(e, idx) {
     e.preventDefault()
-    selectedFieldIdx = idx
+    // If not already in selection, select single; if in multi-selection, keep it
+    if (!selectedFieldIndices.includes(idx)) {
+      selectedFieldIndices = [idx]
+    }
     dragFieldIdx = idx
     dragStartX = e.clientX
     dragStartY = e.clientY
+    if (guideTimeoutId) { clearTimeout(guideTimeoutId); guideTimeoutId = null }
     const f = editingTpl.fields[idx]
     fieldStartX = f.x
     fieldStartY = f.y
-    document.addEventListener('mousemove', onFieldDrag)
-    document.addEventListener('mouseup', onFieldUp)
+    document.addEventListener('pointermove', onFieldDrag)
+    document.addEventListener('pointerup', onFieldUp)
     renderEditor()
+  }
+
+  function getFieldDomSize(idx) {
+    const el = document.querySelector('.tpl-field[data-idx="' + idx + '"]')
+    if (el) {
+      const r = el.getBoundingClientRect()
+      const canvas = document.querySelector('.tpl-canvas')
+      const cr = canvas ? canvas.getBoundingClientRect() : null
+      if (cr) {
+        return { w: (r.width / cr.width) * CANVAS_W, h: (r.height / cr.height) * CANVAS_H }
+      }
+    }
+    const f = editingTpl.fields[idx]
+    return { w: f.label.length * f.fontSize * 0.6, h: f.fontSize }
   }
 
   function onFieldDrag(e) {
     if (dragFieldIdx < 0) return
-    const dx = (e.clientX - dragStartX) / SCALE
-    const dy = (e.clientY - dragStartY) / SCALE
-    let nx = Math.round((fieldStartX + dx) / 10) * 10
-    let ny = Math.round((fieldStartY + dy) / 10) * 10
-    // Boundary clamp
-    const f = editingTpl.fields[dragFieldIdx]
-    const fsPx = f.fontSize * SCALE
-    const approxW = f.label.length * f.fontSize * 0.6  // rough text width in rpx
-    nx = Math.max(0, Math.min(360 - approxW, nx))
-    ny = Math.max(0, Math.min(CANVAS_H - f.fontSize, ny))
-    f.x = nx
-    f.y = ny
-    renderEditor()
+    if (rafId) return
+    rafId = requestAnimationFrame(() => {
+      rafId = null
+      const dx = (e.clientX - dragStartX) / SCALE
+      const dy = (e.clientY - dragStartY) / SCALE
+      let nx = Math.round((fieldStartX + dx) / 10) * 10
+      let ny = Math.round((fieldStartY + dy) / 10) * 10
+
+      const f = editingTpl.fields[dragFieldIdx]
+      const domSize = getFieldDomSize(dragFieldIdx)
+      const fw = domSize.w
+      const fh = domSize.h
+      const fcx = nx + fw / 2
+      const fcy = ny + fh / 2
+
+      // Object-to-object smart snapping (8px threshold)
+      snapGuideLines = []
+      const allFields = editingTpl.fields
+      for (let i = 0; i < allFields.length; i++) {
+        if (i === dragFieldIdx || !allFields[i].visible) continue
+        const o = allFields[i]
+        const os = getFieldDomSize(i)
+        const ow = os.w, oh = os.h
+        const oright = o.x + ow, obottom = o.y + oh
+        const ocy = o.y + oh / 2, ocx = o.x + ow / 2
+
+        // X-axis snaps: left-to-left, center-to-center, right-to-right, left-to-right, right-to-left
+        const xCandidates = [
+          { myEdge: nx,        otherEdge: o.x,   type: 'left' },
+          { myEdge: fcx,       otherEdge: ocx,   type: 'centerH' },
+          { myEdge: nx + fw,   otherEdge: oright, type: 'right' },
+          { myEdge: nx + fw,   otherEdge: o.x,   type: 'left' },   // my right to other left
+          { myEdge: nx,        otherEdge: oright, type: 'right' }   // my left to other right
+        ]
+        // Y-axis snaps
+        const yCandidates = [
+          { myEdge: ny,        otherEdge: o.y,   type: 'top' },
+          { myEdge: fcy,       otherEdge: ocy,   type: 'middle' },
+          { myEdge: ny + fh,   otherEdge: obottom, type: 'bottom' },
+          { myEdge: ny + fh,   otherEdge: o.y,   type: 'top' },    // my bottom to other top
+          { myEdge: ny,        otherEdge: obottom, type: 'bottom' }  // my top to other bottom
+        ]
+
+        const SNAP = 8
+        // Find best X snap (closest within threshold, edge priority over center)
+        let bestX = null, bestXDist = SNAP + 1
+        for (const c of xCandidates) {
+          const dist = Math.abs(c.myEdge - c.otherEdge)
+          const isEdge = c.type === 'left' || c.type === 'right'
+          // edge snaps get priority: count as 0.7× distance vs center
+          const weighted = isEdge ? dist * 0.7 : dist
+          if (dist < SNAP && weighted < bestXDist) {
+            bestX = { dist, target: c.otherEdge, offset: c.myEdge - nx }
+            bestXDist = weighted
+          }
+        }
+        // Find best Y snap
+        let bestY = null, bestYDist = SNAP + 1
+        for (const c of yCandidates) {
+          const dist = Math.abs(c.myEdge - c.otherEdge)
+          const isEdge = c.type === 'top' || c.type === 'bottom'
+          const weighted = isEdge ? dist * 0.7 : dist
+          if (dist < SNAP && weighted < bestYDist) {
+            bestY = { dist, target: c.otherEdge, offset: c.myEdge - ny }
+            bestYDist = weighted
+          }
+        }
+
+        if (bestX && bestY) {
+          // Both snap: apply X first if dist is smaller, else Y first
+          if (bestXDist <= bestYDist) {
+            nx = bestX.target - bestX.offset
+            ny = bestY.target - bestY.offset
+          } else {
+            ny = bestY.target - bestY.offset
+            nx = bestX.target - bestX.offset
+          }
+          snapGuideLines.push({ axis: 'x', pos: bestX.target })
+          snapGuideLines.push({ axis: 'y', pos: bestY.target })
+          break
+        } else if (bestX) {
+          nx = bestX.target - bestX.offset
+          snapGuideLines.push({ axis: 'x', pos: bestX.target })
+        } else if (bestY) {
+          ny = bestY.target - bestY.offset
+          snapGuideLines.push({ axis: 'y', pos: bestY.target })
+        }
+      }
+
+      // Boundary clamp
+      nx = Math.max(0, Math.min(CANVAS_W - fw, nx))
+      ny = Math.max(0, Math.min(CANVAS_H - fh, ny))
+      f.x = Math.round(nx)
+      f.y = Math.round(ny)
+      renderEditor()
+    })
   }
 
   function onFieldUp() {
     dragFieldIdx = -1
-    document.removeEventListener('mousemove', onFieldDrag)
-    document.removeEventListener('mouseup', onFieldUp)
+    document.removeEventListener('pointermove', onFieldDrag)
+    document.removeEventListener('pointerup', onFieldUp)
+    // Fade out guide lines after release
+    guideTimeoutId = setTimeout(() => { snapGuideLines = []; renderEditor(); guideTimeoutId = null }, 200)
   }
 
   // ---- Field property set ----
   window.setFieldProp = function(prop, value) {
-    if (selectedFieldIdx < 0 || !editingTpl || !editingTpl.fields) return
-    editingTpl.fields[selectedFieldIdx][prop] = value
+    if (selectedFieldIndices.length !== 1 || !editingTpl || !editingTpl.fields) return
+    editingTpl.fields[selectedFieldIndices[0]][prop] = value
+    renderEditor()
+  }
+
+  // ---- Alignment ----
+  window.alignFields = function(direction) {
+    if (selectedFieldIndices.length < 2 || !editingTpl || !editingTpl.fields) return
+    const fields = editingTpl.fields
+    const sel = selectedFieldIndices.map(i => fields[i])
+    switch (direction) {
+      case 'left':
+        const minX = Math.min(...sel.map(f => f.x))
+        selectedFieldIndices.forEach(i => { fields[i].x = minX })
+        break
+      case 'centerH': {
+        const avgX = Math.round(sel.reduce((s, f) => s + f.x + (f.width || f.label.length * f.fontSize * 0.6) / 2, 0) / sel.length)
+        selectedFieldIndices.forEach(i => {
+          const w = fields[i].width || fields[i].label.length * fields[i].fontSize * 0.6
+          fields[i].x = Math.round(avgX - w / 2)
+        })
+        break
+      }
+      case 'right': {
+        const maxR = Math.max(...sel.map(f => f.x + (f.width || f.label.length * f.fontSize * 0.6)))
+        selectedFieldIndices.forEach(i => {
+          const w = fields[i].width || fields[i].label.length * fields[i].fontSize * 0.6
+          fields[i].x = Math.round(maxR - w)
+        })
+        break
+      }
+      case 'top':
+        const minY = Math.min(...sel.map(f => f.y))
+        selectedFieldIndices.forEach(i => { fields[i].y = minY })
+        break
+      case 'middle': {
+        const avgY = Math.round(sel.reduce((s, f) => s + f.y + f.fontSize / 2, 0) / sel.length)
+        selectedFieldIndices.forEach(i => { fields[i].y = Math.round(avgY - fields[i].fontSize / 2) })
+        break
+      }
+      case 'bottom': {
+        const maxB = Math.max(...sel.map(f => f.y + f.fontSize))
+        selectedFieldIndices.forEach(i => { fields[i].y = Math.round(maxB - fields[i].fontSize) })
+        break
+      }
+      case 'distributeH': {
+        if (sel.length < 3) break
+        const sorted = [...selectedFieldIndices].sort((a, b) => fields[a].x - fields[b].x)
+        const first = fields[sorted[0]], last = fields[sorted[sorted.length - 1]]
+        const firstW = first.width || first.label.length * first.fontSize * 0.6
+        const totalSpace = (last.x) - (first.x + firstW)
+        const gap = totalSpace / (sorted.length - 1)
+        for (let i = 1; i < sorted.length - 1; i++) {
+          fields[sorted[i]].x = Math.round(first.x + firstW + gap * i)
+        }
+        break
+      }
+    }
     renderEditor()
   }
 
@@ -475,6 +662,46 @@
 }
 .field-list-item:hover {
   background: #edf2f7 !important;
+}
+/* Guide lines for snap alignment */
+.tpl-guide-line {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+}
+.tpl-guide-h {
+  left: 0;
+  width: 100%;
+  height: 0;
+  border-top: 1px dashed #007AFF;
+}
+.tpl-guide-v {
+  top: 0;
+  height: 100%;
+  width: 0;
+  border-left: 1px dashed #007AFF;
+}
+.tpl-guide-fading {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+/* Alignment toolbar buttons */
+.tpl-align-btn {
+  width: 32px;
+  height: 28px;
+  border: 1px solid #dce3ef;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.tpl-align-btn:hover {
+  background: #ebf4ff;
+  border-color: #007AFF;
 }
 </style>
 </body>

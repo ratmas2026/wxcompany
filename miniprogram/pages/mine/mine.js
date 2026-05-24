@@ -24,6 +24,10 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 3 })
     }
+    if (!getApp().globalData.isLogin) {
+      wx.navigateTo({ url: '/pages/login/login' })
+      return
+    }
     this.checkLoginState()
     this.fetchStats()
   },
@@ -76,6 +80,27 @@ Page({
 
   onGoLogin() {
     wx.navigateTo({ url: '/pages/login/login' })
+  },
+
+  onLogout() {
+    wx.showModal({
+      title: '退出登录',
+      content: '确定要退出登录吗？',
+      success: (res) => {
+        if (res.confirm) {
+          const app = getApp()
+          app.globalData.isLogin = false
+          app.globalData.userInfo = null
+          wx.removeStorageSync('userInfo')
+          this.setData({
+            isLoggedIn: false,
+            userInfo: {},
+            stats: { cards: 0, inquiries: 0, collections: 0 }
+          })
+          wx.showToast({ title: '已退出', icon: 'none' })
+        }
+      }
+    })
   },
 
   onMenuTap(e) {
