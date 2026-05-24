@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>名片模板 - Admin Panel</title>
 <link rel="stylesheet" href="css/common.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="js/data.js"></script>
 <script src="js/common.js"></script>
 </head>
@@ -28,17 +31,17 @@
   const CANVAS_H = 216  // preview canvas height (px), standard card ratio ~1.67, landscape
   const SCALE = 1.0     // rpx to px scale (1:1)
 
-  // Default cyberpunk layout — matches cyber.png field positions
+  // Default cyberpunk Red Neon layout — matched to cyber1.docx spec
   const DEFAULT_FIELDS = [
-    { key: 'company',  label: '公司名称', x: 20, y: 23,  fontSize: 22, color: '#ef6a59', visible: true },
-    { key: 'name',     label: '姓名',     x: 20, y: 64,  fontSize: 38, color: '#db7063', visible: true },
-    { key: 'title',    label: '职务',     x: 20, y: 100, fontSize: 28, color: '#d46a60', visible: true },
-    { key: 'address',  label: '地址',     x: 20, y: 156, fontSize: 20, color: '#b6483f', visible: true },
-    { key: 'phone',    label: '手机',     x: 200, y: 156, fontSize: 20, color: '#d1594c', visible: true },
-    { key: 'email',    label: '邮箱',     x: 200, y: 178, fontSize: 20, color: '#d1574b', visible: true }
+    { key: 'company',  label: '公司名称', x: 20, y: 20,  fontSize: 20, color: '#FF3D2E', fontFamily: 'Orbitron', visible: true },
+    { key: 'name',     label: '姓名',     x: 80, y: 70,  fontSize: 18, color: '#FF3D2E', fontFamily: 'Orbitron', visible: true },
+    { key: 'title',    label: '职务',     x: 70, y: 95,  fontSize: 12, color: '#FF5544', fontFamily: 'Rajdhani', visible: true },
+    { key: 'address',  label: '地址',     x: 20, y: 145, fontSize: 11, color: '#FF5544', fontFamily: 'Rajdhani', visible: true },
+    { key: 'phone',    label: '手机',     x: 195, y: 145, fontSize: 11, color: '#FF5544', fontFamily: 'Rajdhani', visible: true },
+    { key: 'email',    label: '邮箱',     x: 195, y: 163, fontSize: 11, color: '#FF5544', fontFamily: 'Rajdhani', visible: true }
   ]
 
-  const COLORS = ['#ef6a59', '#db7063', '#d46a60', '#d1594c', '#b6483f', '#ed3731', '#fb7765', '#ffffff']
+  const COLORS = ['#FF3D2E', '#FF5544', '#FF6B5A', '#FF8A7A', '#ffffff', '#FFD700', '#FF4500', '#DC143C']
 
   function loadTemplates() {
     templates = DataStore.getCardTemplates()
@@ -99,7 +102,8 @@
       const left = f.x * SCALE * scaleX
       const top = f.y * SCALE * scaleY
       const fs = Math.round(f.fontSize * scaleX)
-      return `<div style="position:absolute;left:${left}px;top:${top}px;font-size:${fs}px;color:${escHtml(f.color || '#717777')};white-space:nowrap;line-height:1.2">${escHtml(f.label)}</div>`
+      const ff = f.fontFamily || 'Rajdhani'
+      return `<div style="position:absolute;left:${left}px;top:${top}px;font-size:${fs}px;color:${escHtml(f.color || '#717777')};font-family:${escHtml(ff)},sans-serif;white-space:nowrap;line-height:1.2;text-shadow:0 0 2px currentColor,0 0 4px currentColor">${escHtml(f.label)}</div>`
     }).join('')
     return lines
   }
@@ -117,7 +121,7 @@
       const top = f.y * SCALE
       const selected = idx === selectedFieldIdx
       return `<div class="tpl-field ${selected ? 'tpl-field-selected' : ''}"
-        style="left:${left}px;top:${top}px;font-size:${f.fontSize * SCALE}px;color:${escHtml(f.color)}"
+        style="left:${left}px;top:${top}px;font-size:${f.fontSize * SCALE}px;color:${escHtml(f.color)};font-family:${escHtml(f.fontFamily || 'Rajdhani')},sans-serif"
         data-idx="${idx}"
         onmousedown="window.fieldMouseDown(event, ${idx})">${escHtml(f.label)}</div>`
     }).join('')
@@ -221,10 +225,10 @@
   window.addTemplate = function() {
     editingTpl = {
       id: 0,
-      name: '赛博风格（横版）',
-      background: '#030909',
+      name: 'Red Neon（横版）',
+      background: '#0A0B0D',
       logoUrl: '',
-      colors: { primary: '#db7063', secondary: '#b6483f' },
+      colors: { primary: '#FF3D2E', secondary: '#FF5544' },
       fields: JSON.parse(JSON.stringify(DEFAULT_FIELDS))
     }
     selectedFieldIdx = -1
@@ -311,8 +315,8 @@
     if (dragFieldIdx < 0) return
     const dx = (e.clientX - dragStartX) / SCALE
     const dy = (e.clientY - dragStartY) / SCALE
-    let nx = Math.round(fieldStartX + dx)
-    let ny = Math.round(fieldStartY + dy)
+    let nx = Math.round((fieldStartX + dx) / 10) * 10
+    let ny = Math.round((fieldStartY + dy) / 10) * 10
     // Boundary clamp
     const f = editingTpl.fields[dragFieldIdx]
     const fsPx = f.fontSize * SCALE
@@ -352,8 +356,8 @@
   cursor: crosshair;
   user-select: none;
   overflow: hidden;
-  --grid-fine: rgba(47,25,27,0.35);
-  --grid-accent: rgba(237,55,49,0.12);
+  --grid-fine: rgba(255,255,255,0.08);
+  --grid-accent: rgba(255,255,255,0.15);
   background-image:
     repeating-linear-gradient(0deg, var(--grid-fine), var(--grid-fine) 1px, transparent 1px, transparent 18px),
     repeating-linear-gradient(90deg, var(--grid-fine), var(--grid-fine) 1px, transparent 1px, transparent 18px),
@@ -369,6 +373,7 @@
   border-radius: 4px;
   line-height: 1.2;
   transition: border-color 0.15s;
+  text-shadow: 0 0 2px currentColor, 0 0 6px currentColor, 0 0 14px currentColor;
 }
 .tpl-field:hover {
   border-color: rgba(255,255,255,0.3);
