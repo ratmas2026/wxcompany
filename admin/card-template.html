@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>名片模板 - Admin Panel</title>
 <link rel="stylesheet" href="css/common.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="js/data.js"></script>
 <script src="js/common.js"></script>
@@ -114,9 +114,9 @@
   // ---- Theme System ----
   const THEMES = {
     'cyberpunk': {
-      name: '赛博朋克', bg: '#050508', primaryColor: '#ff4b4b', secondaryColor: '#ff6b6b',
-      fontFamily: 'Share Tech Mono', decorations: ['scanline', 'hex', 'diamond', 'circle'],
-      textShadow: '0 0 5px rgba(255,75,75,0.6)'
+      name: '赛博朋克', bg: '#000000', primaryColor: '#ff4d4d', secondaryColor: '#ff6666',
+      fontFamily: 'Orbitron', decorations: ['scanline', 'hex', 'diamond', 'circle'],
+      textShadow: '0 0 2px #ff0000, 0 0 5px rgba(255, 0, 0, 0.8), 0 0 10px rgba(255, 0, 0, 0.4)'
     },
     'business': {
       name: '商务风', bg: '#ffffff', primaryColor: '#1a3a5c', secondaryColor: '#4a6a8c',
@@ -165,7 +165,7 @@
 
   function autoAdjustTextColorsQuiet() {
     if (!editingTpl || !editingTpl.fields) return
-    const bgBright = getBrightness(editingTpl.background || '#050508')
+    const bgBright = getBrightness(editingTpl.background || '#0A0B10')
     editingTpl.fields.forEach(f => {
       if (!f.visible) return
       const fBright = getBrightness(f.color || '#ffffff')
@@ -175,17 +175,17 @@
     })
   }
 
-  // Default Qwen Neon Synth Labs layout
+  // Default 赛博科技名片 layout (Orbitron + Red/Crimson — Neon Synth Labs)
   const DEFAULT_FIELDS = [
-    { key: 'company',  label: '公司名称', x: 20, y: 30,  fontSize: 22, color: '#ff4b4b', fontFamily: 'Share Tech Mono', textAlign: 'center', width: 320, visible: true },
-    { key: 'name',     label: '姓名',     x: 40, y: 88,  fontSize: 18, color: '#ff4b4b', fontFamily: 'Share Tech Mono', textAlign: 'center', width: 280, visible: true },
-    { key: 'title',    label: '职务',     x: 40, y: 114, fontSize: 12, color: '#ff6b6b', fontFamily: 'Share Tech Mono', textAlign: 'center', width: 280, visible: true },
-    { key: 'address',  label: '地址',     x: 20, y: 170, fontSize: 11, color: '#ff6b6b', fontFamily: 'Share Tech Mono', textAlign: 'left',   width: 160, visible: true },
-    { key: 'phone',    label: '手机',     x: 195,y: 170, fontSize: 11, color: '#ff6b6b', fontFamily: 'Share Tech Mono', textAlign: 'right',  width: 145, visible: true },
-    { key: 'email',    label: '邮箱',     x: 195,y: 190, fontSize: 11, color: '#ff6b6b', fontFamily: 'Share Tech Mono', textAlign: 'right',  width: 145, visible: true }
+    { key: 'company',  label: '公司名称', x: 20, y: 32,  fontSize: 22, color: '#ff4d4d', fontFamily: 'Orbitron', fontWeight: '900', textAlign: 'center', width: 320, visible: true, opacity: 0.95, letterSpacing: 3 },
+    { key: 'name',     label: '姓名',     x: 40, y: 82,  fontSize: 18, color: '#ff4d4d', fontFamily: 'Orbitron', fontWeight: '700', textAlign: 'center', width: 280, visible: true, letterSpacing: 1 },
+    { key: 'title',    label: '职务',     x: 40, y: 110, fontSize: 12, color: '#ff6666', fontFamily: 'Orbitron', fontWeight: '400', textAlign: 'center', width: 280, visible: true, letterSpacing: 2 },
+    { key: 'address',  label: '地址',     x: 16, y: 162, fontSize: 10, color: '#ff4d4d', fontFamily: 'Orbitron', fontWeight: '400', textAlign: 'left',   width: 160, visible: true, opacity: 0.85 },
+    { key: 'phone',    label: '手机',     x: 195,y: 162, fontSize: 10, color: '#ff4d4d', fontFamily: 'Orbitron', fontWeight: '400', textAlign: 'right',  width: 145, visible: true, opacity: 0.85 },
+    { key: 'email',    label: '邮箱',     x: 195,y: 182, fontSize: 10, color: '#ff4d4d', fontFamily: 'Orbitron', fontWeight: '400', textAlign: 'right',  width: 145, visible: true, opacity: 0.85 }
   ]
 
-  const COLORS = ['#ff4b4b', '#ff6b6b', '#ff8888', '#ffaaaa', '#ffffff', '#ffd700', '#00ffff', '#ff00ff']
+  const COLORS = ['#ff4d4d', '#ff6666', '#FFFFFF', '#00F0FF', '#B026FF', '#000000', '#ffd700', '#ff8800']
 
   function loadTemplates() {
     templates = DataStore.getCardTemplates()
@@ -260,7 +260,7 @@
       const op = f.opacity != null ? f.opacity : 1
       const rt = f.rotation || 0
       const rotStyle = rt ? `transform:rotate(${rt}deg);transform-origin:center center;` : ''
-      return `<div style="position:absolute;left:${left}px;top:${top}px;font-size:${fs}px;color:${escHtml(f.color || '#717777')};font-family:${escHtml(ff)},monospace;white-space:nowrap;line-height:${lh};letter-spacing:${ls}px;font-weight:${fweight};opacity:${op};${rotStyle}text-shadow:0 0 5px rgba(255,75,75,0.6);text-align:${escHtml(ta)};${fw ? 'width:'+Math.round(fw)+'px' : ''}">${escHtml(f.label)}</div>`
+      return `<div style="position:absolute;left:${left}px;top:${top}px;font-size:${fs}px;color:${escHtml(f.color || '#717777')};font-family:${escHtml(ff)},monospace;white-space:nowrap;line-height:${lh};letter-spacing:${ls}px;font-weight:${fweight};opacity:${op};${rotStyle}text-shadow:0 0 2px #ff0000,0 0 5px rgba(255,0,0,0.8),0 0 10px rgba(255,0,0,0.4);text-align:${escHtml(ta)};${fw ? 'width:'+Math.round(fw)+'px' : ''}">${escHtml(f.label)}</div>`
     }).join('')
     return lines
   }
@@ -432,18 +432,14 @@
             <span style="font-size:12px;font-weight:700;color:var(--on-surface-variant);margin-left:8px">网格:</span>
             <select style="padding:5px 8px;border-radius:6px;border:1px solid #dce3ef;font-size:12px"
               onchange="window.setGridPreset(this.value)">
-              <option value="3x4">3×4</option>
-              <option value="6x6">6×6</option>
-              <option value="10x6" selected>10×6</option>
-              <option value="12x12">12×12</option>
-              <option value="custom">自定义</option>
+              ${(() => { const cur = gridCols+'x'+gridRows; const presets = ['3x4','6x6','10x6','12x12']; return presets.map(g => '<option value="'+g+'"'+(cur===g?' selected':'')+'>'+g.replace('x','×')+'</option>').join('') + '<option value="custom"'+(presets.includes(cur)?'':' selected')+'>自定义</option>'; })()}
             </select>
             <button class="tpl-tool-btn ${showGrid?'tpl-tool-btn-active':''}" onclick="window.toggleGrid()" title="显示/隐藏网格">⊞</button>
           </div>
           <div class="tpl-canvas" style="background-color:${bg};width:${canvasW}px;height:${canvasH}px"
             onpointerdown="window.canvasMouseDown(event)">
             ${showGrid ? `<div class="tpl-grid-overlay" style="background-size:${canvasW/gridCols}px ${canvasH/gridRows}px"></div>` : ''}
-            ${(() => { const t = THEMES[editingTpl.theme || 'cyberpunk']; const d = t ? t.decorations : ['scanline','hex','diamond','circle']; return (d.includes('scanline') ? '<div class="tpl-scanline"></div>' : '') + (d.includes('circle') ? '<div class="tpl-deco-circle"></div>' : '') + (d.includes('hex') ? '<div class="tpl-hex-pattern">⬡ ⬡<br>⬡ ⬡<br>⬡</div>' : '') + (d.includes('diamond') ? '' : ''); })()}
+            ${(() => { const t = THEMES[editingTpl.theme || 'cyberpunk']; const d = t ? t.decorations : ['scanline','hex','diamond','circle']; const isCyber = (editingTpl.theme || 'cyberpunk') === 'cyberpunk'; const pc = t ? t.primaryColor : '#ff4d4d'; let h = ''; if (isCyber) { h += '<svg class="tpl-honeycomb-bg" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="hcbg" width="24" height="13.86" patternUnits="userSpaceOnUse"><path d="M12,6.93 L16,0 L20,6.93 L16,13.86 L12,6.93" fill="none" stroke="rgba(255,77,77,0.1)" stroke-width="0.5"/><path d="M0,0 L4,-6.93 L8,0 L4,6.93 L0,0" fill="none" stroke="rgba(255,77,77,0.1)" stroke-width="0.5"/><path d="M24,0 L28,-6.93 L32,0 L28,6.93 L24,0" fill="none" stroke="rgba(255,77,77,0.1)" stroke-width="0.5"/><path d="M0,13.86 L4,6.93 L8,13.86 L4,20.79 L0,13.86" fill="none" stroke="rgba(255,77,77,0.1)" stroke-width="0.5"/><path d="M24,13.86 L28,6.93 L32,13.86 L28,20.79 L24,13.86" fill="none" stroke="rgba(255,77,77,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(#hcbg)"/></svg>'; h += '<div class="tpl-outer-frame"></div>'; } if (d.includes('scanline')) h += '<div class="tpl-scanline"></div>'; if (d.includes('circle')) h += '<div class="tpl-deco-rotor"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" fill="none" r="22.5" stroke="'+pc+'" stroke-dasharray="5 7.5" stroke-width="4"/></svg></div>'; if (d.includes('hex')) h += '<div class="tpl-deco-honeycomb"><svg viewBox="0 0 100 100"><path d="M10,25 L30,25 L40,42 L30,59 L10,59 L0,42 Z" fill="none" stroke="'+pc+'" stroke-width="0.5" opacity="0.3"/><path d="M40,25 L60,25 L70,42 L60,59 L40,59 L30,42 Z" fill="none" stroke="'+pc+'" stroke-width="0.5" opacity="0.3"/></svg></div>'; return h; })()}
             ${(() => { const t = THEMES[editingTpl.theme || 'cyberpunk']; return (t && t.decorations && t.decorations.includes('diamond')) ? '' : '<style>.tpl-canvas::before,.tpl-canvas::after{display:none}</style>'; })()}
             ${snapGuideLines.map(g => {
               const fading = dragFieldIdx < 0 ? ' tpl-guide-fading' : ''
@@ -517,14 +513,16 @@
   window.addTemplate = function() {
     editingTpl = {
       id: 0,
-      name: 'Neon Synth Labs',
-      background: '#050508',
+      name: '赛博科技名片',
+      background: '#000000',
       logoUrl: '',
-      colors: { primary: '#ff4b4b', secondary: '#ff6b6b' },
+      colors: { primary: '#ff4d4d', secondary: '#ff6666' },
       fields: JSON.parse(JSON.stringify(DEFAULT_FIELDS)),
-      canvasW: 360, canvasH: 216, orientation: 'landscape', preset: 'business-card'
+      canvasW: 360, canvasH: 216, orientation: 'landscape', preset: 'business-card',
+      theme: 'cyberpunk'
     }
     canvasW = 360; canvasH = 216; orientation = 'landscape'; preset = 'business-card'
+    gridCols = 3; gridRows = 4
     selectedFieldIndices = []
     historyStack = []; historyIndex = -1
     render()
@@ -624,7 +622,7 @@
 
   window.autoAdjustTextColors = function() {
     if (!editingTpl || !editingTpl.fields) return
-    const bgBright = getBrightness(editingTpl.background || '#050508')
+    const bgBright = getBrightness(editingTpl.background || '#0A0B10')
     const fields = editingTpl.fields
     fields.forEach(f => {
       if (!f.visible) return
@@ -1037,6 +1035,21 @@
 </script>
 
 <style>
+/* Honeycomb SVG tessellation background (replaces Google CDN image) */
+.tpl-honeycomb-bg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+  opacity: 0.4;
+}
+/* Outer frame border */
+.tpl-outer-frame {
+  position: absolute;
+  inset: 16px;
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 8px;
+  z-index: 0; pointer-events: none;
+}
 /* Grid overlay */
 .tpl-grid-overlay {
   position: absolute;
@@ -1044,8 +1057,8 @@
   z-index: 1;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, rgba(160,174,192,0.12) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(160,174,192,0.12) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255,255,255,0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.15) 1px, transparent 1px);
 }
 
 .tpl-canvas {
@@ -1055,10 +1068,6 @@
   cursor: crosshair;
   user-select: none;
   overflow: hidden;
-  background-image:
-    linear-gradient(to right, #1a1a1a 1px, transparent 1px),
-    linear-gradient(to bottom, #1a1a1a 1px, transparent 1px);
-  background-size: 36px 36px;
 }
 /* Left diamond */
 .tpl-canvas::before {
@@ -1066,12 +1075,12 @@
   position: absolute;
   top: 51px; left: 12px;
   width: 60px; height: 60px;
-  border: 1px solid rgba(255,75,75,0.15);
+  border: 1px solid rgba(255,77,77,0.2);
   transform: rotate(45deg);
   transform-origin: 30px 30px;
   z-index: 0; pointer-events: none;
 }
-/* Right diamond + dashed circle via box-shadow */
+/* Right small diamond */
 .tpl-canvas::after {
   content: '';
   position: absolute;
@@ -1082,36 +1091,57 @@
   transform: rotate(45deg);
   z-index: 0; pointer-events: none;
 }
-/* Dashed circle — rendered as separate element */
-.tpl-deco-circle {
+/* SVG rotating dashed circle */
+.tpl-deco-rotor {
   position: absolute;
-  bottom: 16px; right: 15px;
-  width: 18px; height: 18px;
-  border: 2px dashed #ff4b4b;
-  border-radius: 50%;
+  bottom: 24px; right: 24px;
+  width: 48px; height: 48px;
   z-index: 0; pointer-events: none;
-  box-shadow: 0 0 6px #ff4b4b;
+  animation: tpl-spin-slow 10s linear infinite;
 }
-/* Hex pattern */
-.tpl-hex-pattern {
+@keyframes tpl-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* SVG honeycomb decoration (2 hexagons) */
+.tpl-deco-honeycomb {
   position: absolute;
-  top: 50%; right: 12px;
-  transform: translateY(-50%) rotate(-15deg);
-  color: rgba(255,255,255,0.08);
-  font-size: 7px;
-  line-height: 1;
+  left: 36px; top: 12%;
+  width: 56px; height: 56px;
   z-index: 0; pointer-events: none;
+  opacity: 0.25;
 }
 /* Scanline animation */
 .tpl-scanline {
-  position: absolute; left: 0; width: 100%; height: 3px;
-  background: rgba(255,75,75,0.06);
+  position: absolute; left: 0; width: 100%; height: 2px;
+  background: rgba(255,77,77,0.08);
   z-index: 5; pointer-events: none;
   animation: tpl-scan 4s linear infinite;
 }
 @keyframes tpl-scan {
-  0% { top: -3px; }
+  0% { top: -2px; }
   100% { top: 100%; }
+}
+/* Scanline text effect (neon glow + CRT scanlines) */
+.tpl-scanline-text {
+  position: relative;
+  display: inline-block;
+  -webkit-text-stroke: 0.3px rgba(0,0,0,0.4);
+  text-shadow: 0 0 2px #ff0000, 0 0 5px rgba(255,0,0,0.8), 0 0 10px rgba(255,0,0,0.4);
+}
+.tpl-scanline-text::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.12),
+    rgba(0,0,0,0.12) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
 }
 .tpl-field {
   position: absolute;
@@ -1122,15 +1152,15 @@
   border-radius: 4px;
   line-height: 1.2;
   transition: border-color 0.15s;
-  text-shadow: 0 0 5px rgba(255,75,75,0.6);
+  text-shadow: 0 0 2px #ff0000, 0 0 5px rgba(255,0,0,0.8), 0 0 10px rgba(255,0,0,0.4);
 }
 .tpl-field:hover {
-  border-color: rgba(255,75,75,0.3);
+  border-color: rgba(255,77,77,0.4);
 }
 .tpl-field-selected {
-  border-color: #ff4b4b !important;
-  background: rgba(255,75,75,0.1);
-  outline: 2px solid #ff4b4b;
+  border-color: #ff4d4d !important;
+  background: rgba(255,77,77,0.1);
+  outline: 2px solid #ff4d4d;
   outline-offset: 1px;
   z-index: 10;
 }
@@ -1146,8 +1176,8 @@
   border-color: #a0aec0;
 }
 .color-swatch-active {
-  border-color: #ff4b4b !important;
-  box-shadow: 0 0 0 2px #ff4b4b;
+  border-color: #ff4d4d !important;
+  box-shadow: 0 0 0 2px #ff4d4d;
 }
 .field-list-item:hover {
   background: #edf2f7 !important;
@@ -1202,7 +1232,7 @@
   overflow: hidden;
 }
 .tpl-theme-btn:hover { transform: scale(1.08); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
-.tpl-theme-btn-active { border-width: 3px; box-shadow: 0 0 0 2px rgba(0,122,255,0.3); }
+.tpl-theme-btn-active { border-width: 3px; box-shadow: 0 0 0 2px rgba(255,77,77,0.4); }
 
 /* Alignment toolbar buttons */
 .tpl-align-btn {
