@@ -3,19 +3,31 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run --config vitest.config.js",
+    "test:watch": "vitest --config vitest.config.js",
+    "test:admin": "vitest run --config vitest.admin.config.js",
+    "test:miniprogram": "vitest run --config vitest.miniprogram.config.js",
+    "test:all": "npm run test && npm run test:admin && npm run test:miniprogram",
+    "test:coverage": "vitest run --config vitest.config.js --coverage"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@alicloud/dysmsapi20170525": "^2.0.0",
+    "@alicloud/pop-core": "^1.7.0",
     "compression": "^1.8.1",
     "cors": "^2.8.6",
     "express": "^4.21.0",
+    "express-rate-limit": "^8.5.2",
     "multer": "^2.1.1",
-    "sql.js": "^1.14.1",
-    "@alicloud/dysmsapi20170525": "^2.0.0",
-    "@alicloud/pop-core": "^1.7.0"
+    "sql.js": "^1.14.1"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.7",
+    "jsdom": "^29.1.1",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.7"
   }
 }

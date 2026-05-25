@@ -14,7 +14,7 @@ module.exports = {
       SMS_SIGN_NAME: '',
       SMS_TEMPLATE_CODE: '',
       WX_APPID: 'wx55caf10db8f623c7',
-      WX_APPSECRET: ''
+      WX_APPSECRET: '58a15f6972d29e0eba9ef031f64a73d0'
     },
     log_date_format: 'YYYY-MM-DD HH:mm:ss',
     error_file: '/opt/wxcompany/logs/error.log',

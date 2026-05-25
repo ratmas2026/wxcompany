@@ -61,17 +61,4 @@
     <text class="agree-link" bindtap="onViewPrivacy">《隐私政策》</text>
   </view>
 
-  <!-- WeChat Phone Login (Secondary, bottom) -->
-  <view class="wx-bottom-section">
-    <button
-      class="wx-bottom-btn"
-      open-type="getPhoneNumber"
-      bindgetphonenumber="onGetPhoneNumber"
-      bindgetphonenumbererror="onGetPhoneNumberError"
-      disabled="{{!agreed}}"
-    >
-      <text class="wx-bottom-icon">💬</text>
-      <text class="wx-bottom-text">微信账号一键登录</text>
-    </button>
-  </view>
 </view>

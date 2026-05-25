@@ -52,8 +52,7 @@ const Admin = {
       { page: 'honors', icon: '&#x1F3C6;', label: '企业荣誉' },
       { page: 'projects', icon: '&#x1F3D7;', label: '企业项目' },
 
-      { page: 'case-custom', icon: '&#x1F39B;', label: '案例自定义' },
-      { page: 'card-custom', icon: '&#x1F4C7;', label: '名片自定义' },
+      { page: 'display-custom', icon: '&#x1F39B;', label: '展示自定义' },
       { page: 'card-template', icon: '&#x1F4C4;', label: '名片模板' },
       { page: 'message', icon: '&#x1F4E9;', label: '留言管理' }
     ]

@@ -6,16 +6,13 @@ const multer = require('multer')
 const db = require('./db')
 const crypto = require('crypto')
 const compression = require('compression')
+const rateLimit = require('express-rate-limit')
 
 // SMS config from env
 const SMS_ACCESS_KEY_ID = process.env.SMS_ACCESS_KEY_ID || ''
 const SMS_ACCESS_KEY_SECRET = process.env.SMS_ACCESS_KEY_SECRET || ''
 const SMS_SIGN_NAME = process.env.SMS_SIGN_NAME || ''
 const SMS_TEMPLATE_CODE = process.env.SMS_TEMPLATE_CODE || ''
-
-// WeChat Mini Program config
-const WX_APPID = process.env.WX_APPID || ''
-const WX_APPSECRET = process.env.WX_APPSECRET || ''
 
 // 验证码存储（phone → {code, expires, lastSent}）
 const codeStore = new Map()
@@ -51,11 +48,23 @@ async function sendSMS(phone, code) {
   return res
 }
 
-// 登录鉴权
-const ADMIN_USER = 'ratmas'
-const ADMIN_PASS = 'laoshuren'
+// 登录鉴权 — 环境变量未设置时生成随机凭据，绝不用硬编码默认值
+let ADMIN_USER = process.env.ADMIN_USER
+let ADMIN_PASS = process.env.ADMIN_PASS
+
+if (!ADMIN_USER || !ADMIN_PASS) {
+  const randUser = 'admin_' + crypto.randomBytes(4).toString('hex')
+  const randPass = crypto.randomBytes(16).toString('hex')
+  if (!ADMIN_USER) ADMIN_USER = randUser
+  if (!ADMIN_PASS) ADMIN_PASS = randPass
+  console.warn('⚠  ADMIN_USER / ADMIN_PASS 未在环境变量中设置！')
+  if (!process.env.ADMIN_USER) console.warn('   ADMIN_USER 已随机生成: ' + randUser)
+  if (!process.env.ADMIN_PASS) console.warn('   ADMIN_PASS 已随机生成: ' + randPass)
+  console.warn('   请在 ecosystem.config.js 中设置永久凭据，重启后此随机凭据将失效。')
+}
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET || crypto.randomBytes(32).toString('hex')
+const USER_SECRET = process.env.USER_SECRET || crypto.randomBytes(32).toString('hex')
 const TOKEN_TTL = 24 * 60 * 60 * 1000 // 24小时
 
 function createToken() {
@@ -65,16 +74,32 @@ function createToken() {
   return Buffer.from(payload + ':' + hmac).toString('base64')
 }
 
+function createUserToken(phone) {
+  const expiry = Date.now() + TOKEN_TTL
+  const payload = 'user:' + phone + ':' + expiry.toString()
+  const hmac = crypto.createHmac('sha256', USER_SECRET).update(payload).digest('hex')
+  return Buffer.from(payload + ':' + hmac).toString('base64')
+}
+
 function validateToken(token) {
   try {
     const decoded = Buffer.from(token, 'base64').toString()
     const parts = decoded.split(':')
     const hmac = parts.pop()
     const payload = parts.join(':')
-    if (Date.now() > parseInt(payload.split(':')[1])) return false
-    const expectedHmac = crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('hex')
+    const prefix = parts[0]
+    if (Date.now() > parseInt(parts[parts.length - 1])) return false
+    const secret = prefix === 'user' ? USER_SECRET : ADMIN_SECRET
+    const expectedHmac = crypto.createHmac('sha256', secret).update(payload).digest('hex')
     return hmac === expectedHmac
   } catch (e) { return false }
+}
+
+function getTokenType(token) {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString()
+    return decoded.split(':')[0] // 'admin' or 'user'
+  } catch (e) { return null }
 }
 
 const app = express()
@@ -118,8 +143,19 @@ var coverStorage = multer.diskStorage({
     cb(null, 'cover_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
   }
 })
-var uploadVideo = multer({ storage: videoStorage, limits: { fileSize: 50 * 1048576 } })
-var uploadCover = multer({ storage: coverStorage, limits: { fileSize: 5 * 1048576 } })
+var imageMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+var videoMimes = ['video/mp4', 'video/webm']
+function imageFilter(req, file, cb) {
+  if (imageMimes.includes(file.mimetype)) { cb(null, true) }
+  else { cb(new Error('仅支持 JPEG/PNG/GIF/WebP 图片格式'), false) }
+}
+function videoFilter(req, file, cb) {
+  if (videoMimes.includes(file.mimetype)) { cb(null, true) }
+  else { cb(new Error('仅支持 MP4/WebM 视频格式'), false) }
+}
+
+var uploadVideo = multer({ storage: videoStorage, limits: { fileSize: 50 * 1048576 }, fileFilter: videoFilter })
+var uploadCover = multer({ storage: coverStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
 
 var avatarStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, AVATARS_DIR) },
@@ -128,7 +164,7 @@ var avatarStorage = multer.diskStorage({
     cb(null, 'avatar_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
   }
 })
-var uploadAvatar = multer({ storage: avatarStorage, limits: { fileSize: 1 * 1048576 } })
+var uploadAvatar = multer({ storage: avatarStorage, limits: { fileSize: 1 * 1048576 }, fileFilter: imageFilter })
 
 var splashStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, SPLASH_DIR) },
@@ -137,7 +173,7 @@ var splashStorage = multer.diskStorage({
     cb(null, 'splash_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
   }
 })
-var uploadSplash = multer({ storage: splashStorage, limits: { fileSize: 5 * 1048576 } })
+var uploadSplash = multer({ storage: splashStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
 
 var profileStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, PROFILE_DIR) },
@@ -146,7 +182,7 @@ var profileStorage = multer.diskStorage({
     cb(null, 'profile_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
   }
 })
-var uploadProfile = multer({ storage: profileStorage, limits: { fileSize: 5 * 1048576 } })
+var uploadProfile = multer({ storage: profileStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
 
 var honorsStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, HONORS_DIR) },
@@ -155,7 +191,7 @@ var honorsStorage = multer.diskStorage({
     cb(null, 'honor_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
   }
 })
-var uploadHonors = multer({ storage: honorsStorage, limits: { fileSize: 5 * 1048576 } })
+var uploadHonors = multer({ storage: honorsStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
 
 var projectsStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, PROJECTS_DIR) },
@@ -164,7 +200,7 @@ var projectsStorage = multer.diskStorage({
     cb(null, 'project_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
   }
 })
-var uploadProjects = multer({ storage: projectsStorage, limits: { fileSize: 5 * 1048576 } })
+var uploadProjects = multer({ storage: projectsStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
 
 var editorStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, EDITOR_DIR) },
@@ -173,7 +209,7 @@ var editorStorage = multer.diskStorage({
     cb(null, 'editor_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
   }
 })
-var uploadEditor = multer({ storage: editorStorage, limits: { fileSize: 50 * 1048576 } })
+var uploadEditor = multer({ storage: editorStorage, limits: { fileSize: 50 * 1048576 }, fileFilter: imageFilter })
 
 var businessModuleStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, BUSINESS_MODULES_DIR) },
@@ -182,7 +218,7 @@ var businessModuleStorage = multer.diskStorage({
     cb(null, 'bm_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
   }
 })
-var uploadBusinessModule = multer({ storage: businessModuleStorage, limits: { fileSize: 5 * 1048576 } })
+var uploadBusinessModule = multer({ storage: businessModuleStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
 
 var performanceStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, PERFORMANCE_DIR) },
@@ -191,7 +227,7 @@ var performanceStorage = multer.diskStorage({
     cb(null, 'performance_' + Date.now() + '_' + Math.round(Math.random() * 1000) + ext)
   }
 })
-var uploadPerformance = multer({ storage: performanceStorage, limits: { fileSize: 5 * 1048576 } })
+var uploadPerformance = multer({ storage: performanceStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
 
 app.use(cors())
 app.use(compression())
@@ -219,16 +255,67 @@ app.use((err, req, res, next) => {
   next(err)
 })
 
+// --- Rate Limiting ---
+// Disable rate limiting in test environment
+const skipInTest = (req) => process.env.NODE_ENV === 'test' || process.env.VITEST
+
+// Global API limiter: 200 requests per minute per IP
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipInTest,
+  message: { error: 'Too many requests, please try again later.' }
+})
+
+// Strict limiter for login: 10 requests per minute per IP (brute force protection)
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipInTest,
+  message: { ok: false, error: '登录尝试过于频繁，请稍后再试' }
+})
+
+// SMS limiter: 3 requests per minute per IP (anti-abuse)
+const smsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipInTest,
+  message: { ok: false, error: '短信发送过于频繁，请稍后再试' }
+})
+
+app.use('/api', globalLimiter)
+app.use('/api/login', loginLimiter)
+app.use('/api/sms/send', smsLimiter)
+
 // --- Auth Middleware ---
+// Admin-only GET paths (contain sensitive data, require token even for GET)
+const ADMIN_GET_PREFIXES = [
+  '/api/messages'  // inquiry messages contain user PII
+]
+// Routes accessible with user token (mini-program)
+const USER_ROUTES = [
+  '/api/inquiry'
+]
+function isAdminGet(path) {
+  return ADMIN_GET_PREFIXES.some(p => path.startsWith(p))
+}
+function isUserRoute(path, method) {
+  return USER_ROUTES.some(p => path === p) && method === 'POST'
+}
+
 function authMiddleware(req, res, next) {
   // 登录和鉴权检查始终放行 + 短信接口放行
-  if (req.path === '/api/login' || req.path === '/api/auth-check' || req.path === '/api/sms/send' || req.path === '/api/login/phone') return next()
-  // 模板 GET 接口放行
-  if (req.path.startsWith('/api/card-templates') && req.method === 'GET') return next()
+  if (req.path === '/api/login' || req.path === '/api/auth-check' || req.path === '/api/sms/send') return next()
   // 非 API 路径放行（静态文件等）
   if (!req.path.startsWith('/api/') && req.path !== '/api') return next()
-  // GET 请求放行（小程序公开接口）
-  if (req.method === 'GET') return next()
+  // 小程序公开 GET 接口放行（管理员敏感路径除外）
+  if (req.method === 'GET' && !isAdminGet(req.path)) return next()
 
   const auth = req.headers.authorization
   if (!auth || !auth.startsWith('Bearer ')) {
@@ -238,10 +325,23 @@ function authMiddleware(req, res, next) {
   if (!validateToken(token)) {
     return res.status(401).json({ error: 'Unauthorized', code: 'INVALID_TOKEN' })
   }
+
+  const tokenType = getTokenType(token)
+  if (tokenType === 'user' && !isUserRoute(req.path, req.method)) {
+    return res.status(403).json({ error: 'Forbidden', code: 'ADMIN_ONLY' })
+  }
+
   next()
 }
 
 app.use(authMiddleware)
+
+// Helper: extract only allowed fields from an object (mass-assignment protection)
+function pick(obj, ...keys) {
+  const result = {}
+  for (const k of keys) { if (k in obj) result[k] = obj[k] }
+  return result
+}
 
 // Login (后台 username/password)
 app.post('/api/login', (req, res) => {
@@ -262,12 +362,13 @@ app.post('/api/login', (req, res) => {
     }
     codeStore.delete(phone)
 
+    const token = createUserToken(phone)
     const data = readData()
     const user = (data.cards || []).find(c => c.phone === phone)
     if (!user) {
-      return res.json({ ok: true, user: null })
+      return res.json({ ok: true, token, user: null })
     }
-    return res.json({ ok: true, user: { nickName: user.name, title: user.title, company: user.company, department: user.department, phone: user.phone, avatar: user.avatar } })
+    return res.json({ ok: true, token, user: { nickName: user.name, title: user.title, company: user.company, department: user.department, phone: user.phone, avatar: user.avatar } })
   }
 
   // 后台 username/password 登录
@@ -276,57 +377,6 @@ app.post('/api/login', (req, res) => {
   }
   const token = createToken()
   res.json({ ok: true, token })
-})
-
-// 微信手机号一键登录（getPhoneNumber）
-app.post('/api/login/phone', async (req, res) => {
-  const { encryptedData, iv, code } = req.body || {}
-  if (!encryptedData || !iv || !code) {
-    return res.status(400).json({ ok: false, error: '参数不完整' })
-  }
-  if (!WX_APPID || !WX_APPSECRET) {
-    return res.status(500).json({ ok: false, error: '微信配置未设置' })
-  }
-  try {
-    const sessionRes = await fetch(
-      `https://api.weixin.qq.com/sns/jscode2session?appid=${WX_APPID}&secret=${WX_APPSECRET}&js_code=${code}&grant_type=authorization_code`
-    )
-    const sessionData = await sessionRes.json()
-    if (sessionData.errcode) {
-      console.error('[WX] jscode2session error:', sessionData.errcode, sessionData.errmsg)
-      return res.status(400).json({ ok: false, error: '微信授权失败，请重试' })
-    }
-    const sessionKey = Buffer.from(sessionData.session_key, 'base64')
-    const ivBuffer = Buffer.from(iv, 'base64')
-    const decipher = crypto.createDecipheriv('aes-128-cbc', sessionKey, ivBuffer)
-    decipher.setAutoPadding(true)
-    let decoded = decipher.update(encryptedData, 'base64', 'utf8')
-    decoded += decipher.final('utf8')
-    const phoneData = JSON.parse(decoded)
-    const phone = phoneData.purePhoneNumber || phoneData.phoneNumber
-    if (!phone) {
-      return res.status(400).json({ ok: false, error: '未能获取手机号' })
-    }
-    const data = readData()
-    const user = (data.cards || []).find(c => c.phone === phone)
-    if (!user) {
-      return res.json({ ok: true, user: null })
-    }
-    return res.json({
-      ok: true,
-      user: {
-        nickName: user.name,
-        title: user.title,
-        company: user.company,
-        department: user.department,
-        phone: user.phone,
-        avatar: user.avatar
-      }
-    })
-  } catch (err) {
-    console.error('[WX] decrypt error:', err.message)
-    return res.status(500).json({ ok: false, error: '解密失败，请使用短信登录' })
-  }
 })
 
 // 发送短信验证码
@@ -404,7 +454,7 @@ app.post('/api/company-infos', (req, res) => {
   if (!data.companyInfos) data.companyInfos = []
   if (!data.nextId.companyInfos) data.nextId.companyInfos = 1
   const item = {
-    ...req.body,
+    ...pick(req.body, 'name', 'legalPerson', 'phone', 'address', 'longitude', 'latitude', 'website', 'description', 'sortOrder', 'status'),
     id: data.nextId.companyInfos++,
     name: req.body.name || '',
     legalPerson: req.body.legalPerson || '',
@@ -428,7 +478,7 @@ app.put('/api/company-infos/:id', (req, res) => {
   const data = readData()
   const idx = (data.companyInfos || []).findIndex(ci => ci.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.companyInfos[idx] = { ...data.companyInfos[idx], ...req.body, id: data.companyInfos[idx].id, updatedAt: new Date().toISOString() }
+  data.companyInfos[idx] = { ...data.companyInfos[idx], ...pick(req.body, 'name', 'legalPerson', 'phone', 'address', 'longitude', 'latitude', 'website', 'description', 'sortOrder', 'status'), id: data.companyInfos[idx].id, updatedAt: new Date().toISOString() }
   writeData(data)
   res.json(data.companyInfos[idx])
 })
@@ -490,7 +540,7 @@ app.put('/api/company/profile/:id', (req, res) => {
   const data = readData()
   const idx = (data.companyProfiles || []).findIndex(p => p.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  const body = { ...req.body }
+  const body = pick(req.body, 'title', 'sortOrder', 'cover', 'detail', 'status')
   if (typeof body.cover === 'string') {
     try { body.cover = JSON.parse(body.cover) } catch (e) { body.cover = { backgroundImage: '', video: '', zones: {} } }
   }
@@ -686,7 +736,7 @@ app.put('/api/company/performance/:id', (req, res) => {
   const data = readData()
   const idx = (data.companyPerformances || []).findIndex(p => p.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  const body = { ...req.body }
+  const body = pick(req.body, 'title', 'sortOrder', 'cover', 'detail', 'status')
   if (typeof body.cover === 'string') {
     try { body.cover = JSON.parse(body.cover) } catch (e) { body.cover = { backgroundImage: '', video: '', zones: {} } }
   }
@@ -1011,7 +1061,7 @@ app.put('/api/business-modules/:id', (req, res) => {
   if (!data.businessModules) data.businessModules = []
   const idx = data.businessModules.findIndex(m => m.id === id)
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.businessModules[idx] = { ...data.businessModules[idx], ...req.body, id: data.businessModules[idx].id }
+  data.businessModules[idx] = { ...data.businessModules[idx], ...pick(req.body, 'name', 'coverImage', 'coverAspectRatio', 'layoutType', 'sortOrder', 'status', 'sections', 'cards'), id: data.businessModules[idx].id }
   writeData(data)
   res.json(data.businessModules[idx])
 })
@@ -1064,7 +1114,7 @@ app.put('/api/business-modules/:mid/cards/:cid', (req, res) => {
   if (!mod.cards) mod.cards = []
   const cidx = mod.cards.findIndex(c => c.id === cid)
   if (cidx < 0) return res.status(404).json({ error: 'Card not found' })
-  mod.cards[cidx] = { ...mod.cards[cidx], ...req.body, id: mod.cards[cidx].id }
+  mod.cards[cidx] = { ...mod.cards[cidx], ...pick(req.body, 'name', 'title', 'phone', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'sortOrder', 'templateId', 'extra'), id: mod.cards[cidx].id }
   writeData(data)
   res.json(mod.cards[cidx])
 })
@@ -1119,7 +1169,7 @@ app.post('/api/honors', (req, res) => {
   if (!data.honors) data.honors = []
   if (!data.nextId.honors) data.nextId.honors = 1
   const item = {
-    ...req.body,
+    ...pick(req.body, 'image', 'name', 'description', 'sortOrder', 'status', 'createdAt'),
     id: data.nextId.honors++,
     image: req.body.image || '',
     createdAt: req.body.createdAt || new Date().toISOString().split('T')[0]
@@ -1133,7 +1183,7 @@ app.put('/api/honors/:id', (req, res) => {
   const data = readData()
   const idx = (data.honors || []).findIndex(h => h.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.honors[idx] = { ...data.honors[idx], ...req.body, id: data.honors[idx].id }
+  data.honors[idx] = { ...data.honors[idx], ...pick(req.body, 'image', 'name', 'description', 'sortOrder', 'status', 'createdAt'), id: data.honors[idx].id }
   writeData(data)
   res.json(data.honors[idx])
 })
@@ -1168,7 +1218,7 @@ app.post('/api/projects', (req, res) => {
   if (!data.projects) data.projects = []
   if (!data.nextId.projects) data.nextId.projects = 1
   const item = {
-    ...req.body,
+    ...pick(req.body, 'name', 'location', 'year', 'desc', 'scale', 'period', 'investment', 'address', 'image', 'images', 'tags', 'highlights', 'detail', 'detailImages', 'results', 'sortOrder', 'status', 'createdAt'),
     id: data.nextId.projects++,
     image: req.body.image || '',
     images: req.body.images || [],
@@ -1186,7 +1236,7 @@ app.put('/api/projects/:id', (req, res) => {
   const data = readData()
   const idx = (data.projects || []).findIndex(p => p.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.projects[idx] = { ...data.projects[idx], ...req.body, id: data.projects[idx].id }
+  data.projects[idx] = { ...data.projects[idx], ...pick(req.body, 'name', 'location', 'year', 'desc', 'scale', 'period', 'investment', 'address', 'image', 'images', 'tags', 'highlights', 'detail', 'detailImages', 'results', 'sortOrder', 'status', 'createdAt'), id: data.projects[idx].id }
   writeData(data)
   res.json(data.projects[idx])
 })
@@ -1251,7 +1301,7 @@ app.put('/api/splash/:id', (req, res) => {
   if (!data.splashImages) data.splashImages = [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}]
   const idx = data.splashImages.findIndex(s => s.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.splashImages[idx] = { ...data.splashImages[idx], ...req.body, id: data.splashImages[idx].id, updatedAt: new Date().toISOString() }
+  data.splashImages[idx] = { ...data.splashImages[idx], ...pick(req.body, 'url', 'sort'), id: data.splashImages[idx].id, updatedAt: new Date().toISOString() }
   writeData(data)
   res.json(data.splashImages[idx])
 })
@@ -1292,7 +1342,7 @@ app.put('/api/cards/:id', (req, res) => {
   const data = readData()
   const idx = data.cards.findIndex(c => c.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.cards[idx] = { ...data.cards[idx], ...req.body, id: data.cards[idx].id }
+  data.cards[idx] = { ...data.cards[idx], ...pick(req.body, 'name', 'phone', 'title', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'templateId'), id: data.cards[idx].id }
   writeData(data)
   res.json(data.cards[idx])
 })
@@ -1331,7 +1381,7 @@ app.put('/api/messages/:id', (req, res) => {
   const data = readData()
   const idx = data.messages.findIndex(m => m.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.messages[idx] = { ...data.messages[idx], ...req.body, id: data.messages[idx].id }
+  data.messages[idx] = { ...data.messages[idx], ...pick(req.body, 'status', 'remark'), id: data.messages[idx].id }
   writeData(data)
   res.json(data.messages[idx])
 })
@@ -1364,7 +1414,7 @@ app.put('/api/positions/:id', (req, res) => {
   const data = readData()
   const idx = data.positions.findIndex(p => p.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.positions[idx] = { ...data.positions[idx], ...req.body, id: data.positions[idx].id }
+  data.positions[idx] = { ...data.positions[idx], ...pick(req.body, 'title', 'department', 'location', 'requirement', 'sortOrder', 'status', 'createdAt'), id: data.positions[idx].id }
   writeData(data)
   res.json(data.positions[idx])
 })
@@ -1398,7 +1448,7 @@ app.put('/api/videos/:id', (req, res) => {
   const data = readData()
   const idx = data.videos.findIndex(v => v.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.videos[idx] = { ...data.videos[idx], ...req.body, id: data.videos[idx].id }
+  data.videos[idx] = { ...data.videos[idx], ...pick(req.body, 'url', 'title', 'description', 'sortOrder', 'status', 'createdAt'), id: data.videos[idx].id }
   writeData(data)
   res.json(data.videos[idx])
 })
@@ -1416,7 +1466,7 @@ app.post('/api/inquiry', (req, res) => {
   const data = readData()
   const msg = {
     id: data.nextId.messages++,
-    ...req.body,
+    ...pick(req.body, 'name', 'company', 'phone', 'title', 'areas', 'message'),
     status: 'new',
     remark: '',
     createdAt: new Date().toLocaleString('zh-CN', { hour12: false })
@@ -1461,7 +1511,7 @@ app.put('/api/card-templates/:id', (req, res) => {
   const templates = data.cardTemplates || []
   const idx = templates.findIndex(t => t.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  templates[idx] = { ...templates[idx], ...req.body, id: templates[idx].id }
+  templates[idx] = { ...templates[idx], ...pick(req.body, 'name', 'background', 'logoUrl', 'colors', 'fields', 'status'), id: templates[idx].id }
   writeData(data)
   res.json(templates[idx])
 })
@@ -1491,6 +1541,9 @@ app.post('/api/reset', (req, res) => {
   }
   res.json({ ok: true })
 })
+
+// ADMIN_SECRET is intentionally NOT exported — it must stay private
+module.exports = { app, generateCode, createToken, createUserToken, validateToken, getTokenType, TOKEN_TTL }
 
 db.initDatabase().then(() => {
   app.listen(PORT, () => {

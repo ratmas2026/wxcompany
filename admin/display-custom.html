@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>展示自定义 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(async function() {
+  Admin.init('display-custom')
+  await DataStore.init()
+
+  // ── Tab 配置（扩展口：加新页面只需在此数组新增一项）──
+  const TABS = [
+    {
+      id: 'card', label: '名片自定义',
+      getConfig: () => DataStore.getCardPageConfig(),
+      updateConfig: (sections) => DataStore.updateCardPageConfig(sections)
+    },
+    {
+      id: 'case', label: '案例自定义',
+      getConfig: () => DataStore.getCasePageConfig(),
+      updateConfig: (sections) => DataStore.updateCasePageConfig(sections)
+    }
+  ]
+
+  // 从 URL ?tab=xxx 读取默认 tab，无参默认第一个
+  const urlParams = new URLSearchParams(window.location.search)
+  const initTab = TABS.findIndex(t => t.id === urlParams.get('tab'))
+  let activeTab = initTab >= 0 ? initTab : 0
+  let draggedIdx = null
+
+  const DEFAULT_SECTIONS = [
+    { id: 'company-profiles',    name: '企业动态', type: 'profiles',    enabled: true, sortOrder: 10 },
+    { id: 'company-performance', name: '公司业绩', type: 'performance', enabled: true, sortOrder: 20 },
+    { id: 'business-modules',    name: '核心业务', type: 'business',    enabled: true, sortOrder: 30 },
+    { id: 'honors',              name: '企业荣誉', type: 'honors',      enabled: true, sortOrder: 40 },
+    { id: 'projects',            name: '企业项目', type: 'projects',    enabled: true, sortOrder: 50 }
+  ]
+
+  function getSections() {
+    const tab = TABS[activeTab]
+    const config = tab.getConfig()
+    let sections = (config.sections || []).filter(function(sec) { return sec.type !== 'sites' })
+    if (!sections.length) {
+      sections = JSON.parse(JSON.stringify(DEFAULT_SECTIONS))
+    }
+    sections.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    return sections
+  }
+
+  async function saveSections(sections) {
+    const tab = TABS[activeTab]
+    await tab.updateConfig({ sections })
+  }
+
+  function render() {
+    const sections = getSections()
+    const tab = TABS[activeTab]
+    const iconMap = {
+      'profiles': '🏢', 'performance': '📊', 'business': '📦',
+      'honors': '🏆', 'projects': '🏗️'
+    }
+
+    // Tab bar
+    const tabsHtml = TABS.map((t, i) => {
+      const active = i === activeTab ? 'tab-active' : ''
+      return `<button class="tab-btn ${active}" onclick="window.switchTab(${i})">${t.label}</button>`
+    }).join('')
+
+    // Top cards: fixed order by sidebar menu sequence, not affected by drag sort
+    const TYPE_ORDER = ['profiles', 'performance', 'business', 'honors', 'projects']
+    const cards = TYPE_ORDER
+      .map(type => sections.find(s => s.type === type))
+      .filter(Boolean)
+      .map(sec => `
+        <div class="display-module-card">
+          <span class="module-icon">${iconMap[sec.type] || '📄'}</span>
+          <span class="module-name">${sec.name}</span>
+        </div>
+      `).join('')
+
+    // Bottom drag-sort table
+    const circledDigits = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩']
+    const sectionRows = sections.map((sec, idx) => {
+      const statusOn = sec.enabled !== false
+      const orderBadge = `<span class="order-badge">${circledDigits[idx] || idx}</span>`
+      const dragAttrs = `draggable="true" ondragstart="window.onSectionDragStart(event,${idx})" ondragover="window.onSectionDragOver(event)" ondrop="window.onSectionDrop(event,${idx})" ondragend="window.onSectionDragEnd(event)"`
+
+      return `
+        <tr class="section-row" ${dragAttrs} data-idx="${idx}">
+          <td class="drag-cell"><span class="drag-handle">☰</span>${orderBadge}</td>
+          <td class="section-name"><span class="section-icon">${iconMap[sec.type] || '📄'}</span>${sec.name}</td>
+          <td class="toggle-cell">
+            <label class="switch">
+              <input type="checkbox" ${statusOn ? 'checked' : ''} onchange="window.toggleSection(${idx})">
+              <span class="switch-slider"></span>
+            </label>
+          </td>
+        </tr>
+      `
+    }).join('')
+
+    const html = `
+      <div class="page-header">
+        <h1>展示自定义</h1>
+      </div>
+
+      <div class="tabs-bar">${tabsHtml}</div>
+
+      <div class="card">
+        <h3 class="card-title">关联模块</h3>
+        <div class="module-grid">${cards}</div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">模块位置</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:60px">位置</th>
+                <th>模块名称</th>
+                <th style="text-align:right;width:60px">状态</th>
+              </tr>
+            </thead>
+            <tbody>${sectionRows}</tbody>
+          </table>
+        </div>
+      </div>
+    `
+
+    Admin.setPageContent(html)
+  }
+
+  // ── Public handlers ──
+
+  window.switchTab = function(idx) {
+    if (idx === activeTab) return
+    activeTab = idx
+    draggedIdx = null
+    render()
+  }
+
+  window.toggleSection = async function(idx) {
+    const sections = getSections()
+    const sec = sections[idx]
+    if (!sec) return
+    sec.enabled = sec.enabled === false ? true : false
+    await saveSections(sections)
+    render()
+  }
+
+  window.toggleModule = async function(id) {
+    const sections = getSections()
+    const sec = sections.find(s => s.id === id)
+    if (!sec) return
+    sec.enabled = sec.enabled === false ? true : false
+    await saveSections(sections)
+    render()
+  }
+
+  window.onSectionDragStart = function(event, idx) {
+    draggedIdx = idx
+    event.target.style.opacity = '0.4'
+    event.dataTransfer.effectAllowed = 'move'
+  }
+
+  window.onSectionDragOver = function(event) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    document.querySelectorAll('.section-row').forEach(r => r.style.borderTop = '')
+    const row = event.target.closest('.section-row')
+    if (row) {
+      row.style.borderTop = '3px solid #3a5f94'
+    }
+  }
+
+  window.onSectionDrop = async function(event, targetIdx) {
+    event.preventDefault()
+    document.querySelectorAll('.section-row').forEach(r => r.style.borderTop = '')
+    if (draggedIdx === null || draggedIdx === targetIdx) {
+      draggedIdx = null
+      return
+    }
+
+    const sections = getSections()
+    const [moved] = sections.splice(draggedIdx, 1)
+    sections.splice(targetIdx, 0, moved)
+
+    let order = 10
+    sections.forEach(sec => {
+      sec.sortOrder = order
+      order += 10
+    })
+
+    await saveSections(sections)
+    draggedIdx = null
+    render()
+  }
+
+  window.onSectionDragEnd = function(event) {
+    event.target.style.opacity = ''
+    document.querySelectorAll('.section-row').forEach(r => r.style.borderTop = '')
+    draggedIdx = null
+  }
+
+  window.onGlobalSearch = function() {}
+
+  render()
+})()
+</script>
+
+<style>
+/* Tabs */
+.tabs-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  background: #f1f4f6;
+  border-radius: 12px;
+  padding: 4px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #586064;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab-btn.tab-active {
+  background: #ffffff;
+  color: #3a5f94;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Cards */
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.card-title {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a202c;
+}
+.module-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.display-module-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+.module-icon {
+  font-size: 22px;
+}
+.module-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1a202c;
+}
+.display-module-card:hover {
+  background: #edf0f3;
+}
+
+/* Table */
+.drag-cell {
+  white-space: nowrap;
+}
+.drag-handle {
+  cursor: grab;
+  color: #a0aec0;
+  font-size: 16px;
+  user-select: none;
+  margin-right: 6px;
+}
+.order-badge {
+  font-size: 14px;
+  color: #3a5f94;
+  font-weight: 700;
+}
+.section-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+.section-icon {
+  font-size: 16px;
+  margin-right: 6px;
+}
+.toggle-cell {
+  text-align: right;
+}
+
+/* Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e0;
+  transition: 0.2s;
+  border-radius: 24px;
+}
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+.switch input:checked + .switch-slider {
+  background-color: #3a5f94;
+}
+.switch input:checked + .switch-slider:before {
+  transform: translateX(20px);
+}
+</style>
+</body>
+</html>

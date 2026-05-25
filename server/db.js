@@ -622,4 +622,4 @@ function getDb() {
   return db;
 }
 
-module.exports = { initDatabase, readData, writeData, getDb, save };
+module.exports = { initDatabase, readData, writeData, getDb, save, queryAll };

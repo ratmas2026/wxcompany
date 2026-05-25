@@ -110,69 +110,6 @@ Page({
     })
   },
 
-  // WeChat getPhoneNumber — 一键获取微信绑定手机号
-  onGetPhoneNumber(e) {
-    if (this.data.loggingIn) return
-    const { encryptedData, iv, errMsg } = e.detail || {}
-    if (errMsg && errMsg.indexOf(':ok') === -1) {
-      wx.showToast({ title: '获取手机号失败', icon: 'none' })
-      return
-    }
-    if (!encryptedData || !iv) {
-      wx.showToast({ title: '未能获取手机号信息', icon: 'none' })
-      return
-    }
-    if (!this.data.agreed) {
-      wx.showToast({ title: '请先阅读并同意用户协议和隐私政策', icon: 'none' })
-      return
-    }
-
-    wx.showLoading({ title: '登录中...' })
-    wx.login({
-      success: (loginRes) => {
-        if (!loginRes.code) {
-          wx.hideLoading()
-          wx.showToast({ title: '微信登录失败', icon: 'none' })
-          return
-        }
-        wx.request({
-          url: this._apiBase() + '/login/phone',
-          method: 'POST',
-          data: { encryptedData, iv, code: loginRes.code },
-          timeout: 15000,
-          success: (res) => {
-            wx.hideLoading()
-            if (!res.data || !res.data.ok) {
-              wx.showToast({ title: (res.data && res.data.error) || '登录失败', icon: 'none' })
-              return
-            }
-            const user = res.data.user
-            if (!user) {
-              wx.showToast({ title: '该手机号未注册', icon: 'none' })
-              return
-            }
-            this.saveLoginState(user)
-            wx.showToast({ title: `${user.nickName || ''}，欢迎回来`, icon: 'success' })
-            setTimeout(() => this.navigateBack(), 800)
-          },
-          fail: () => {
-            wx.hideLoading()
-            wx.showToast({ title: '网络错误，请重试', icon: 'none' })
-          }
-        })
-      },
-      fail: () => {
-        wx.hideLoading()
-        wx.showToast({ title: '微信登录失败', icon: 'none' })
-      }
-    })
-  },
-
-  onGetPhoneNumberError(e) {
-    console.log('[login] getPhoneNumber error:', e.detail)
-    // 用户拒绝或取消，不提示，让用户使用短信方式
-  },
-
   _getPhone() {
     const phone = this.data.phone
     if (!phone || !/^1\d{10}$/.test(phone)) {
