@@ -291,105 +291,45 @@
         onpointerdown="window.fieldMouseDown(event, ${idx})">${escHtml(f.label)}</div>`
     }).join('')
 
-    // Property panel for selected field (single selection only)
-    let propPanel = ''
+    // Property toolbar for selected field (single selection, horizontal compact bar)
+    let propBar = ''
     if (selectedFieldIndices.length === 1) {
       const sf = fields[selectedFieldIndices[0]]
       const colorBtns = COLORS.map(c =>
-        `<button class="color-swatch ${sf.color === c ? 'color-swatch-active' : ''}"
-          style="background:${c}" title="${c}"
-          onclick="window.setFieldProp('color','${c}')"></button>`
+        `<button class="color-swatch" style="width:20px;height:20px;border-radius:3px;background:${c};flex-shrink:0;${sf.color===c?'border:2px solid #ff4d4d;box-shadow:0 0 0 1px #ff4d4d':''}"
+          title="${c}" onclick="window.setFieldProp('color','${c}')"></button>`
       ).join('')
       const fontFamilies = ['Share Tech Mono', '微软雅黑', '思源黑体', '宋体', 'Helvetica', 'Arial', 'Courier New', 'Georgia']
       const fontOpts = fontFamilies.map(ff => `<option value="${ff}" ${(sf.fontFamily||'Share Tech Mono')===ff?'selected':''}>${ff}</option>`).join('')
-      propPanel = `
-        <div class="card" style="margin-top:16px">
-          <h3 style="margin:0 0 12px;font-size:15px">✏️ 属性：${escHtml(sf.label)}</h3>
-          ${sf.isCustom ? `
-          <div class="form-group">
-            <label class="form-label">文本内容</label>
-            <input type="text" class="form-input" value="${escHtml(sf.label)}"
-              oninput="editingTpl.fields[${selectedFieldIndices[0]}].label = this.value; renderEditor()"
-              placeholder="输入文本内容">
-          </div>` : ''}
-          <div class="form-group">
-            <label class="form-label">字体</label>
-            <select style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid #dce3ef;font-size:12px"
-              onchange="window.setFieldProp('fontFamily', this.value)">${fontOpts}</select>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="form-group">
-              <label class="form-label">字号 <span style="color:#718096">${sf.fontSize}rpx</span></label>
-              <input type="range" min="10" max="72" value="${sf.fontSize}" style="width:100%"
-                oninput="window.setFieldProp('fontSize', parseInt(this.value))">
-            </div>
-            <div class="form-group">
-              <label class="form-label">粗细</label>
-              <select style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid #dce3ef;font-size:12px"
-                onchange="window.setFieldProp('fontWeight', this.value)">
-                <option value="normal" ${(sf.fontWeight||'normal')==='normal'?'selected':''}>常规</option>
-                <option value="bold" ${sf.fontWeight==='bold'?'selected':''}>粗体</option>
-                <option value="200" ${sf.fontWeight==='200'?'selected':''}>细体 200</option>
-                <option value="500" ${sf.fontWeight==='500'?'selected':''}>中等 500</option>
-                <option value="700" ${sf.fontWeight==='700'?'selected':''}>加粗 700</option>
-                <option value="900" ${sf.fontWeight==='900'?'selected':''}>超粗 900</option>
-              </select>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="form-group">
-              <label class="form-label">行高 <span style="color:#718096">${sf.lineHeight || 1.2}</span></label>
-              <input type="range" min="0.8" max="3" step="0.1" value="${sf.lineHeight || 1.2}" style="width:100%"
-                oninput="window.setFieldProp('lineHeight', parseFloat(this.value))">
-            </div>
-            <div class="form-group">
-              <label class="form-label">字间距 <span style="color:#718096">${sf.letterSpacing || 0}px</span></label>
-              <input type="range" min="-2" max="10" step="0.5" value="${sf.letterSpacing || 0}" style="width:100%"
-                oninput="window.setFieldProp('letterSpacing', parseFloat(this.value))">
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="form-group">
-              <label class="form-label">透明度 <span style="color:#718096">${sf.opacity != null ? sf.opacity : 1}</span></label>
-              <input type="range" min="0.2" max="1" step="0.05" value="${sf.opacity != null ? sf.opacity : 1}" style="width:100%"
-                oninput="window.setFieldProp('opacity', parseFloat(this.value))">
-            </div>
-            <div class="form-group">
-              <label class="form-label">旋转 <span style="color:#718096">${sf.rotation || 0}°</span></label>
-              <input type="range" min="-180" max="180" step="1" value="${sf.rotation || 0}" style="width:100%"
-                oninput="window.setFieldProp('rotation', parseInt(this.value))">
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">颜色</label>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">${colorBtns}</div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">对齐</label>
-            <select style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid #dce3ef"
-              onchange="window.setFieldProp('textAlign', this.value)">
-              <option value="left" ${(sf.textAlign||'left')==='left'?'selected':''}>左对齐</option>
-              <option value="center" ${sf.textAlign==='center'?'selected':''}>居中</option>
-              <option value="right" ${sf.textAlign==='right'?'selected':''}>右对齐</option>
-            </select>
-          </div>
-          <div class="form-group" style="display:flex;align-items:center;gap:12px">
-            <label class="switch">
-              <input type="checkbox" ${sf.visible ? 'checked' : ''} onchange="window.setFieldProp('visible', this.checked)">
-              <span class="switch-slider"></span>
-            </label>
-            <span style="font-size:13px">显示此字段</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">X 坐标: ${sf.x} rpx</label>
-            <input type="range" min="0" max="${canvasW - 20}" value="${sf.x}" style="width:100%"
-              oninput="window.setFieldProp('x', parseInt(this.value))">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Y 坐标: ${sf.y} rpx</label>
-            <input type="range" min="0" max="${canvasH - 16}" value="${sf.y}" style="width:100%"
-              oninput="window.setFieldProp('y', parseInt(this.value))">
-          </div>
+      propBar = `
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;margin-bottom:8px;background:#f7fafc;border-radius:8px;flex-wrap:wrap;font-size:11px;border:1px solid #e8ecf1">
+          <span style="font-weight:700;color:#ff4d4d;white-space:nowrap;min-width:40px">✏️ ${escHtml(sf.label)}</span>
+          ${sf.isCustom ? `<input type="text" style="width:72px;padding:2px 4px;font-size:11px;border:1px solid #dce3ef;border-radius:4px" value="${escHtml(sf.label)}" oninput="editingTpl.fields[${selectedFieldIndices[0]}].label = this.value; renderEditor()" placeholder="文本">` : ''}
+          <select style="padding:2px 3px;font-size:10px;border:1px solid #dce3ef;border-radius:4px;max-width:98px" onchange="window.setFieldProp('fontFamily', this.value)">${fontOpts}</select>
+          <span style="white-space:nowrap">字号</span><input type="range" min="10" max="72" value="${sf.fontSize}" style="width:44px" oninput="window.setFieldProp('fontSize', parseInt(this.value))"><span style="color:#718096;min-width:18px;text-align:right">${sf.fontSize}</span>
+          <select style="padding:2px 3px;font-size:10px;border:1px solid #dce3ef;border-radius:4px;max-width:62px" onchange="window.setFieldProp('fontWeight', this.value)">
+            <option value="normal" ${(sf.fontWeight||'normal')==='normal'?'selected':''}>常规</option>
+            <option value="bold" ${sf.fontWeight==='bold'?'selected':''}>粗</option>
+            <option value="200" ${sf.fontWeight==='200'?'selected':''}>200</option>
+            <option value="500" ${sf.fontWeight==='500'?'selected':''}>500</option>
+            <option value="700" ${sf.fontWeight==='700'?'selected':''}>700</option>
+            <option value="900" ${sf.fontWeight==='900'?'selected':''}>900</option>
+          </select>
+          <span style="white-space:nowrap">行高</span><input type="range" min="0.8" max="3" step="0.1" value="${sf.lineHeight || 1.2}" style="width:44px" oninput="window.setFieldProp('lineHeight', parseFloat(this.value))"><span style="color:#718096;min-width:18px;text-align:right">${sf.lineHeight || 1.2}</span>
+          <span style="white-space:nowrap">间距</span><input type="range" min="-2" max="10" step="0.5" value="${sf.letterSpacing || 0}" style="width:44px" oninput="window.setFieldProp('letterSpacing', parseFloat(this.value))"><span style="color:#718096;min-width:18px;text-align:right">${sf.letterSpacing || 0}</span>
+          <span style="white-space:nowrap">透明</span><input type="range" min="0.2" max="1" step="0.05" value="${sf.opacity != null ? sf.opacity : 1}" style="width:44px" oninput="window.setFieldProp('opacity', parseFloat(this.value))"><span style="color:#718096;min-width:18px;text-align:right">${sf.opacity != null ? sf.opacity : 1}</span>
+          <span style="white-space:nowrap">旋转</span><input type="range" min="-180" max="180" step="1" value="${sf.rotation || 0}" style="width:44px" oninput="window.setFieldProp('rotation', parseInt(this.value))"><span style="color:#718096;min-width:20px;text-align:right">${sf.rotation || 0}°</span>
+          <select style="padding:2px 3px;font-size:10px;border:1px solid #dce3ef;border-radius:4px;max-width:52px" onchange="window.setFieldProp('textAlign', this.value)">
+            <option value="left" ${(sf.textAlign||'left')==='left'?'selected':''}>左</option>
+            <option value="center" ${sf.textAlign==='center'?'selected':''}>中</option>
+            <option value="right" ${sf.textAlign==='right'?'selected':''}>右</option>
+          </select>
+          <div style="display:flex;gap:2px;align-items:center">${colorBtns}</div>
+          <span style="white-space:nowrap">X</span><input type="range" min="0" max="${canvasW-20}" value="${sf.x}" style="width:44px" oninput="window.setFieldProp('x', parseInt(this.value))"><span style="color:#718096;min-width:20px;text-align:right">${sf.x}</span>
+          <span style="white-space:nowrap">Y</span><input type="range" min="0" max="${canvasH-16}" value="${sf.y}" style="width:44px" oninput="window.setFieldProp('y', parseInt(this.value))"><span style="color:#718096;min-width:20px;text-align:right">${sf.y}</span>
+          <label style="display:flex;align-items:center;gap:2px;white-space:nowrap;cursor:pointer">
+            <input type="checkbox" ${sf.visible ? 'checked' : ''} onchange="window.setFieldProp('visible', this.checked)" style="width:13px;height:13px">显示
+          </label>
         </div>
       `
     }
@@ -407,9 +347,10 @@
         <!-- Canvas -->
         <div class="card" style="flex:1;min-width:340px;display:flex;flex-direction:column;align-items:center">
           <div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <label class="form-label" style="margin:0">模板名称：</label>
-            <input type="text" class="form-input" style="width:180px" value="${escHtml(tpl.name)}"
-              oninput="editingTpl.name = this.value" placeholder="输入模板名称">
+            <label class="form-label" style="margin:0">风格主题：</label>
+            <input type="text" class="form-input" style="width:140px" value="${escHtml(tpl.name)}"
+              oninput="editingTpl.name = this.value" placeholder="输入名称">
+            <button class="tpl-theme-btn tpl-theme-btn-active" style="width:30px;height:30px;background:#000000;border-color:#ff4d4d;cursor:default" title="赛博朋克" disabled><span style="color:#ff4d4d;font-size:13px">赛</span></button>
             <label class="form-label" style="margin:0">背景色：</label>
             <input type="color" value="${bg}" style="width:32px;height:32px;border:none;cursor:pointer"
               onchange="editingTpl.background = this.value; window.autoAdjustTextColors()">
@@ -436,6 +377,7 @@
             </select>
             <button class="tpl-tool-btn ${showGrid?'tpl-tool-btn-active':''}" onclick="window.toggleGrid()" title="显示/隐藏网格">⊞</button>
           </div>
+          ${propBar}
           <div class="tpl-canvas" style="background-color:${bg};width:${canvasW}px;height:${canvasH}px"
             onpointerdown="window.canvasMouseDown(event)">
             ${showGrid ? `<div class="tpl-grid-overlay" style="background-size:${canvasW/gridCols}px ${canvasH/gridRows}px"></div>` : ''}
@@ -453,19 +395,6 @@
 
         <!-- Side Panel -->
         <div style="width:300px;flex-shrink:0">
-          <div class="card">
-            <h3 style="margin:0 0 8px;font-size:14px">🎨 风格主题</h3>
-            <div style="display:flex;flex-wrap:wrap;gap:6px">
-              ${Object.entries(THEMES).map(([k, t]) => `
-                <button class="tpl-theme-btn ${(editingTpl.theme===k)?'tpl-theme-btn-active':''}"
-                  style="background:${t.bg};border-color:${t.primaryColor}"
-                  onclick="window.applyTheme('${k}')" title="${t.name}">
-                  <span style="color:${t.primaryColor};font-size:17px">${t.name.slice(0,1)}</span>
-                  <span style="font-size:10px;color:${t.secondaryColor}">${t.name}</span>
-                </button>
-              `).join('')}
-            </div>
-          </div>
           <div class="card">
             <h3 style="margin:0 0 12px;font-size:15px;display:flex;justify-content:space-between;align-items:center">
               📋 字段列表
@@ -496,7 +425,6 @@
             </div>
           </div>
           ` : ''}
-          ${propPanel}
         </div>
       </div>
     `
