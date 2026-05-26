@@ -5,13 +5,41 @@ function authFetch(url, options = {}) {
   const token = sessionStorage.getItem('admin_token')
   const headers = { ...options.headers }
   if (token) headers['Authorization'] = 'Bearer ' + token
-  return fetch(url, { ...options, headers }).then(res => {
-    if (res.status === 401) {
-      sessionStorage.removeItem('admin_token')
-      window.location.href = 'login.html'
-    }
-    return res
-  })
+
+  const controller = new AbortController()
+  const signal = controller.signal
+  const timeout = setTimeout(() => controller.abort(), 15000)
+
+  return fetch(url, { ...options, headers, signal })
+    .then(res => {
+      clearTimeout(timeout)
+      if (res.status === 401) {
+        sessionStorage.removeItem('admin_token')
+        sessionStorage.removeItem('admin_user')
+        window.location.href = 'login.html'
+        throw new Error('Unauthorized')
+      }
+      if (res.status >= 500) {
+        if (typeof Admin !== 'undefined' && Admin.showToast) {
+          Admin.showToast('服务器繁忙，稍后重试', 'error')
+        }
+      }
+      return res
+    })
+    .catch(err => {
+      clearTimeout(timeout)
+      if (err.name === 'AbortError') {
+        if (typeof Admin !== 'undefined' && Admin.showToast) {
+          Admin.showToast('请求超时，请检查网络', 'error')
+        }
+        throw new Error('Request timeout')
+      }
+      if (err.message === 'Unauthorized') throw err
+      if (err.message !== 'Request timeout' && typeof Admin !== 'undefined' && Admin.showToast) {
+        Admin.showToast('网络异常，请检查连接', 'error')
+      }
+      throw err
+    })
 }
 
 const DataStore = {
@@ -692,5 +720,82 @@ const DataStore = {
     this._setCache(cache)
     await this._sync('companyInfos', 'DELETE', '/company-infos/' + id)
   },
+
+  // --- User Profile APIs ---
+  async getUserProfile() {
+    const res = await authFetch(API_BASE + '/user/profile')
+    return res.json()
+  },
+
+  async updateUserProfile(field, value) {
+    const res = await authFetch(API_BASE + '/user/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ field, value })
+    })
+    return res.json()
+  },
+
+  async uploadAvatar(file) {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await authFetch(API_BASE + '/user/avatar', {
+      method: 'POST',
+      body: form
+    })
+    return res.json()
+  },
+
+  async checkUserField(field, value) {
+    const res = await authFetch(API_BASE + '/user/check?field=' + encodeURIComponent(field) + '&value=' + encodeURIComponent(value))
+    return res.json()
+  },
+
+  // --- Password & Sessions ---
+  async changePassword(oldPassword, newPassword) {
+    const res = await authFetch(API_BASE + '/user/password', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldPassword, newPassword })
+    })
+    return res.json()
+  },
+
+  async getUserSessions() {
+    const res = await authFetch(API_BASE + '/user/sessions')
+    return res.json()
+  },
+
+  async deleteSession(id) {
+    const res = await authFetch(API_BASE + '/user/sessions/' + id, { method: 'DELETE' })
+    return res.json()
+  },
+
+  // --- Bindings ---
+  async getUserBindings() {
+    const res = await authFetch(API_BASE + '/user/bindings')
+    return res.json()
+  },
+
+  // --- Notifications ---
+  async getNotifications(limit = 5) {
+    const res = await authFetch(API_BASE + '/notifications?limit=' + limit)
+    return res.json()
+  },
+
+  async getUnreadCount() {
+    const res = await authFetch(API_BASE + '/notifications/unread-count')
+    return res.json()
+  },
+
+  async markNotificationRead(id) {
+    const res = await authFetch(API_BASE + '/notifications/' + id + '/read', { method: 'PUT' })
+    return res.json()
+  },
+
+  async markAllNotificationsRead() {
+    const res = await authFetch(API_BASE + '/notifications/read-all', { method: 'PUT' })
+    return res.json()
+  }
 
 }
