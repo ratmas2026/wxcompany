@@ -27,7 +27,7 @@
   const defaultCompany = defaultCI ? (defaultCI.name || '') : ''
   const defaultAddress = defaultCI ? (defaultCI.address || '') : ''
 
-  let card = { id: null, name: '', title: '', company: defaultCompany, phone: '', email: '', department: '', avatar: '', bio: '', address: defaultAddress }
+  let card = { id: null, name: '', title: '', company: defaultCompany, phone: '', email: '', department: '', avatar: '', bio: '', address: defaultAddress, style: 'cyberpunk' }
   let selectedAvatarFile = null       // File object for upload
   let selectedAvatarPreviewUrl = null // Object URL or server URL for preview
 
@@ -111,9 +111,17 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">联系地址</label>
-            <input class="form-input" id="cardAddress" value="${escapeHtml(card.address || '')}" placeholder="选择企业后自动填充，也可手动修改">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">联系地址</label>
+              <input class="form-input" id="cardAddress" value="${escapeHtml(card.address || '')}" placeholder="选择企业后自动填充，也可手动修改">
+            </div>
+            <div class="form-group">
+              <label class="form-label">风格选择</label>
+              <select class="form-select" id="cardStyle">
+                <option value="cyberpunk" ${card.style === 'cyberpunk' ? 'selected' : ''}>赛博朋克</option>
+              </select>
+            </div>
           </div>
 
           <div class="form-group">
@@ -177,6 +185,7 @@
     const emailVal = document.getElementById('cardEmail').value.trim()
     const addressVal = document.getElementById('cardAddress').value.trim()
     const bioVal = document.getElementById('cardBio').value.trim()
+    const styleVal = document.getElementById('cardStyle').value
 
     if (!nameVal) { Admin.showToast('请输入姓名', 'error'); return }
     if (!titleVal) { Admin.showToast('请选择职位', 'error'); return }
@@ -211,6 +220,7 @@
       email: emailVal,
       address: addressVal,
       bio: bioVal,
+      style: styleVal,
       avatar: avatarUrl,
       status: card.status !== undefined ? card.status : true
     }

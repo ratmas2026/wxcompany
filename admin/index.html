@@ -78,7 +78,6 @@
           </label>
         </td>
         <td style="text-align:center">
-          <button class="btn btn-outline btn-sm" style="color:#ff4d4d;border-color:#ff4d4d" onclick="window.previewCard(${c.id})">预览</button>
           <button class="btn btn-outline btn-sm" onclick="window.editCard(${c.id})">编辑</button>
           <button class="btn btn-danger btn-sm" onclick="window.deleteCardItem(${c.id})" style="margin-left:4px">删除</button>
         </td>
@@ -209,14 +208,6 @@
       Admin.showToast('删除成功', 'success')
       render()
     })
-  }
-
-  window.previewCard = function(id) {
-    const card = cards.find(c => c.id === id)
-    if (card) {
-      localStorage.setItem('preview_card', JSON.stringify(card))
-      window.open('card-preview.html', '_blank')
-    }
   }
 
   window.batchDelete = function() {
