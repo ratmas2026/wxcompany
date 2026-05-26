@@ -238,6 +238,7 @@ a:hover { text-decoration: underline; }
   text-decoration: none;
 }
 .user-dropdown-item--danger { color: var(--error); }
+.dropdown-icon { margin-right: 8px; }
 .user-dropdown-divider {
   height: 1px;
   background: var(--surface-container-high);

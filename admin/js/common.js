@@ -117,10 +117,10 @@ const Admin = {
             <span class="topbar-name">${name}</span>
             <span class="topbar-arrow">&#x25BC;</span>
             <div class="user-dropdown" id="userDropdown">
-              <a class="user-dropdown-item" href="profile.html">&#x1F464; 个人中心</a>
-              <a class="user-dropdown-item" href="settings.html">&#x2699; 账号设置</a>
+              <a class="user-dropdown-item" href="profile.html"><span class="dropdown-icon">&#x1F464;</span>个人中心</a>
+              <a class="user-dropdown-item" href="settings.html"><span class="dropdown-icon">&#x2699;</span>账号设置</a>
               <div class="user-dropdown-divider"></div>
-              <div class="user-dropdown-item user-dropdown-item--danger" onclick="Admin.logout();event.stopPropagation()">&#x1F6AA; 退出登录</div>
+              <div class="user-dropdown-item user-dropdown-item--danger" onclick="Admin.logout();event.stopPropagation()"><span class="dropdown-icon">&#x1F6AA;</span>退出登录</div>
             </div>
           </div>
         </div>
