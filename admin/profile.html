@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>个人中心 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<canvas id="cropCanvas" width="200" height="200" style="display:none"></canvas>
+<input type="file" id="avatarInput" accept="image/*" style="display:none">
+
+<script>
+(async function() {
+  Admin.init('profile')
+  Admin.track('page_view', { page: 'profile' })
+
+  let user = Admin.currentUser || { nickName: 'Admin', avatar: '', phone: '', email: '', title: '' }
+  let editingField = null
+  let fieldErrors = {}
+
+  function render() {
+    const avatarHTML = user.avatar
+      ? `<img src="${user.avatar}" class="profile-avatar-img" alt="" id="avatarImg">`
+      : `<div class="profile-avatar-placeholder">${(user.nickName || 'A')[0]}</div>`
+
+    const fields = [
+      { key: 'nickName', label: '昵称' },
+      { key: 'phone', label: '手机号' },
+      { key: 'email', label: '邮箱' },
+      { key: 'title', label: '职位' }
+    ]
+
+    const rowsHTML = fields.map(f => {
+      const val = user[f.key] || ''
+      const err = fieldErrors[f.key] || ''
+      if (editingField === f.key) {
+        return `
+          <div class="profile-field-row">
+            <span class="profile-field-label">${f.label}</span>
+            <input class="profile-field-input" id="edit-${f.key}" value="${Admin._escapeHTML(val)}" placeholder="请输入${f.label}">
+            <button class="profile-field-btn" onclick="saveField('${f.key}')">✓</button>
+            <button class="profile-field-btn" style="background:var(--surface-container);color:var(--on-surface-variant);margin-left:6px" onclick="cancelEdit()">✕</button>
+          </div>
+          ${err ? '<div class="profile-field-error">' + err + '</div>' : ''}
+        `
+      }
+      return `
+        <div class="profile-field-row">
+          <span class="profile-field-label">${f.label}</span>
+          <span class="profile-field-value">${val || '未设置'}</span>
+          <button class="profile-field-btn" style="background:transparent;color:var(--primary);border:1px solid var(--outline-variant)" onclick="startEdit('${f.key}')">编辑</button>
+        </div>
+      `
+    }).join('')
+
+    Admin.setPageContent(`
+      <div class="page-header">
+        <h1>个人中心</h1>
+      </div>
+      <div class="card" style="max-width:560px;margin:0 auto">
+        <div class="profile-avatar-section">
+          <div class="profile-avatar-wrap" onclick="document.getElementById('avatarInput').click()">
+            ${avatarHTML}
+            <div class="profile-avatar-edit">✎</div>
+          </div>
+          <p style="font-size:12px;color:var(--outline);margin-top:8px">点击更换头像</p>
+        </div>
+        <div id="fieldsContainer">${rowsHTML}</div>
+      </div>
+    `)
+    bindEvents()
+  }
+
+  function bindEvents() {
+    document.getElementById('avatarInput').addEventListener('change', handleAvatar)
+    if (editingField) {
+      const input = document.getElementById('edit-' + editingField)
+      if (input) {
+        input.focus()
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') saveField(editingField)
+          if (e.key === 'Escape') cancelEdit()
+        })
+      }
+    }
+  }
+
+  async function handleAvatar(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    const canvas = document.getElementById('cropCanvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.onload = async function() {
+      const size = Math.min(img.width, img.height)
+      const sx = (img.width - size) / 2
+      const sy = (img.height - size) / 2
+      ctx.clearRect(0, 0, 200, 200)
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 200, 200)
+      canvas.toBlob(async function(blob) {
+        try {
+          const data = await DataStore.uploadAvatar(blob)
+          if (data && data.ok && data.url) {
+            user.avatar = data.url
+            if (Admin.currentUser) Admin.currentUser.avatar = data.url
+            sessionStorage.setItem('admin_user', JSON.stringify(user))
+            Admin.showToast('头像已更新', 'success')
+            render()
+          } else {
+            Admin.showToast('上传失败，请重试', 'error')
+          }
+        } catch (e) {
+          Admin.showToast('上传失败，请重试', 'error')
+        }
+      }, 'image/jpeg', 0.85)
+    }
+    img.src = URL.createObjectURL(file)
+    e.target.value = ''
+  }
+
+  window.startEdit = function(key) {
+    editingField = key
+    fieldErrors = {}
+    render()
+  }
+
+  window.cancelEdit = function() {
+    editingField = null
+    fieldErrors = {}
+    render()
+  }
+
+  window.saveField = async function(key) {
+    const input = document.getElementById('edit-' + key)
+    if (!input) return
+    const value = input.value.trim()
+    if (!value) {
+      fieldErrors[key] = '不能为空'
+      render()
+      return
+    }
+    if (key === 'phone') {
+      if (!/^1\d{10}$/.test(value)) {
+        fieldErrors[key] = '请输入正确的11位手机号'
+        render()
+        return
+      }
+      try {
+        const check = await DataStore.checkUserField('phone', value)
+        if (check && check.exists) {
+          fieldErrors[key] = '该手机号已被其他账号绑定'
+          render()
+          return
+        }
+      } catch (e) { /* proceed */ }
+    }
+    if (key === 'email') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        fieldErrors[key] = '请输入正确的邮箱地址'
+        render()
+        return
+      }
+      try {
+        const check = await DataStore.checkUserField('email', value)
+        if (check && check.exists) {
+          fieldErrors[key] = '该邮箱已被其他账号绑定'
+          render()
+          return
+        }
+      } catch (e) { /* proceed */ }
+    }
+    try {
+      const data = await DataStore.updateUserProfile(key, value)
+      if (data && data.ok) {
+        user[key] = value
+        if (Admin.currentUser) Admin.currentUser[key] = value
+        sessionStorage.setItem('admin_user', JSON.stringify(user))
+        Admin.showToast('已更新', 'success')
+        editingField = null
+        fieldErrors = {}
+        Admin.track('profile_update', { field: key })
+        render()
+      } else {
+        fieldErrors[key] = (data && data.error) || '保存失败'
+        render()
+      }
+    } catch (e) {
+      fieldErrors[key] = '网络错误，请重试'
+      render()
+    }
+  }
+
+  // Load latest from server
+  try {
+    const data = await DataStore.getUserProfile()
+    if (data && data.ok && data.user) {
+      user = data.user
+      Admin.currentUser = data.user
+      sessionStorage.setItem('admin_user', JSON.stringify(data.user))
+    }
+  } catch (e) { /* use cached */ }
+
+  render()
+})()
+</script>
+</body>
+</html>

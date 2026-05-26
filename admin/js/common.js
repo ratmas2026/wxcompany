@@ -279,12 +279,159 @@ const Admin = {
   },
 
   logout() {
+    this.track('logout')
     sessionStorage.removeItem('admin_token')
+    sessionStorage.removeItem('admin_user')
     window.location.href = 'login.html'
   },
 
-  toggleUserMenu() {
-    const dropdown = document.getElementById('userDropdown')
-    if (dropdown) dropdown.classList.toggle('show')
+  toggleUserMenu(e) {
+    e && e.stopPropagation && e.stopPropagation()
+    const dd = document.getElementById('userDropdown')
+    const np = document.getElementById('notifyPanel')
+    if (np) np.classList.remove('show')
+    if (dd) dd.classList.toggle('show')
+  },
+
+  // --- Notification ---
+  toggleNotify(e) {
+    e.stopPropagation()
+    const np = document.getElementById('notifyPanel')
+    const dd = document.getElementById('userDropdown')
+    if (dd) dd.classList.remove('show')
+    if (np) {
+      const opening = !np.classList.contains('show')
+      np.classList.toggle('show')
+      if (opening) {
+        this.track('notify_open')
+        this._loadNotifyList()
+      }
+    }
+  },
+
+  async _loadNotifyList() {
+    const list = document.getElementById('notifyList')
+    if (!list) return
+    list.innerHTML = '<div class="notify-empty">加载中...</div>'
+    try {
+      const res = await authFetch(API_BASE + '/notifications?limit=5')
+      if (!res.ok) throw new Error('HTTP ' + res.status)
+      const data = await res.json()
+      const items = (data && data.list) || []
+      if (items.length === 0) {
+        list.innerHTML = '<div class="notify-empty">暂无新通知</div>'
+        return
+      }
+      list.innerHTML = items.map(item => `
+        <div class="notify-item ${item.isRead ? '' : 'notify-item--unread'}" onclick="Admin.markRead(${item.id}, event)">
+          <div class="notify-item-icon">${this._notifyIcon(item.type)}</div>
+          <div class="notify-item-body">
+            <div class="notify-item-title">${this._escapeHTML(item.title)}</div>
+            <div class="notify-item-time">${this._timeAgo(item.createdAt)}</div>
+          </div>
+          ${item.isRead ? '' : '<span class="notify-dot"></span>'}
+        </div>
+      `).join('')
+    } catch (e) {
+      list.innerHTML = '<div class="notify-empty">加载失败</div>'
+    }
+  },
+
+  async markRead(id, e) {
+    e && e.stopPropagation()
+    // Optimistic update
+    if (this.unreadCount > 0) {
+      this.unreadCount--
+      this.updateBadge()
+    }
+    try {
+      await authFetch(API_BASE + '/notifications/' + id + '/read', { method: 'PUT' })
+    } catch (e) { /* silent */ }
+    this._loadNotifyList()
+  },
+
+  async markAllRead() {
+    this.unreadCount = 0
+    this.updateBadge()
+    try {
+      await authFetch(API_BASE + '/notifications/read-all', { method: 'PUT' })
+    } catch (e) { /* silent */ }
+    this._loadNotifyList()
+  },
+
+  async fetchUnreadCount() {
+    try {
+      const res = await authFetch(API_BASE + '/notifications/unread-count')
+      if (res.ok) {
+        const data = await res.json()
+        if (data && typeof data.count === 'number') {
+          this.unreadCount = data.count
+          this.updateBadge()
+        }
+      }
+    } catch (e) { /* silent */ }
+  },
+
+  updateBadge() {
+    const badge = document.getElementById('notifyBadge')
+    if (!badge) return
+    if (this.unreadCount <= 0) {
+      badge.style.display = 'none'
+    } else {
+      badge.style.display = ''
+      badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount
+    }
+  },
+
+  // --- User info ---
+  async loadUserInfo() {
+    const cached = sessionStorage.getItem('admin_user')
+    if (cached) {
+      try { this.currentUser = JSON.parse(cached) } catch (e) { /* ignore */ }
+    }
+    try {
+      const res = await authFetch(API_BASE + '/user/profile')
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.ok && data.user) {
+          this.currentUser = data.user
+          sessionStorage.setItem('admin_user', JSON.stringify(data.user))
+        }
+      }
+    } catch (e) { /* silent */ }
+  },
+
+  // --- Analytics ---
+  track(eventName, data) {
+    try {
+      const payload = JSON.stringify({ event: eventName, data: data || {}, ts: Date.now(), page: this.currentPage })
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(API_BASE + '/analytics', payload)
+      } else {
+        authFetch(API_BASE + '/analytics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload }).catch(() => {})
+      }
+    } catch (e) { /* silent */ }
+  },
+
+  // --- Helpers ---
+  _notifyIcon(type) {
+    const map = { system: '&#x2699;', message: '&#x1F4AC;', alert: '&#x26A0;' }
+    return map[type] || '&#x1F514;'
+  },
+
+  _timeAgo(iso) {
+    if (!iso) return ''
+    const diff = Date.now() - new Date(iso).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return '刚刚'
+    if (mins < 60) return mins + '分钟前'
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return hours + '小时前'
+    return Math.floor(hours / 24) + '天前'
+  },
+
+  _escapeHTML(str) {
+    if (!str) return ''
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }
 }
