@@ -238,6 +238,7 @@ a:hover { text-decoration: underline; }
   text-decoration: none;
 }
 .user-dropdown-item--danger { color: var(--error); }
+.user-dropdown-item.disabled { opacity: 0.4; cursor: not-allowed; }
 .dropdown-icon { margin-right: 18px; }
 .user-dropdown-divider {
   height: 1px;
