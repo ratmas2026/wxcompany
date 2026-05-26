@@ -1524,7 +1524,7 @@ app.get('/api/templates', (req, res) => {
 })
 
 // Upload template
-app.post('/api/templates', uploadTemplate.single('file'), (req, res) => {
+app.post('/api/templates', uploadTemplate.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ ok: false, error: '请选择文件' })
 
   const ext = path.extname(req.file.originalname).toLowerCase()
@@ -1544,7 +1544,7 @@ app.post('/api/templates', uploadTemplate.single('file'), (req, res) => {
 
   const isHtml = ext === '.html' || ext === '.htm'
   if (isHtml) {
-    content = sanitizer.sanitize(content)
+    content = await sanitizer.sanitize(content)
     // Overwrite with sanitized version
     try { fs.writeFileSync(req.file.path, content, 'utf-8') } catch (_) {}
   }
@@ -1617,7 +1617,7 @@ app.get('/api/templates/:id/raw', (req, res) => {
 })
 
 // Render template with card data (full pipeline: whitelist → sanitize → wrap → cache)
-app.get('/api/templates/:id/render', (req, res) => {
+app.get('/api/templates/:id/render', async (req, res) => {
   const id = parseInt(req.params.id)
   const cardId = parseInt(req.query.cardId)
   if (isNaN(id)) return res.status(400).send('Invalid template id')
@@ -1676,7 +1676,7 @@ app.get('/api/templates/:id/render', (req, res) => {
       result = templateEngine.wrapTxtAsHtml(templateEngine.renderTemplateRaw(content, renderData))
     } else {
       // For HTML: replace placeholders with escaping, then sanitize (defense-in-depth)
-      result = sanitizer.sanitize(templateEngine.renderTemplate(content, renderData))
+      result = await sanitizer.sanitize(templateEngine.renderTemplate(content, renderData))
     }
 
     // Step 3: Wrap in full HTML document
