@@ -37,7 +37,7 @@ Page({
     if (globalData.isLogin && globalData.userInfo) {
       const userInfo = { ...globalData.userInfo }
       if (userInfo.avatar) {
-        userInfo.avatar = api.staticUrl(userInfo.avatar)
+        userInfo.avatar = api.staticUrl(userInfo.avatar, { w: 144, h: 144 })
       }
       this.setData({
         isLoggedIn: true,
@@ -53,7 +53,7 @@ Page({
     const phone = globalData.userInfo && globalData.userInfo.phone
     if (!phone) return
     api.getUserByPhone(phone).then(user => {
-      if (user.avatar) user.avatar = api.staticUrl(user.avatar)
+      if (user.avatar) user.avatar = api.staticUrl(user.avatar, { w: 144, h: 144 })
       const newInfo = { ...globalData.userInfo, ...user }
       this.setData({ userInfo: newInfo })
       // 同步回 globalData

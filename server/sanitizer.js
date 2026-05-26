@@ -66,7 +66,11 @@ async function sanitize(html) {
   if (!html || typeof html !== 'string') return ''
   await ensureInit()
   if (!DOMPurify) return _fallbackSanitize(html)
-  return DOMPurify.sanitize(html, {
+
+  // Check if input has a DOCTYPE declaration
+  var inputHasDocType = /^\s*<!DOCTYPE\s/i.test(html)
+
+  var result = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
       'html', 'head', 'body', 'title', 'script', 'link', 'meta',
       'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -110,6 +114,13 @@ async function sanitize(html) {
     KEEP_CONTENT: true,
     ALLOWED_URI_REGEXP: /^(?:(?:https?|data):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i
   })
+
+  // DOMPurify strips DOCTYPE; restore it if the input had one
+  if (inputHasDocType && !/^\s*<!DOCTYPE\s/i.test(result)) {
+    result = '<!DOCTYPE html>\n' + result
+  }
+
+  return result
 }
 
 // Fallback when DOMPurify/jsdom are unavailable (ESM load failure)

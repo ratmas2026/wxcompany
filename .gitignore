@@ -3,3 +3,8 @@ server/uploads/
 project.private.config.json
 server/data.db
 .env
+*.key
+*.pem
+*.zip
+memory.md
+部署方案.txt

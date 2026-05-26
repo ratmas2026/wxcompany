@@ -79,7 +79,7 @@ Page({
         return
       }
       const detail = profile.detail
-      detail.images = (detail.images || []).map(img => api.staticUrl(img))
+      detail.images = (detail.images || []).map(img => api.staticUrl(img, { w: 750 }))
       detail.video = api.staticUrl(detail.video)
       const processed = this.processBodyHtml(detail.body || '')
       this.setData({

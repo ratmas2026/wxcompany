@@ -63,7 +63,7 @@
             <span class="template-card-name">${Admin._escapeHTML(t.name)}</span>
           </div>
           <div class="template-card-preview">
-            <iframe sandbox="allow-scripts" srcdoc="" data-id="${t.id}" loading="lazy"></iframe>
+            <iframe sandbox="allow-scripts allow-same-origin" srcdoc="" data-id="${t.id}" loading="lazy"></iframe>
           </div>
           <div class="template-card-meta-row">
             <span>${formatSize(t.size)}</span>
@@ -193,7 +193,7 @@
           <button class="btn btn-sm btn-secondary" onclick="closePreview()">关闭</button>
         </div>
         <div class="template-preview-body">
-          <iframe id="previewFrame" sandbox="allow-scripts" srcdoc=""></iframe>
+          <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin" srcdoc=""></iframe>
         </div>
       </div>`
     overlay.addEventListener('click', function(e) {

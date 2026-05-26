@@ -75,11 +75,11 @@ Page({
             middle: { textBoxes: (zones.middle && zones.middle.textBoxes) || [] },
             bottom: { textBoxes: (zones.bottom && zones.bottom.textBoxes) || [] }
           }
-          p.cover.backgroundImage = api.staticUrl(p.cover.backgroundImage)
+          p.cover.backgroundImage = api.staticUrl(p.cover.backgroundImage, { w: 720 })
           p.cover.video = api.staticUrl(p.cover.video)
         }
         if (p.detail) {
-          p.detail.images = (p.detail.images || []).map(img => api.staticUrl(img))
+          p.detail.images = (p.detail.images || []).map(img => api.staticUrl(img, { w: 750 }))
           p.detail.video = api.staticUrl(p.detail.video)
         }
         if (p.cover && p.cover.zones) {
@@ -90,7 +90,7 @@ Page({
                 fontSizeRpx: FONT_SIZE_MAP[tb.fontSize] || '32rpx'
               }
               if (result.role && result.role.avatar) {
-                result.role = { ...result.role, avatar: api.staticUrl(result.role.avatar) }
+                result.role = { ...result.role, avatar: api.staticUrl(result.role.avatar, { w: 144, h: 144 }) }
               }
               return result
             })
@@ -206,7 +206,7 @@ Page({
     return api.getHonors().then(honors => {
       const awards = (honors || []).map(h => ({
         ...h,
-        image: api.staticUrl(h.image)
+        image: api.staticUrl(h.image, { w: 320 })
       }))
       this.setData({ awards })
     }).catch(() => {})
@@ -217,7 +217,7 @@ Page({
       const published = (videos || []).filter(v => v.status === 'published').map(v => ({
         ...v,
         url: api.staticUrl(v.url),
-        cover: api.staticUrl(v.cover)
+        cover: api.staticUrl(v.cover, { w: 320 })
       }))
       this.setData({ videos: published })
     }).catch(() => {})
@@ -227,8 +227,8 @@ Page({
     return api.getProjects().then(projects => {
       const items = (projects || []).map(p => ({
         ...p,
-        image: api.staticUrl(p.image),
-        images: (p.images || []).map(img => api.staticUrl(img))
+        image: api.staticUrl(p.image, { w: 320 }),
+        images: (p.images || []).map(img => api.staticUrl(img, { w: 320 }))
       }))
       this.setData({ projects: items })
     }).catch(() => {})
@@ -253,11 +253,11 @@ Page({
             middle: { textBoxes: (zones.middle && zones.middle.textBoxes) || [] },
             bottom: { textBoxes: (zones.bottom && zones.bottom.textBoxes) || [] }
           }
-          p.cover.backgroundImage = api.staticUrl(p.cover.backgroundImage)
+          p.cover.backgroundImage = api.staticUrl(p.cover.backgroundImage, { w: 720 })
           p.cover.video = api.staticUrl(p.cover.video)
         }
         if (p.detail) {
-          p.detail.images = (p.detail.images || []).map(img => api.staticUrl(img))
+          p.detail.images = (p.detail.images || []).map(img => api.staticUrl(img, { w: 750 }))
           p.detail.video = api.staticUrl(p.detail.video)
         }
         if (p.cover && p.cover.zones) {
@@ -268,7 +268,7 @@ Page({
                 fontSizeRpx: FONT_SIZE_MAP[tb.fontSize] || '32rpx'
               }
               if (result.role && result.role.avatar) {
-                result.role = { ...result.role, avatar: api.staticUrl(result.role.avatar) }
+                result.role = { ...result.role, avatar: api.staticUrl(result.role.avatar, { w: 144, h: 144 }) }
               }
               return result
             })
@@ -388,7 +388,7 @@ Page({
     ]).then(([modules, config]) => {
       const allModules = (modules || []).filter(m => m.status !== false).map(m => ({
         ...m,
-        coverImage: api.staticUrl(m.coverImage)
+        coverImage: api.staticUrl(m.coverImage, { w: 720 })
       }))
       const configSections = (config.sections || [])
         .filter(sec => sec.status !== false)

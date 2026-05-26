@@ -156,6 +156,25 @@ describe('sanitize', () => {
     expect(result).toContain('Hi')
   })
 
+  it('preserves DOCTYPE declaration', async () => {
+    const result = await sanitizer.sanitize('<!DOCTYPE html><html lang="en"><head></head><body><p>Hi</p></body></html>')
+    expect(result).toMatch(/^<!DOCTYPE html>/)
+    expect(result).toContain('<html')
+    expect(result).toContain('<body>')
+    expect(result).toContain('Hi')
+  })
+
+  it('does not add DOCTYPE when input has none', async () => {
+    const result = await sanitizer.sanitize('<div>Hello</div>')
+    expect(result).not.toMatch(/^<!DOCTYPE/)
+    expect(result).toContain('Hello')
+  })
+
+  it('preserves DOCTYPE with leading whitespace', async () => {
+    const result = await sanitizer.sanitize('\n\n<!DOCTYPE html><html></html>')
+    expect(result).toMatch(/^<!DOCTYPE html>/)
+  })
+
   it('strips onclick event handlers', async () => {
     const result = await sanitizer.sanitize('<div onclick="alert(1)">Click</div>')
     expect(result).not.toContain('onclick')

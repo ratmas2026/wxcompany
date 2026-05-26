@@ -146,11 +146,38 @@ const getBusinessModuleCard = (moduleId, cardId) => request('/business-modules/'
 const getUserByPhone = (phone) => request('/user/phone/' + phone)
 
 // 将服务器相对路径转为完整URL（用于图片/视频等静态资源）
-const staticUrl = (path) => {
+// 支持可选的图片处理参数，对接 OSS/CDN 的实时转换能力
+// 示例: staticUrl('/uploads/a.jpg', { w: 300, h: 300 }) → 裁剪为300x300
+// 当 STATIC_BASE 指向 OSS 时自动追加 x-oss-process 参数
+// 当 STATIC_BASE 为普通服务器时参数被忽略（无副作用）
+const staticUrl = (path, options) => {
   if (!path) return ''
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path
   if (!path.startsWith('/')) path = '/' + path
-  return STATIC_BASE + path
+
+  var url = STATIC_BASE + path
+
+  // 图片处理参数（对接 OSS/CDN 时生效）
+  if (options) {
+    var params = []
+    // 尺寸裁剪：仅指定宽或高时等比缩放，同时指定时裁剪填充
+    if (options.w || options.h) {
+      if (options.w && options.h) {
+        params.push('x-oss-process=image/resize,m_fill,w_' + options.w + ',h_' + options.h + ',limit_0')
+      } else if (options.w) {
+        params.push('x-oss-process=image/resize,w_' + options.w)
+      } else {
+        params.push('x-oss-process=image/resize,h_' + options.h)
+      }
+    }
+    // WebP 格式转换（微信小程序全面支持）
+    if (options.webp !== false) {
+      params.push('x-oss-process=image/format,webp')
+    }
+    if (params.length) url = url + '?' + params.join('|')
+  }
+
+  return url
 }
 
 module.exports = {

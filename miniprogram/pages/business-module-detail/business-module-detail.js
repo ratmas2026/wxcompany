@@ -34,11 +34,11 @@ Page({
             middle: { textBoxes: (zones.middle && zones.middle.textBoxes) || [] },
             bottom: { textBoxes: (zones.bottom && zones.bottom.textBoxes) || [] }
           }
-          card.cover.backgroundImage = api.staticUrl(card.cover.backgroundImage)
+          card.cover.backgroundImage = api.staticUrl(card.cover.backgroundImage, { w: 720 })
           card.cover.video = api.staticUrl(card.cover.video)
         }
         if (card.detail) {
-          card.detail.images = (card.detail.images || []).map(img => api.staticUrl(img))
+          card.detail.images = (card.detail.images || []).map(img => api.staticUrl(img, { w: 750 }))
           card.detail.video = api.staticUrl(card.detail.video)
         }
         if (card.cover && card.cover.zones) {
@@ -46,7 +46,7 @@ Page({
             card.cover.zones[zoneKey].textBoxes = (card.cover.zones[zoneKey].textBoxes || []).map(tb => {
               const result = { ...tb, fontSizeRpx: FONT_SIZE_MAP[tb.fontSize] || '32rpx' }
               if (result.role && result.role.avatar) {
-                result.role = { ...result.role, avatar: api.staticUrl(result.role.avatar) }
+                result.role = { ...result.role, avatar: api.staticUrl(result.role.avatar, { w: 144, h: 144 }) }
               }
               return result
             })

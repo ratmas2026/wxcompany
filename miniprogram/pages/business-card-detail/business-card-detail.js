@@ -68,7 +68,7 @@ Page({
       if (!card) { wx.showToast({ title: '卡片不存在', icon: 'none' }); return }
 
       const detail = card.detail || {}
-      detail.images = (detail.images || []).map(img => api.staticUrl(img))
+      detail.images = (detail.images || []).map(img => api.staticUrl(img, { w: 750 }))
       detail.video = api.staticUrl(detail.video)
       card.detail = detail
 

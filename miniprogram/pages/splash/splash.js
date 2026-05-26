@@ -40,7 +40,7 @@ Page({
         const valid = images.filter(img => img.url && img.url.length > 0)
         if (valid.length) {
           const random = valid[Math.floor(Math.random() * valid.length)]
-          this.setData({ currentImage: api.staticUrl(random.url) })
+          this.setData({ currentImage: api.staticUrl(random.url, { w: 750 }) })
         }
       }
     }).catch(err => {
