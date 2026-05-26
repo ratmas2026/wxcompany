@@ -115,6 +115,7 @@ var PROJECTS_DIR = path.join(UPLOADS_DIR, 'projects')
 var EDITOR_DIR = path.join(UPLOADS_DIR, 'editor')
 var BUSINESS_MODULES_DIR = path.join(UPLOADS_DIR, 'business-modules')
 var PERFORMANCE_DIR = path.join(UPLOADS_DIR, 'performance')
+var TEMPLATES_DIR = path.join(__dirname, 'templates')
 
 // Ensure upload directories exist
 if (!fs.existsSync(VIDEOS_DIR)) fs.mkdirSync(VIDEOS_DIR, { recursive: true })
@@ -127,6 +128,7 @@ if (!fs.existsSync(PROJECTS_DIR)) fs.mkdirSync(PROJECTS_DIR, { recursive: true }
 if (!fs.existsSync(EDITOR_DIR)) fs.mkdirSync(EDITOR_DIR, { recursive: true })
 if (!fs.existsSync(BUSINESS_MODULES_DIR)) fs.mkdirSync(BUSINESS_MODULES_DIR, { recursive: true })
 if (!fs.existsSync(PERFORMANCE_DIR)) fs.mkdirSync(PERFORMANCE_DIR, { recursive: true })
+if (!fs.existsSync(TEMPLATES_DIR)) fs.mkdirSync(TEMPLATES_DIR, { recursive: true })
 
 // Multer config
 var videoStorage = multer.diskStorage({
@@ -228,6 +230,16 @@ var performanceStorage = multer.diskStorage({
   }
 })
 var uploadPerformance = multer({ storage: performanceStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
+
+var templateStorage = multer.diskStorage({
+  destination: function(req, file, cb) { cb(null, TEMPLATES_DIR) },
+  filename: function(req, file, cb) { cb(null, file.originalname) }
+})
+function templateFilter(req, file, cb) {
+  if (file.mimetype === 'text/html') { cb(null, true) }
+  else { cb(new Error('仅支持 HTML 文件'), false) }
+}
+var uploadTemplate = multer({ storage: templateStorage, limits: { fileSize: 100 * 1024 }, fileFilter: templateFilter })
 
 app.use(cors())
 app.use(compression())
@@ -1345,7 +1357,7 @@ app.put('/api/cards/:id', (req, res) => {
   const data = readData()
   const idx = data.cards.findIndex(c => c.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.cards[idx] = { ...data.cards[idx], ...pick(req.body, 'name', 'phone', 'title', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status'), id: data.cards[idx].id }
+  data.cards[idx] = { ...data.cards[idx], ...pick(req.body, 'name', 'phone', 'title', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'template'), id: data.cards[idx].id }
   writeData(data)
   res.json(data.cards[idx])
 })
@@ -1493,6 +1505,87 @@ app.post('/api/reset', (req, res) => {
     writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], honors: [], projects: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1, projects: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1 } })
   }
   res.json({ ok: true })
+})
+
+// --- Card Templates API ---
+// List all templates
+app.get('/api/templates', (req, res) => {
+  try {
+    const files = fs.readdirSync(TEMPLATES_DIR).filter(f => f.endsWith('.html'))
+    const templates = files.map(f => {
+      const stat = fs.statSync(path.join(TEMPLATES_DIR, f))
+      return { filename: f, name: f.replace('.html', ''), size: stat.size, uploadedAt: stat.mtime.toISOString() }
+    })
+    res.json({ ok: true, templates })
+  } catch (e) {
+    res.json({ ok: true, templates: [] })
+  }
+})
+
+// Upload template
+app.post('/api/templates', uploadTemplate.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ ok: false, error: '请选择 HTML 文件' })
+  res.json({ ok: true, filename: req.file.filename })
+})
+
+// Delete template
+app.delete('/api/templates/:filename', (req, res) => {
+  const filename = req.params.filename
+  // Sanitize: prevent directory traversal
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(400).json({ ok: false, error: 'Invalid filename' })
+  }
+  const filePath = path.join(TEMPLATES_DIR, filename)
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ ok: false, error: 'Template not found' })
+  }
+  try {
+    fs.unlinkSync(filePath)
+    // Clear template reference from all cards that use this template
+    const data = readData()
+    let changed = false
+    data.cards.forEach(c => {
+      if (c.template === filename) { c.template = ''; changed = true }
+    })
+    if (changed) writeData(data)
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'Failed to delete template' })
+  }
+})
+
+// Preview template with card data
+app.get('/api/templates/:filename/preview', (req, res) => {
+  const filename = req.params.filename
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(400).send('Invalid filename')
+  }
+  const filePath = path.join(TEMPLATES_DIR, filename)
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('Template not found')
+  }
+  try {
+    let html = fs.readFileSync(filePath, 'utf-8')
+    const cardId = parseInt(req.query.cardId)
+    const data = readData()
+    const card = data.cards.find(c => c.id === cardId)
+    if (card) {
+      const fields = ['name', 'company', 'title', 'phone', 'email', 'address', 'department', 'avatar', 'bio']
+      fields.forEach(f => {
+        html = html.replace(new RegExp('\\{\\{' + f + '\\}\\}', 'g'), card[f] || '')
+      })
+    } else {
+      // No card selected: replace with placeholder hints
+      const fields = ['name', 'company', 'title', 'phone', 'email', 'address', 'department', 'avatar', 'bio']
+      fields.forEach(f => {
+        html = html.replace(new RegExp('\\{\\{' + f + '\\}\\}', 'g'), '[' + f + ']')
+      })
+    }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.send(html)
+  } catch (e) {
+    res.status(500).send('Preview error')
+  }
 })
 
 // ADMIN_SECRET is intentionally NOT exported — it must stay private

@@ -2,7 +2,7 @@
   width: 100vw;
   height: 100vh;
   position: relative;
-  background: #1a3a6a;
+  background: #0f0f1a;
 }
 
 /* 兜底渐变背景 */

@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS cards (
   id INTEGER PRIMARY KEY,
   name TEXT, phone TEXT, title TEXT, department TEXT, company TEXT,
   email TEXT, address TEXT, avatar TEXT, bio TEXT,
-  status INTEGER DEFAULT 1, created_at TEXT
+  status INTEGER DEFAULT 1, created_at TEXT, template TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -139,6 +139,9 @@ function initDatabase() {
     // Migration: drop legacy business table (replaced by business_modules)
     db.run('DROP TABLE IF EXISTS business');
 
+    // Migration: add template column to cards
+    try { db.run('ALTER TABLE cards ADD COLUMN template TEXT DEFAULT \'\''); } catch (e) { /* already exists */ }
+
     save();  // Persist DDL changes (new tables/columns) to disk
 
     const row = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='cards'");
@@ -165,11 +168,11 @@ function migrateFromJSON() {
 
   // Cards
   const insCard = db.prepare(
-    'INSERT INTO cards (id,name,phone,title,department,company,email,address,avatar,bio,status,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
+    'INSERT INTO cards (id,name,phone,title,department,company,email,address,avatar,bio,status,created_at,template) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
   );
   (data.cards || []).forEach(function(c) {
     insCard.run([c.id, c.name||'', c.phone||'', c.title||'', c.department||'', c.company||'',
-      c.email||'', c.address||'', c.avatar||'', c.bio||'', c.status?1:0, c.createdAt||'']);
+      c.email||'', c.address||'', c.avatar||'', c.bio||'', c.status?1:0, c.createdAt||'', c.template||'']);
   });
   insCard.free();
 
@@ -305,7 +308,7 @@ function readData() {
       id: c.id, name: c.name || '', phone: c.phone || '', title: c.title || '',
       department: c.department || '', company: c.company || '', email: c.email || '',
       address: c.address || '', avatar: c.avatar || '', bio: c.bio || '',
-      status: !!c.status, createdAt: c.created_at || ''
+      status: !!c.status, createdAt: c.created_at || '', template: c.template || ''
     };
   });
 
@@ -512,10 +515,10 @@ function _writeDataImpl(data) {
 
   // Cards
   syncTable('cards',
-    ['id','name','phone','title','department','company','email','address','avatar','bio','status','created_at'],
+    ['id','name','phone','title','department','company','email','address','avatar','bio','status','created_at','template'],
     data.cards,
     function(c) { return [c.id, c.name||'', c.phone||'', c.title||'', c.department||'', c.company||'',
-      c.email||'', c.address||'', c.avatar||'', c.bio||'', c.status?1:0, c.createdAt||'']; }
+      c.email||'', c.address||'', c.avatar||'', c.bio||'', c.status?1:0, c.createdAt||'', c.template||'']; }
   );
 
   // Messages

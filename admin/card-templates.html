@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>名片模板 - Admin Panel</title>
+<link rel="stylesheet" href="css/common.css"/>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="templateFileInput" accept=".html" style="display:none">
+
+<script>
+(async function() {
+  Admin.init('card-templates')
+  Admin.track('page_view', { page: 'card-templates' })
+
+  let templates = []
+  let cards = []
+
+  async function loadData() {
+    try {
+      const tRes = await DataStore.getTemplates()
+      templates = (tRes && tRes.templates) || []
+    } catch (e) { templates = [] }
+    cards = DataStore.getCards()
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / 1048576).toFixed(1) + ' MB'
+  }
+
+  function formatDate(iso) {
+    if (!iso) return ''
+    return iso.split('T')[0] + ' ' + iso.slice(11, 16)
+  }
+
+  function render() {
+    let bodyHTML
+    if (templates.length === 0) {
+      bodyHTML = '<div class="template-empty"><div class="empty-icon">&#x1F4C4;</div><p>暂无模板</p><p style="font-size:12px;color:var(--outline);margin-top:4px">点击右上角上传 HTML 模板文件</p></div>'
+    } else {
+      const gridItems = templates.map(t => `
+        <div class="template-card">
+          <div class="template-card-preview">
+            <iframe src="${API_BASE}/templates/${encodeURIComponent(t.filename)}/preview?cardId=${cards[0] ? cards[0].id : 0}" loading="lazy"></iframe>
+          </div>
+          <div class="template-card-info">
+            <div>
+              <div class="template-card-name">${Admin._escapeHTML(t.name)}</div>
+              <div class="template-card-meta">${formatSize(t.size)} · ${formatDate(t.uploadedAt)}</div>
+            </div>
+            <div class="template-card-actions">
+              <button class="btn btn-sm btn-outline" onclick="previewTemplate('${Admin._escapeHTML(t.filename)}')">预览</button>
+              <button class="btn btn-sm btn-outline" onclick="downloadTemplate('${Admin._escapeHTML(t.filename)}')">下载</button>
+              <button class="btn btn-sm btn-outline" style="color:var(--error);border-color:var(--error)" onclick="deleteTemplate('${Admin._escapeHTML(t.filename)}')">删除</button>
+            </div>
+          </div>
+        </div>
+      `).join('')
+      bodyHTML = '<div class="template-grid">' + gridItems + '</div>'
+    }
+
+    Admin.setPageContent(`
+      <div class="page-header">
+        <h1>名片模板</h1>
+        <div class="toolbar-right">
+          <button class="btn btn-primary" id="uploadBtn">+ 上传模板</button>
+        </div>
+      </div>
+      <div class="form-hint" style="margin-bottom:16px">上传 HTML 模板文件，使用 {{name}}、{{company}}、{{title}} 等占位符，预览时自动替换为名片数据</div>
+      ${bodyHTML}
+    `)
+
+    document.getElementById('uploadBtn').addEventListener('click', function() {
+      document.getElementById('templateFileInput').click()
+    })
+  }
+
+  // Upload handler
+  document.getElementById('templateFileInput').addEventListener('change', async function(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.name.endsWith('.html')) {
+      Admin.showToast('仅支持 .html 文件', 'error')
+      e.target.value = ''
+      return
+    }
+    try {
+      const data = await DataStore.uploadTemplate(file)
+      if (data && data.ok) {
+        Admin.showToast('模板上传成功', 'success')
+        Admin.track('template_upload', { filename: file.name })
+        await loadData()
+        render()
+      } else {
+        Admin.showToast((data && data.error) || '上传失败', 'error')
+      }
+    } catch (err) {
+      Admin.showToast('上传失败，请重试', 'error')
+    }
+    e.target.value = ''
+  })
+
+  // Preview
+  window.previewTemplate = function(filename) {
+    if (cards.length === 0) {
+      Admin.showToast('暂无名片数据，请先创建名片', 'error')
+      return
+    }
+    const options = cards.map(c => '<option value="' + c.id + '">' + Admin._escapeHTML(c.name) + ' - ' + Admin._escapeHTML(c.title || '') + '</option>').join('')
+    const overlay = document.createElement('div')
+    overlay.className = 'template-preview-overlay'
+    overlay.id = 'previewOverlay'
+    overlay.innerHTML = `
+      <div class="template-preview-modal">
+        <div class="template-preview-header">
+          <h3>模板预览</h3>
+          <select id="previewCardSelect">${options}</select>
+          <button class="btn btn-sm btn-secondary" onclick="closePreview()">关闭</button>
+        </div>
+        <div class="template-preview-body">
+          <iframe id="previewFrame" src="${API_BASE}/templates/${encodeURIComponent(filename)}/preview?cardId=${cards[0].id}"></iframe>
+        </div>
+      </div>
+    `
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) closePreview()
+    })
+    document.body.appendChild(overlay)
+
+    document.getElementById('previewCardSelect').addEventListener('change', function() {
+      document.getElementById('previewFrame').src = API_BASE + '/templates/' + encodeURIComponent(filename) + '/preview?cardId=' + this.value
+    })
+  }
+
+  window.closePreview = function() {
+    const overlay = document.getElementById('previewOverlay')
+    if (overlay) overlay.remove()
+  }
+
+  // Download
+  window.downloadTemplate = function(filename) {
+    window.open(API_BASE + '/templates/' + encodeURIComponent(filename) + '/preview?cardId=' + (cards[0] ? cards[0].id : 0), '_blank')
+  }
+
+  // Delete
+  window.deleteTemplate = function(filename) {
+    Admin.confirmDelete('确定删除模板「' + filename.replace('.html', '') + '」？关联此模板的名片将恢复为无模板状态。', async function() {
+      try {
+        const data = await DataStore.deleteTemplate(filename)
+        if (data && data.ok) {
+          Admin.showToast('模板已删除', 'success')
+          Admin.track('template_delete', { filename: filename })
+          await loadData()
+          render()
+        } else {
+          Admin.showToast((data && data.error) || '删除失败', 'error')
+        }
+      } catch (e) {
+        Admin.showToast('删除失败，请重试', 'error')
+      }
+    })
+  }
+
+  await loadData()
+  render()
+})()
+</script>
+</body>
+</html>

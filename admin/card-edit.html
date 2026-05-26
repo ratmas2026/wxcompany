@@ -27,7 +27,8 @@
   const defaultCompany = defaultCI ? (defaultCI.name || '') : ''
   const defaultAddress = defaultCI ? (defaultCI.address || '') : ''
 
-  let card = { id: null, name: '', title: '', company: defaultCompany, phone: '', email: '', department: '', avatar: '', bio: '', address: defaultAddress, style: 'cyberpunk' }
+  let card = { id: null, name: '', title: '', company: defaultCompany, phone: '', email: '', department: '', avatar: '', bio: '', address: defaultAddress, template: '' }
+  let templates = []
   let selectedAvatarFile = null       // File object for upload
   let selectedAvatarPreviewUrl = null // Object URL or server URL for preview
 
@@ -117,9 +118,10 @@
               <input class="form-input" id="cardAddress" value="${escapeHtml(card.address || '')}" placeholder="选择企业后自动填充，也可手动修改">
             </div>
             <div class="form-group">
-              <label class="form-label">风格选择</label>
-              <select class="form-select" id="cardStyle">
-                <option value="cyberpunk" ${card.style === 'cyberpunk' ? 'selected' : ''}>赛博朋克</option>
+              <label class="form-label">名片模板</label>
+              <select class="form-select" id="cardTemplate">
+                <option value="">无模板</option>
+                ${templates.map(t => `<option value="${Admin._escapeHTML(t.filename)}" ${card.template === t.filename ? 'selected' : ''}>${Admin._escapeHTML(t.name)}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -185,7 +187,7 @@
     const emailVal = document.getElementById('cardEmail').value.trim()
     const addressVal = document.getElementById('cardAddress').value.trim()
     const bioVal = document.getElementById('cardBio').value.trim()
-    const styleVal = document.getElementById('cardStyle').value
+    const templateVal = document.getElementById('cardTemplate').value
 
     if (!nameVal) { Admin.showToast('请输入姓名', 'error'); return }
     if (!titleVal) { Admin.showToast('请选择职位', 'error'); return }
@@ -220,7 +222,7 @@
       email: emailVal,
       address: addressVal,
       bio: bioVal,
-      style: styleVal,
+      template: templateVal,
       avatar: avatarUrl,
       status: card.status !== undefined ? card.status : true
     }
@@ -234,6 +236,12 @@
   }
 
   window.onGlobalSearch = function() {}
+
+  // Load templates for the dropdown
+  try {
+    const tRes = await DataStore.getTemplates()
+    templates = (tRes && tRes.templates) || []
+  } catch (e) { /* use empty list */ }
 
   render()
 })()

@@ -796,6 +796,29 @@ const DataStore = {
   async markAllNotificationsRead() {
     const res = await authFetch(API_BASE + '/notifications/read-all', { method: 'PUT' })
     return res.json()
+  },
+
+  // --- Card Templates ---
+  async getTemplates() {
+    const res = await authFetch(API_BASE + '/templates')
+    return res.json()
+  },
+
+  async uploadTemplate(file) {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await authFetch(API_BASE + '/templates', { method: 'POST', body: fd })
+    return res.json()
+  },
+
+  async deleteTemplate(filename) {
+    const res = await authFetch(API_BASE + '/templates/' + encodeURIComponent(filename), { method: 'DELETE' })
+    return res.json()
+  },
+
+  async previewTemplate(filename, cardId) {
+    const res = await authFetch(API_BASE + '/templates/' + encodeURIComponent(filename) + '/preview?cardId=' + cardId)
+    return res.text()
   }
 
 }
