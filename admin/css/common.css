@@ -668,6 +668,7 @@ tr:hover td { background: var(--surface-container-low); }
   box-shadow: 0 0 0 3px var(--primary-light);
 }
 .form-textarea { min-height: 100px; resize: vertical; }
+.form-select { padding-right: 4px; }
 .form-hint {
   font-size: 11px;
   color: var(--outline);
