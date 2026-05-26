@@ -451,6 +451,9 @@ app.get('/api/company-infos/:id', (req, res) => {
 
 app.post('/api/company-infos', (req, res) => {
   const data = readData()
+  if ((data.companyInfos || []).length >= 1) {
+    return res.status(400).json({ error: '仅允许创建一个企业信息，请编辑现有条目' })
+  }
   if (!data.companyInfos) data.companyInfos = []
   if (!data.nextId.companyInfos) data.nextId.companyInfos = 1
   const item = {
