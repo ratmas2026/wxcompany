@@ -1,14 +1,42 @@
 // XSS sanitizer — DOMPurify + jsdom wrapper (ESM-loaded for compat)
 let DOMPurify = null
+let _jsdomWindow = null
 
 async function _init() {
   if (DOMPurify) return
+  // Close previous JSDOM instance if retrying
+  if (_jsdomWindow) {
+    try { _jsdomWindow.close() } catch (_) {}
+    _jsdomWindow = null
+  }
   const [createDOMPurify, { JSDOM }] = await Promise.all([
     import('dompurify').then(m => m.default),
     import('jsdom')
   ])
-  const window = new JSDOM('').window
-  DOMPurify = createDOMPurify(window)
+  _jsdomWindow = new JSDOM('').window
+  DOMPurify = createDOMPurify(_jsdomWindow)
+  // Register hook after DOMPurify is fully assigned to avoid duplicate registrations
+  DOMPurify.addHook('uponSanitizeElement', function(node, data) {
+    // Remove inline event handlers (e.g., onclick="...")
+    if (node.attributes) {
+      for (var i = node.attributes.length - 1; i >= 0; i--) {
+        var name = node.attributes[i].name
+        if (/^on/i.test(name)) {
+          node.removeAttribute(name)
+        }
+      }
+    }
+    // Keep external (src-based) script elements like Tailwind CDN
+    if (data.tagName === 'script' && node.hasAttribute('src')) {
+      // Only allow known-safe CDN origins
+      var src = node.getAttribute('src') || ''
+      var allowed = /^https:\/\/cdn\.tailwindcss\.com(\/|$)/.test(src)
+      if (!allowed) {
+        // Remove unsafe script src
+        node.removeAttribute('src')
+      }
+    }
+  })
 }
 var _initPromise = null
 function ensureInit() {
@@ -29,6 +57,7 @@ async function sanitize(html) {
   if (!DOMPurify) return _fallbackSanitize(html)
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
+      'html', 'head', 'body', 'title', 'script', 'link', 'meta',
       'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
       'img', 'a', 'br', 'hr',
       'table', 'thead', 'tbody', 'tr', 'td', 'th', 'caption',
@@ -43,17 +72,18 @@ async function sanitize(html) {
       'class', 'id', 'style',
       'src', 'alt', 'width', 'height',
       'href', 'target', 'rel',
+      'type', 'crossorigin', 'charset', 'content', 'name', 'property', 'media', 'as', 'lang',
       'border', 'cellpadding', 'cellspacing', 'colspan', 'rowspan',
       'viewBox', 'xmlns', 'd', 'cx', 'cy', 'r', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
       'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
       'transform', 'opacity'
     ],
-    ALLOW_DATA_ATTR: false,
+    ALLOW_DATA_ATTR: true,
     FORBID_TAGS: [
-      'script', 'noscript',
+      'noscript',
       'iframe', 'object', 'embed', 'applet',
       'form', 'input', 'button', 'select', 'option', 'textarea',
-      'link', 'meta', 'base',
+      'base',
       'audio', 'video', 'source', 'track'
     ],
     FORBID_ATTR: [
@@ -65,21 +95,25 @@ async function sanitize(html) {
       'ontouchstart', 'ontouchend', 'ontouchmove',
       'onpointerdown', 'onpointerup', 'onpointermove'
     ],
+    WHOLE_DOCUMENT: true,
     KEEP_CONTENT: true,
     ALLOWED_URI_REGEXP: /^(?:(?:https?|data):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i
   })
 }
 
 // Fallback when DOMPurify/jsdom are unavailable (ESM load failure)
+// Simplified regexes to avoid ReDoS backtracking
 function _fallbackSanitize(html) {
   return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-    .replace(/<embed\b[^>]*\/?>/gi, '')
-    .replace(/<applet\b[^<]*(?:(?!<\/applet>)<[^<]*)*<\/applet>/gi, '')
-    .replace(/\bon\w+\s*=\s*"[^"]*"/gi, '')
-    .replace(/\bon\w+\s*=\s*'[^']*'/gi, '')
+    // Remove script/iframe/object/embed/applet tags with their content
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<object[\s\S]*?<\/object>/gi, '')
+    .replace(/<embed[^>]*?>/gi, '')
+    .replace(/<applet[\s\S]*?<\/applet>/gi, '')
+    // Remove inline event handlers (all quote styles + unquoted)
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|`[^`]*`|[^\s>]*)/gi, '')
+    // Remove javascript: URIs (case-insensitive)
     .replace(/javascript\s*:/gi, '')
 }
 

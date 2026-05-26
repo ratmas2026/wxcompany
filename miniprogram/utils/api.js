@@ -6,10 +6,25 @@ const STATIC_BASE = config.STATIC_BASE
 const _inflight = new Map()
 const _cache = new Map()
 const CACHE_TTL = 30000 // GET 响应缓存 30 秒
+const MAX_CACHE_SIZE = 200  // 防止无限增长
+
+// 定期清理过期缓存（每 60 秒）
+function _cleanExpiredCache() {
+  const now = Date.now()
+  for (const [key, entry] of _cache) {
+    if (now - entry.ts >= CACHE_TTL) _cache.delete(key)
+  }
+}
+setInterval(_cleanExpiredCache, 60000)
 
 function _cacheKey(url, options) {
-  const method = (options.method || 'GET').toUpperCase()
-  return method + ':' + url + ':' + JSON.stringify(options.data || {})
+  try {
+    const method = (options.method || 'GET').toUpperCase()
+    return method + ':' + url + ':' + JSON.stringify(options.data || {})
+  } catch (e) {
+    // If data contains circular references, fall back to a non-cacheable key
+    return method + ':' + url + ':__unstringifiable__'
+  }
 }
 
 function request(url, options = {}) {
@@ -35,7 +50,18 @@ function request(url, options = {}) {
       header: { 'Content-Type': 'application/json', ...options.header },
       success: (res) => {
         if (res.statusCode === 200) {
-          if (method === 'GET') _cache.set(key, { data: res.data, ts: Date.now() })
+          if (method === 'GET') {
+            if (_cache.size >= MAX_CACHE_SIZE) {
+              // Evict the oldest entry
+              let oldestKey = null
+              let oldestTs = Infinity
+              for (const [k, entry] of _cache) {
+                if (entry.ts < oldestTs) { oldestTs = entry.ts; oldestKey = k }
+              }
+              if (oldestKey) _cache.delete(oldestKey)
+            }
+            _cache.set(key, { data: res.data, ts: Date.now() })
+          }
           resolve(res.data)
         } else {
           reject(res)

@@ -17,6 +17,7 @@ const WHITELIST = [
  * @returns {string} HTML with placeholders replaced
  */
 function renderTemplate(html, data) {
+  if (!data) return html
   return html.replace(/\{\{([\w.]+)\}\}/g, (match, key) => {
     if (!WHITELIST.includes(key)) return ''
     // qr_code is a top-level key (not namespaced)
@@ -34,6 +35,7 @@ function renderTemplate(html, data) {
  * Used for TXT templates where wrapTxtAsHtml handles all escaping.
  */
 function renderTemplateRaw(html, data) {
+  if (!data) return html
   return html.replace(/\{\{([\w.]+)\}\}/g, (match, key) => {
     if (!WHITELIST.includes(key)) return ''
     if (key === 'qr_code') return data.qr_code || ''

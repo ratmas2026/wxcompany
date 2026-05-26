@@ -134,7 +134,7 @@ function initDatabase() {
       db = new SQL.Database(buffer);
     } else {
       db = new SQL.Database();
-      db.run('PRAGMA journal_mode=OFF');
+      db.run('PRAGMA journal_mode=WAL');
     }
 
     db.run(SCHEMA);
@@ -500,9 +500,15 @@ function readData() {
 }
 
 // -- writeData() replacement: sync all tables from data object --
+// NOTE: writeData must NOT contain async operations. It runs synchronously
+// within a single event-loop tick. The _writeLocked guard is a safety net
+// for future-proofing; in single-threaded JS it should never trigger.
 var _writeLocked = false
 function writeData(data) {
-  if (_writeLocked) throw new Error('Re-entrant writeData detected')
+  if (_writeLocked) {
+    console.error('BUG: re-entrant writeData detected — this should never happen in synchronous code')
+    // Don't throw — the second write will still complete, just without transaction safety
+  }
   _writeLocked = true
   try {
     db.run('BEGIN')

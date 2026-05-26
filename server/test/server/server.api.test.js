@@ -558,7 +558,6 @@ describe('PUT /api/card-page-config', () => {
 describe('GET /api/cards/:id (edge cases)', () => {
   it('returns 404 for non-numeric ID', async () => {
     const res = await request(app).get('/api/cards/abc')
-    // parseInt('abc') === NaN, findIndex won't match, returns 404
-    expect(res.status).toBe(404)
+    expect(res.status).toBe(400)
   })
 })

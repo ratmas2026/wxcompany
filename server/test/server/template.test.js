@@ -125,38 +125,55 @@ describe('wrapHtmlDocument', () => {
 // sanitizer: sanitize
 // ============================================================
 describe('sanitize', () => {
-  it('strips <script> tags', () => {
-    const result = sanitizer.sanitize('<div>Hello</div><script>alert(1)</script>')
-    expect(result).not.toContain('<script>')
-    expect(result).not.toContain('alert(1)')
+  it('allows inline <script> tags (security via iframe sandbox)', async () => {
+    const result = await sanitizer.sanitize('<div>Hello</div><script>alert(1)</script>')
+    expect(result).toContain('<script>')
+    expect(result).toContain('alert(1)')
     expect(result).toContain('Hello')
   })
 
-  it('strips onclick event handlers', () => {
-    const result = sanitizer.sanitize('<div onclick="alert(1)">Click</div>')
+  it('preserves external <script src> tags (CDN frameworks)', async () => {
+    const result = await sanitizer.sanitize('<script src="https://cdn.tailwindcss.com"></script><div>OK</div>')
+    expect(result).toContain('<script')
+    expect(result).toContain('src="https://cdn.tailwindcss.com"')
+    expect(result).toContain('OK')
+  })
+
+  it('preserves <link>, <meta>, <title> in full documents', async () => {
+    const result = await sanitizer.sanitize('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Test</title><link rel="stylesheet" href="/style.css"></head><body><p>Hi</p></body></html>')
+    expect(result).toContain('<html')
+    expect(result).toContain('<meta')
+    expect(result).toContain('<link')
+    expect(result).toContain('<title>')
+    expect(result).toContain('<body>')
+    expect(result).toContain('Hi')
+  })
+
+  it('strips onclick event handlers', async () => {
+    const result = await sanitizer.sanitize('<div onclick="alert(1)">Click</div>')
     expect(result).not.toContain('onclick')
     expect(result).toContain('Click')
   })
 
-  it('strips onerror event handlers', () => {
-    const result = sanitizer.sanitize('<img src=x onerror="alert(1)">')
+  it('strips onerror event handlers', async () => {
+    const result = await sanitizer.sanitize('<img src=x onerror="alert(1)">')
     expect(result).not.toContain('onerror')
   })
 
-  it('strips javascript: protocol in href', () => {
-    const result = sanitizer.sanitize('<a href="javascript:alert(1)">Link</a>')
+  it('strips javascript: protocol in href', async () => {
+    const result = await sanitizer.sanitize('<a href="javascript:alert(1)">Link</a>')
     expect(result).not.toContain('javascript:')
   })
 
-  it('preserves safe inline styles', () => {
-    const result = sanitizer.sanitize('<div style="color:red;font-size:14px">Styled</div>')
+  it('preserves safe inline styles', async () => {
+    const result = await sanitizer.sanitize('<div style="color:red;font-size:14px">Styled</div>')
     expect(result).toContain('color:red')
     expect(result).toContain('font-size:14px')
     expect(result).toContain('Styled')
   })
 
-  it('preserves safe tags like div, p, span, img, a', () => {
-    const result = sanitizer.sanitize('<div><p>Text</p><span>More</span><img src="/img.jpg" alt="pic"><a href="https://example.com">Link</a></div>')
+  it('preserves safe tags like div, p, span, img, a', async () => {
+    const result = await sanitizer.sanitize('<div><p>Text</p><span>More</span><img src="/img.jpg" alt="pic"><a href="https://example.com">Link</a></div>')
     expect(result).toContain('<div>')
     expect(result).toContain('<p>')
     expect(result).toContain('<span>')
@@ -165,32 +182,33 @@ describe('sanitize', () => {
     expect(result).toContain('href="https://example.com"')
   })
 
-  it('strips <iframe> tags', () => {
-    const result = sanitizer.sanitize('<iframe src="https://evil.com"></iframe>')
+  it('strips <iframe> tags', async () => {
+    const result = await sanitizer.sanitize('<iframe src="https://evil.com"></iframe>')
     expect(result).not.toContain('<iframe')
   })
 
-  it('strips <form>/<input>/<button> tags', () => {
-    const result = sanitizer.sanitize('<form><input name="user"><button>Submit</button></form>')
+  it('strips <form>/<input>/<button> tags', async () => {
+    const result = await sanitizer.sanitize('<form><input name="user"><button>Submit</button></form>')
     expect(result).not.toContain('<form')
     expect(result).not.toContain('<input')
     expect(result).not.toContain('<button')
   })
 
-  it('returns empty string for null/undefined/non-string input', () => {
-    expect(sanitizer.sanitize(null)).toBe('')
-    expect(sanitizer.sanitize(undefined)).toBe('')
-    expect(sanitizer.sanitize(123)).toBe('')
+  it('returns empty string for null/undefined/non-string input', async () => {
+    expect(await sanitizer.sanitize(null)).toBe('')
+    expect(await sanitizer.sanitize(undefined)).toBe('')
+    expect(await sanitizer.sanitize(123)).toBe('')
   })
 
-  it('handles empty string', () => {
-    expect(sanitizer.sanitize('')).toBe('')
+  it('handles empty string', async () => {
+    expect(await sanitizer.sanitize('')).toBe('')
   })
 
-  it('preserves text content inside stripped tags (KEEP_CONTENT)', () => {
-    const result = sanitizer.sanitize('<div>Before<script>alert(1)</script>After</div>')
+  it('preserves inline scripts and surrounding text', async () => {
+    const result = await sanitizer.sanitize('<div>Before<script>alert(1)</script>After</div>')
     expect(result).toContain('Before')
     expect(result).toContain('After')
+    expect(result).toContain('<script>alert(1)</script>')
   })
 })
 

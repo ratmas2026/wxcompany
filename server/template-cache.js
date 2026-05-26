@@ -4,6 +4,7 @@
 
 const cache = new Map()
 const TTL = 24 * 60 * 60 * 1000  // 24 hours in ms
+const MAX_SIZE = 5000            // Prevent unbounded growth under high traffic
 
 /**
  * Build cache key from template ID and card/user ID.
@@ -27,8 +28,21 @@ function get(key) {
 
 /**
  * Store render result in cache with 24h TTL.
+ * Enforces max size to prevent unbounded memory growth.
  */
 function set(key, value) {
+  // Evict oldest entry if at capacity
+  if (cache.size >= MAX_SIZE) {
+    let oldestKey = null
+    let oldestExpiry = Infinity
+    for (const [k, entry] of cache) {
+      if (entry.expiry < oldestExpiry) {
+        oldestExpiry = entry.expiry
+        oldestKey = k
+      }
+    }
+    if (oldestKey) cache.delete(oldestKey)
+  }
   cache.set(key, { value, expiry: Date.now() + TTL })
 }
 
@@ -43,13 +57,25 @@ function invalidateUser(cardId) {
   }
 }
 
+/**
+ * Periodic eviction: remove all expired entries.
+ * Runs every 10 minutes to catch entries that are never re-accessed.
+ */
+function evictExpired() {
+  const now = Date.now()
+  for (const [key, entry] of cache) {
+    if (now > entry.expiry) cache.delete(key)
+  }
+}
+setInterval(evictExpired, 10 * 60 * 1000)
+
 /** Get cache stats (for monitoring/debugging) */
 function stats() {
   const now = Date.now()
   let active = 0
   let expired = 0
   for (const [, entry] of cache) {
-    if (Date.now() > entry.expiry) expired++
+    if (now > entry.expiry) expired++
     else active++
   }
   return { size: cache.size, active, expired }

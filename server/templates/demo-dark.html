@@ -1,0 +1,52 @@
+<div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#e0e0e0;padding:24px 20px;max-width:380px;margin:0 auto;font-family:system-ui,-apple-system,sans-serif;border-radius:12px">
+  <!-- Logo + Company -->
+  <div style="text-align:center;margin-bottom:20px">
+    {{company.logo}}
+    <div style="font-size:13px;color:#94a3b8;margin-top:8px;letter-spacing:2px">{{company.name}}</div>
+  </div>
+
+  <!-- Avatar -->
+  <div style="text-align:center;margin-bottom:16px">
+    <img src="{{user.avatar}}" style="width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,0.2);object-fit:cover" onerror="this.style.display='none'" />
+  </div>
+
+  <!-- Name & Title -->
+  <div style="text-align:center;margin-bottom:20px">
+    <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:4px">{{user.name}}</div>
+    <div style="font-size:14px;color:#64b5f6">{{user.title}}</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:2px">{{user.department}}</div>
+  </div>
+
+  <!-- Divider -->
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);margin:16px 0"></div>
+
+  <!-- Contact Info -->
+  <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
+    <div style="display:flex;align-items:center;gap:10px;color:#b0bec5">
+      <span style="font-size:16px;width:22px;text-align:center;flex-shrink:0">📞</span>
+      <span style="color:#e0e0e0">{{user.phone}}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;color:#b0bec5">
+      <span style="font-size:16px;width:22px;text-align:center;flex-shrink:0">✉️</span>
+      <span style="color:#e0e0e0">{{user.email}}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;color:#b0bec5">
+      <span style="font-size:16px;width:22px;text-align:center;flex-shrink:0">📍</span>
+      <span style="color:#e0e0e0">{{user.address}}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;color:#b0bec5">
+      <span style="font-size:16px;width:22px;text-align:center;flex-shrink:0">🌐</span>
+      <span style="color:#e0e0e0">{{user.bio}}</span>
+    </div>
+  </div>
+
+  <!-- QR Code -->
+  <div style="text-align:center;margin-top:16px">
+    {{qr_code}}
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center;margin-top:12px;font-size:10px;color:#62748c">
+    长按识别二维码 · 了解更多
+  </div>
+</div>

@@ -31,6 +31,12 @@ function cleanExpiredCodes() {
   }
 }
 
+// Periodic cleanup: purge expired codes every 60 seconds
+setInterval(cleanExpiredCodes, 60000)
+
+// Prevent unbounded growth from abuse
+const MAX_CODE_STORE_SIZE = 1000
+
 async function sendSMS(phone, code) {
   const Core = require('@alicloud/pop-core')
   const client = new Core({
@@ -88,10 +94,12 @@ function validateToken(token) {
   try {
     const decoded = Buffer.from(token, 'base64').toString()
     const parts = decoded.split(':')
+    // Token must have at least 3 parts: prefix, expiry, hmac
+    if (parts.length < 3) return false
     const hmac = parts.pop()
     const payload = parts.join(':')
-    const prefix = parts[0]
     if (Date.now() > parseInt(parts[parts.length - 1])) return false
+    const prefix = parts[0]
     const secret = prefix === 'user' ? USER_SECRET : ADMIN_SECRET
     const expectedHmac = crypto.createHmac('sha256', secret).update(payload).digest('hex')
     return hmac === expectedHmac
@@ -361,6 +369,12 @@ function pick(obj, ...keys) {
   return result
 }
 
+// Helper: safely parse integer route param, returns NaN if invalid
+function parseId(val) {
+  const n = parseInt(val)
+  return isNaN(n) ? NaN : n
+}
+
 // Login (后台 username/password)
 app.post('/api/login', (req, res) => {
   const { username, password, phone, code } = req.body || {}
@@ -410,6 +424,11 @@ app.post('/api/sms/send', (req, res) => {
   }
 
   cleanExpiredCodes()
+
+  // Prevent codeStore from growing unbounded by abusive requests
+  if (codeStore.size >= MAX_CODE_STORE_SIZE) {
+    return res.status(503).json({ ok: false, error: '系统繁忙，请稍后重试' })
+  }
 
   const code = generateCode()
   const now = Date.now()
@@ -518,8 +537,10 @@ app.get('/api/company/profile', (req, res) => {
 })
 
 app.get('/api/company/profile/:id', (req, res) => {
+  const id = parseId(req.params.id)
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid id' })
   const data = readData()
-  const profile = (data.companyProfiles || []).find(p => p.id === parseInt(req.params.id))
+  const profile = (data.companyProfiles || []).find(p => p.id === id)
   if (!profile) return res.status(404).json({ error: 'Not found' })
   res.json(profile)
 })
@@ -714,8 +735,10 @@ app.get('/api/company/performance', (req, res) => {
 })
 
 app.get('/api/company/performance/:id', (req, res) => {
+  const id = parseId(req.params.id)
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid id' })
   const data = readData()
-  const profile = (data.companyPerformances || []).find(p => p.id === parseInt(req.params.id))
+  const profile = (data.companyPerformances || []).find(p => p.id === id)
   if (!profile) return res.status(404).json({ error: 'Not found' })
   res.json(profile)
 })
@@ -1334,8 +1357,10 @@ app.get('/api/cards', (req, res) => {
 })
 
 app.get('/api/cards/:id', (req, res) => {
+  const id = parseId(req.params.id)
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid id' })
   const data = readData()
-  const card = data.cards.find(c => c.id === parseInt(req.params.id))
+  const card = data.cards.find(c => c.id === id)
   if (!card) return res.status(404).json({ error: 'Not found' })
   res.json(card)
 })
@@ -1389,6 +1414,7 @@ app.patch('/api/cards/:id/toggle', (req, res) => {
 app.post('/api/cards/batch-delete', (req, res) => {
   const data = readData()
   const { ids } = req.body
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be an array' })
   data.cards = data.cards.filter(c => !ids.includes(c.id))
   writeData(data)
   res.json({ ok: true, deleted: ids.length })
@@ -1412,6 +1438,7 @@ app.put('/api/messages/:id', (req, res) => {
 app.post('/api/messages/batch-delete', (req, res) => {
   const data = readData()
   const { ids } = req.body
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be an array' })
   data.messages = data.messages.filter(m => !ids.includes(m.id))
   writeData(data)
   res.json({ ok: true, deleted: ids.length })
@@ -1445,11 +1472,11 @@ app.put('/api/positions/:id', (req, res) => {
 app.post('/api/positions/batch-delete', (req, res) => {
   const data = readData()
   const { ids } = req.body
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be an array' })
   data.positions = data.positions.filter(p => !ids.includes(p.id))
   writeData(data)
   res.json({ ok: true, deleted: ids.length })
 })
-
 // --- Videos API ---
 app.get('/api/videos', (req, res) => {
   const data = readData()
@@ -1479,6 +1506,7 @@ app.put('/api/videos/:id', (req, res) => {
 app.post('/api/videos/batch-delete', (req, res) => {
   const data = readData()
   const { ids } = req.body
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be an array' })
   data.videos = data.videos.filter(v => !ids.includes(v.id))
   writeData(data)
   res.json({ ok: true, deleted: ids.length })
@@ -1525,47 +1553,53 @@ app.get('/api/templates', (req, res) => {
 
 // Upload template
 app.post('/api/templates', uploadTemplate.single('file'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ ok: false, error: '请选择文件' })
-
-  const ext = path.extname(req.file.originalname).toLowerCase()
-  if (ext !== '.html' && ext !== '.htm' && ext !== '.txt') {
-    // Clean up the uploaded file
-    try { fs.unlinkSync(req.file.path) } catch (_) {}
-    return res.status(400).json({ ok: false, error: '仅支持 HTML/TXT 文件' })
-  }
-
-  // Read and sanitize HTML files
-  let content
   try {
-    content = fs.readFileSync(req.file.path, 'utf-8')
+    if (!req.file) return res.status(400).json({ ok: false, error: '请选择文件' })
+
+    const ext = path.extname(req.file.originalname).toLowerCase()
+    if (ext !== '.html' && ext !== '.htm' && ext !== '.txt') {
+      try { fs.unlinkSync(req.file.path) } catch (_) {}
+      return res.status(400).json({ ok: false, error: '仅支持 HTML/TXT 文件' })
+    }
+
+    let content
+    try {
+      content = fs.readFileSync(req.file.path, 'utf-8')
+    } catch (e) {
+      return res.status(500).json({ ok: false, error: '文件读取失败' })
+    }
+
+    const isHtml = ext === '.html' || ext === '.htm'
+    if (isHtml) {
+      content = await sanitizer.sanitize(content)
+      try { fs.writeFileSync(req.file.path, content, 'utf-8') } catch (_) {}
+    }
+
+    const data = readData()
+    if (!data.templates) data.templates = []
+    if (!data.nextId.templates) data.nextId.templates = 1
+
+    const name = path.basename(req.file.originalname, ext)
+    const template = {
+      id: data.nextId.templates++,
+      name: name,
+      filename: req.file.filename,
+      mime_type: isHtml ? 'text/html' : 'text/plain',
+      size: req.file.size,
+      created_at: new Date().toISOString()
+    }
+    data.templates.push(template)
+    writeData(data)
+
+    res.json({ ok: true, template: template })
   } catch (e) {
-    return res.status(500).json({ ok: false, error: '文件读取失败' })
+    console.error('[templates] Upload error:', e)
+    // Clean up orphaned file if handler failed after multer wrote it
+    if (req.file) {
+      try { fs.unlinkSync(req.file.path) } catch (_) {}
+    }
+    res.status(500).json({ ok: false, error: '模板上传处理失败' })
   }
-
-  const isHtml = ext === '.html' || ext === '.htm'
-  if (isHtml) {
-    content = await sanitizer.sanitize(content)
-    // Overwrite with sanitized version
-    try { fs.writeFileSync(req.file.path, content, 'utf-8') } catch (_) {}
-  }
-
-  const data = readData()
-  if (!data.templates) data.templates = []
-  if (!data.nextId.templates) data.nextId.templates = 1
-
-  const name = path.basename(req.file.originalname, ext)
-  const template = {
-    id: data.nextId.templates++,
-    name: name,
-    filename: req.file.filename,
-    mime_type: isHtml ? 'text/html' : 'text/plain',
-    size: req.file.size,
-    created_at: new Date().toISOString()
-  }
-  data.templates.push(template)
-  writeData(data)
-
-  res.json({ ok: true, template: template })
 })
 
 // Delete template by ID
@@ -1679,8 +1713,10 @@ app.get('/api/templates/:id/render', async (req, res) => {
       result = await sanitizer.sanitize(templateEngine.renderTemplate(content, renderData))
     }
 
-    // Step 3: Wrap in full HTML document
-    result = templateEngine.wrapHtmlDocument(result)
+    // Step 3: Wrap in full HTML document (only for fragments, skip complete docs)
+    if (!/<html/i.test(result)) {
+      result = templateEngine.wrapHtmlDocument(result)
+    }
 
     // Cache the result
     templateCache.set(cacheKey, result)

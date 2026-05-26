@@ -137,7 +137,8 @@ const Admin = {
 
   bindSearch() {
     const input = document.getElementById('globalSearch')
-    if (input) {
+    if (input && !this._searchBound) {
+      this._searchBound = true
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && typeof window.onGlobalSearch === 'function') {
           window.onGlobalSearch(input.value)
@@ -228,7 +229,10 @@ const Admin = {
 
     // Wrap in a container so we can bind events
     const id = 'pagination-' + Date.now()
-    setTimeout(() => {
+    // Debounce: clear previous timeout to prevent listener accumulation on rapid re-renders
+    if (this._paginationTimer) clearTimeout(this._paginationTimer)
+    this._paginationTimer = setTimeout(() => {
+      this._paginationTimer = null
       const el = document.getElementById(id)
       if (el) {
         el.querySelectorAll('.page-btn').forEach(btn => {
@@ -263,7 +267,7 @@ const Admin = {
 
   // Export CSV helper
   exportCSV(data, filename) {
-    if (!data.length) return
+    if (!data || !data.length || !data[0] || typeof data[0] !== 'object') return
     const headers = Object.keys(data[0])
     const csv = [
       headers.join(','),
@@ -324,7 +328,7 @@ const Admin = {
         return
       }
       list.innerHTML = items.map(item => `
-        <div class="notify-item ${item.isRead ? '' : 'notify-item--unread'}" onclick="Admin.markRead(${item.id}, event)">
+        <div class="notify-item ${item.isRead ? '' : 'notify-item--unread'}" onclick="Admin.markRead(${this._escapeHTML(String(item.id))}, event)">
           <div class="notify-item-icon">${this._notifyIcon(item.type)}</div>
           <div class="notify-item-body">
             <div class="notify-item-title">${this._escapeHTML(item.title)}</div>
@@ -340,22 +344,22 @@ const Admin = {
 
   async markRead(id, e) {
     e && e.stopPropagation()
-    // Optimistic update
-    if (this.unreadCount > 0) {
-      this.unreadCount--
-      this.updateBadge()
-    }
     try {
       await authFetch(API_BASE + '/notifications/' + id + '/read', { method: 'PUT' })
+      // Only decrement after API confirms success
+      if (this.unreadCount > 0) {
+        this.unreadCount--
+        this.updateBadge()
+      }
     } catch (e) { /* silent */ }
     this._loadNotifyList()
   },
 
   async markAllRead() {
-    this.unreadCount = 0
-    this.updateBadge()
     try {
       await authFetch(API_BASE + '/notifications/read-all', { method: 'PUT' })
+      this.unreadCount = 0
+      this.updateBadge()
     } catch (e) { /* silent */ }
     this._loadNotifyList()
   },
@@ -397,6 +401,13 @@ const Admin = {
         if (data && data.ok && data.user) {
           this.currentUser = data.user
           sessionStorage.setItem('admin_user', JSON.stringify(data.user))
+          // Refresh topbar name/avatar in DOM
+          const nameEl = document.querySelector('.topbar-name')
+          const avatarEl = document.querySelector('.topbar-avatar')
+          if (nameEl) nameEl.textContent = data.user.nickName || 'Admin'
+          if (avatarEl && data.user.avatar) {
+            avatarEl.outerHTML = `<img src="${data.user.avatar}" class="topbar-avatar-img" alt="">`
+          }
         }
       }
     } catch (e) { /* silent */ }
@@ -422,7 +433,9 @@ const Admin = {
 
   _timeAgo(iso) {
     if (!iso) return ''
-    const diff = Date.now() - new Date(iso).getTime()
+    const ts = new Date(iso).getTime()
+    if (isNaN(ts)) return ''
+    const diff = Date.now() - ts
     const mins = Math.floor(diff / 60000)
     if (mins < 1) return '刚刚'
     if (mins < 60) return mins + '分钟前'

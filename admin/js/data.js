@@ -45,6 +45,14 @@ function authFetch(url, options = {}) {
 const DataStore = {
   _storageKey: 'admin_data_cache',
   _ready: false,
+  _mutex: Promise.resolve(),
+
+  // Serialize mutations to prevent read-modify-write races
+  _lock(fn) {
+    const p = this._mutex.then(() => fn())
+    this._mutex = p.catch(() => {})
+    return p
+  },
 
   async init() {
     try {
@@ -116,7 +124,16 @@ const DataStore = {
 
   _getCache() {
     const raw = localStorage.getItem(this._storageKey)
-    return raw ? JSON.parse(raw) : { cards: [], messages: [], positions: [], videos: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, cardPageConfig: { sections: [] }, honors: [], projects: [], businessModules: [], businessModulePageConfig: { sections: [] }, companyInfos: [] }
+    if (!raw) {
+      return { cards: [], messages: [], positions: [], videos: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, cardPageConfig: { sections: [] }, honors: [], projects: [], businessModules: [], businessModulePageConfig: { sections: [] }, companyInfos: [] }
+    }
+    try {
+      return JSON.parse(raw)
+    } catch (e) {
+      console.warn('Local cache corrupted, resetting to defaults')
+      localStorage.removeItem(this._storageKey)
+      return { cards: [], messages: [], positions: [], videos: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, cardPageConfig: { sections: [] }, honors: [], projects: [], businessModules: [], businessModulePageConfig: { sections: [] }, companyInfos: [] }
+    }
   },
 
   _setCache(data) {
@@ -154,24 +171,30 @@ const DataStore = {
   },
 
   async deleteCard(id) {
-    const cache = this._getCache()
-    cache.cards = cache.cards.filter(c => c.id !== id)
-    this._setCache(cache)
-    await this._sync('cards', 'DELETE', '/cards/' + id)
+    return this._lock(async () => {
+      const cache = this._getCache()
+      cache.cards = cache.cards.filter(c => c.id !== id)
+      this._setCache(cache)
+      await this._sync('cards', 'DELETE', '/cards/' + id)
+    })
   },
 
   async toggleCardStatus(id) {
-    const cache = this._getCache()
-    const card = cache.cards.find(c => c.id === id)
-    if (card) { card.status = !card.status; this._setCache(cache) }
-    await this._sync('cards', 'PATCH', '/cards/' + id + '/toggle')
+    return this._lock(async () => {
+      const cache = this._getCache()
+      const card = cache.cards.find(c => c.id === id)
+      if (card) { card.status = !card.status; this._setCache(cache) }
+      await this._sync('cards', 'PATCH', '/cards/' + id + '/toggle')
+    })
   },
 
   async batchDeleteCards(ids) {
-    const cache = this._getCache()
-    cache.cards = cache.cards.filter(c => !ids.includes(c.id))
-    this._setCache(cache)
-    await this._sync('cards', 'POST', '/cards/batch-delete', { ids })
+    return this._lock(async () => {
+      const cache = this._getCache()
+      cache.cards = cache.cards.filter(c => !ids.includes(c.id))
+      this._setCache(cache)
+      await this._sync('cards', 'POST', '/cards/batch-delete', { ids })
+    })
   },
 
   // Messages
@@ -501,6 +524,8 @@ const DataStore = {
         await this._sync('businessModules', 'PUT', '/business-modules/' + item.id, item)
         cache.businessModules[idx] = { ...cache.businessModules[idx], ...item }
       } else {
+        // Item exists on server but not in local cache; sync to server and add locally
+        await this._sync('businessModules', 'PUT', '/business-modules/' + item.id, item)
         cache.businessModules.push(item)
       }
       this._setCache(cache)
@@ -736,7 +761,7 @@ const DataStore = {
     return res.json()
   },
 
-  async uploadAvatar(file) {
+  async uploadUserAvatar(file) {
     const form = new FormData()
     form.append('file', file)
     const res = await authFetch(API_BASE + '/user/avatar', {
