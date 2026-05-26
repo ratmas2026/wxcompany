@@ -84,7 +84,7 @@ router.delete('/:id', (req, res) => {
   const templateIdStr = String(id)
   let changed = false
   data.cards.forEach(c => {
-    if (c.template === templateIdStr) { c.template = ''; changed = true }
+    if (c.template === templateIdStr || c.template === template.filename) { c.template = ''; changed = true }
   })
   writeData(data)
   res.json({ ok: true })
