@@ -1,6 +1,8 @@
 // Common Admin Framework
 const Admin = {
   currentPage: '',
+  currentUser: null,
+  unreadCount: 0,
 
   init(page) {
     if (!sessionStorage.getItem('admin_token')) {
@@ -11,13 +13,20 @@ const Admin = {
     this.injectLayout()
     this.setActiveNav(page)
     this.bindSearch()
+    this.loadUserInfo()
+    this.fetchUnreadCount()
     if (!this._dropdownBound) {
       this._dropdownBound = true
       document.addEventListener('click', function(e) {
-        var user = document.getElementById('topbarUser')
         var dd = document.getElementById('userDropdown')
+        var np = document.getElementById('notifyPanel')
+        var user = document.getElementById('topbarUser')
+        var bell = document.getElementById('notifyBell')
         if (dd && dd.classList.contains('show') && (!user || !user.contains(e.target))) {
           dd.classList.remove('show')
+        }
+        if (np && np.classList.contains('show') && (!bell || !bell.contains(e.target))) {
+          np.classList.remove('show')
         }
       })
     }
@@ -75,6 +84,14 @@ const Admin = {
   },
 
   topbarHTML() {
+    const avatar = (this.currentUser && this.currentUser.avatar)
+      ? `<img src="${this.currentUser.avatar}" class="topbar-avatar-img" alt="">`
+      : (this.currentUser ? (this.currentUser.nickName || 'A')[0] : 'A')
+    const name = (this.currentUser && this.currentUser.nickName) || 'Admin'
+    const avatarTag = (this.currentUser && this.currentUser.avatar)
+      ? avatar
+      : `<div class="topbar-avatar">${avatar}</div>`
+
     return `
       <header class="topbar">
         <div class="topbar-search">
@@ -82,12 +99,28 @@ const Admin = {
           <input type="text" id="globalSearch" placeholder="全局搜索...">
         </div>
         <div class="topbar-right">
-          <div class="topbar-user" id="topbarUser" onclick="Admin.toggleUserMenu()">
-            <div class="topbar-avatar">A</div>
-            <span class="topbar-name">Admin</span>
+          <div class="notify-wrap" id="notifyBell" onclick="Admin.toggleNotify(event)">
+            <span class="notify-icon">&#x1F514;</span>
+            <span class="notify-badge" id="notifyBadge" style="display:${this.unreadCount > 0 ? '' : 'none'}">${this.unreadCount > 99 ? '99+' : this.unreadCount}</span>
+            <div class="notify-panel" id="notifyPanel">
+              <div class="notify-panel-header">
+                <span>消息通知</span>
+                <span class="notify-mark-all" onclick="Admin.markAllRead();event.stopPropagation()">全部已读</span>
+              </div>
+              <div class="notify-list" id="notifyList">
+                <div class="notify-empty">加载中...</div>
+              </div>
+            </div>
+          </div>
+          <div class="topbar-user" id="topbarUser" onclick="Admin.toggleUserMenu(event)">
+            ${avatarTag}
+            <span class="topbar-name">${name}</span>
             <span class="topbar-arrow">&#x25BC;</span>
             <div class="user-dropdown" id="userDropdown">
-              <div class="user-dropdown-item" onclick="Admin.logout();event.stopPropagation()">退出登录</div>
+              <a class="user-dropdown-item" href="profile.html">&#x1F464; 个人中心</a>
+              <a class="user-dropdown-item" href="settings.html">&#x2699; 账号设置</a>
+              <div class="user-dropdown-divider"></div>
+              <div class="user-dropdown-item user-dropdown-item--danger" onclick="Admin.logout();event.stopPropagation()">&#x1F6AA; 退出登录</div>
             </div>
           </div>
         </div>
