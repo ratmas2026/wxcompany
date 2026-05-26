@@ -8,7 +8,10 @@ module.exports = {
     max_memory_restart: '300M',
     env: {
       NODE_ENV: 'production',
-      ADMIN_SECRET: '',
+      ADMIN_USER: 'ratmas',
+      ADMIN_PASS: 'laoshuren',
+      ADMIN_SECRET: '3505159e162e582ae86f4c556d00ab6837d651254797d6d1d4898e02f9ddcbc6',
+      USER_SECRET: '4dd1ff3b17094fc7feb9d56b215aab704e2f9b4526807e5e43677bc057c6bd07',
       SMS_ACCESS_KEY_ID: '',
       SMS_ACCESS_KEY_SECRET: '',
       SMS_SIGN_NAME: '',
