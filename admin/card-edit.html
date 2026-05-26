@@ -47,11 +47,6 @@
       `<option value="${d}" ${card.department === d ? 'selected' : ''}>${d}</option>`
     ).join('')
 
-    // Build company info options for select
-    const ciOptions = companyInfos.map(ci =>
-      '<option value="' + escapeHtml(ci.name) + '" data-address="' + escapeHtml(ci.address || '') + '" ' + (card.company === ci.name ? 'selected' : '') + '>' + escapeHtml(ci.name) + '</option>'
-    ).join('')
-
     const posOptions = positions.map(p =>
       `<option value="${p.name}" ${card.title === p.name ? 'selected' : ''}>${p.name}</option>`
     ).join('')
@@ -108,12 +103,7 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">公司名称</label>
-              ${hasCI ? `
-              <select class="form-select" id="cardCompany" onchange="window.onCompanyChange(this)">
-                <option value="">请选择企业</option>
-                ${ciOptions}
-              </select>
-              ` : `<input class="form-input" id="cardCompany" value="${escapeHtml(card.company)}" placeholder="暂无企业信息，请手动输入">`}
+              <input class="form-input" id="cardCompany" value="${escapeHtml(card.company)}" readonly>
             </div>
             <div class="form-group">
               <label class="form-label">邮箱</label>
@@ -173,15 +163,6 @@
     selectedAvatarPreviewUrl = null
     card.avatar = ''
     render()
-  }
-
-  window.onCompanyChange = function(select) {
-    const addressInput = document.getElementById('cardAddress')
-    const selectedOpt = select.options[select.selectedIndex]
-    const addr = selectedOpt ? selectedOpt.dataset.address : ''
-    if (addr && addressInput) {
-      addressInput.value = addr
-    }
   }
 
   window.saveCard = async function(e) {
