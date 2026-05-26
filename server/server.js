@@ -5,6 +5,9 @@ const path = require('path')
 const multer = require('multer')
 const db = require('./db')
 const crypto = require('crypto')
+const templateEngine = require('./template-engine')
+const sanitizer = require('./sanitizer')
+const templateCache = require('./template-cache')
 const compression = require('compression')
 const rateLimit = require('express-rate-limit')
 
@@ -233,13 +236,16 @@ var uploadPerformance = multer({ storage: performanceStorage, limits: { fileSize
 
 var templateStorage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, TEMPLATES_DIR) },
-  filename: function(req, file, cb) { cb(null, file.originalname) }
+  filename: function(req, file, cb) {
+    var ext = path.extname(file.originalname) || '.html'
+    cb(null, crypto.randomUUID() + ext)
+  }
 })
 function templateFilter(req, file, cb) {
-  if (file.mimetype === 'text/html') { cb(null, true) }
-  else { cb(new Error('仅支持 HTML 文件'), false) }
+  if (file.mimetype === 'text/html' || file.mimetype === 'text/plain') { cb(null, true) }
+  else { cb(new Error('仅支持 HTML/TXT 文件'), false) }
 }
-var uploadTemplate = multer({ storage: templateStorage, limits: { fileSize: 100 * 1024 }, fileFilter: templateFilter })
+var uploadTemplate = multer({ storage: templateStorage, limits: { fileSize: 500 * 1024 }, fileFilter: templateFilter })
 
 app.use(cors())
 app.use(compression())
@@ -445,7 +451,7 @@ function writeData(data) {
 }
 
 // API health
-app.get('/api', (req, res) => res.json({ ok: true, endpoints: ['company/profile','company/profile/:id','cards','messages','positions','videos','honors','honors/:id','projects','projects/:id','splash','user/phone/:phone','inquiry','reset','upload/video','upload/cover','upload/avatar','upload/splash','upload/profile','upload/honors','upload/projects','upload/editor','business-modules','business-modules/:id','business-modules/:mid/cards','business-modules/:mid/cards/:cid','upload/business-module'] }))
+app.get('/api', (req, res) => res.json({ ok: true, endpoints: ['company/profile','company/profile/:id','cards','messages','positions','videos','honors','honors/:id','projects','projects/:id','splash','user/phone/:phone','inquiry','reset','upload/video','upload/cover','upload/avatar','upload/splash','upload/profile','upload/honors','upload/projects','upload/editor','business-modules','business-modules/:id','business-modules/:mid/cards','business-modules/:mid/cards/:cid','upload/business-module','templates','templates/:id/raw','templates/:id/render'] }))
 
 // --- Company Infos (new multi-row table) ---
 app.get('/api/company-infos', (req, res) => {
@@ -1359,6 +1365,8 @@ app.put('/api/cards/:id', (req, res) => {
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
   data.cards[idx] = { ...data.cards[idx], ...pick(req.body, 'name', 'phone', 'title', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'template'), id: data.cards[idx].id }
   writeData(data)
+  // Invalidate cached template renders for this user
+  templateCache.invalidateUser(req.params.id)
   res.json(data.cards[idx])
 })
 
@@ -1499,92 +1507,189 @@ app.post('/api/reset', (req, res) => {
       var seed = JSON.parse(fs.readFileSync(seedFile, 'utf-8'))
       writeData(seed)
     } else {
-      writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], honors: [], projects: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1, projects: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1 } })
+      writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], honors: [], projects: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, templates: [], nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1, projects: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1, templates: 1 } })
     }
   } catch (e) {
-    writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], honors: [], projects: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1, projects: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1 } })
+    writeData({ cards: [], messages: [], positions: [], videos: [], companyInfo: {}, companyInfos: [], honors: [], projects: [], splashImages: [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}], companyProfiles: [], companyProfileConfig: { sections: [] }, companyPerformances: [], companyPerformanceConfig: { sections: [] }, casePageConfig: { sections: [] }, businessModules: [], businessModulePageConfig: { sections: [] }, templates: [], nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1, projects: 1, splashImages: 4, companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1, templates: 1 } })
   }
   res.json({ ok: true })
 })
 
-// --- Card Templates API ---
-// List all templates
+// --- Card Templates API (V2) ---
+
+// List all templates (from DB)
 app.get('/api/templates', (req, res) => {
-  try {
-    const files = fs.readdirSync(TEMPLATES_DIR).filter(f => f.endsWith('.html'))
-    const templates = files.map(f => {
-      const stat = fs.statSync(path.join(TEMPLATES_DIR, f))
-      return { filename: f, name: f.replace('.html', ''), size: stat.size, uploadedAt: stat.mtime.toISOString() }
-    })
-    res.json({ ok: true, templates })
-  } catch (e) {
-    res.json({ ok: true, templates: [] })
-  }
+  const data = readData()
+  res.json({ ok: true, templates: data.templates || [] })
 })
 
 // Upload template
 app.post('/api/templates', uploadTemplate.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ ok: false, error: '请选择 HTML 文件' })
-  res.json({ ok: true, filename: req.file.filename })
-})
+  if (!req.file) return res.status(400).json({ ok: false, error: '请选择文件' })
 
-// Delete template
-app.delete('/api/templates/:filename', (req, res) => {
-  const filename = req.params.filename
-  // Sanitize: prevent directory traversal
-  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-    return res.status(400).json({ ok: false, error: 'Invalid filename' })
+  const ext = path.extname(req.file.originalname).toLowerCase()
+  if (ext !== '.html' && ext !== '.htm' && ext !== '.txt') {
+    // Clean up the uploaded file
+    try { fs.unlinkSync(req.file.path) } catch (_) {}
+    return res.status(400).json({ ok: false, error: '仅支持 HTML/TXT 文件' })
   }
-  const filePath = path.join(TEMPLATES_DIR, filename)
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ ok: false, error: 'Template not found' })
-  }
+
+  // Read and sanitize HTML files
+  let content
   try {
-    fs.unlinkSync(filePath)
-    // Clear template reference from all cards that use this template
-    const data = readData()
-    let changed = false
-    data.cards.forEach(c => {
-      if (c.template === filename) { c.template = ''; changed = true }
-    })
-    if (changed) writeData(data)
-    res.json({ ok: true })
+    content = fs.readFileSync(req.file.path, 'utf-8')
   } catch (e) {
-    res.status(500).json({ ok: false, error: 'Failed to delete template' })
+    return res.status(500).json({ ok: false, error: '文件读取失败' })
+  }
+
+  const isHtml = ext === '.html' || ext === '.htm'
+  if (isHtml) {
+    content = sanitizer.sanitize(content)
+    // Overwrite with sanitized version
+    try { fs.writeFileSync(req.file.path, content, 'utf-8') } catch (_) {}
+  }
+
+  const data = readData()
+  if (!data.templates) data.templates = []
+  if (!data.nextId.templates) data.nextId.templates = 1
+
+  const name = path.basename(req.file.originalname, ext)
+  const template = {
+    id: data.nextId.templates++,
+    name: name,
+    filename: req.file.filename,
+    mime_type: isHtml ? 'text/html' : 'text/plain',
+    size: req.file.size,
+    created_at: new Date().toISOString()
+  }
+  data.templates.push(template)
+  writeData(data)
+
+  res.json({ ok: true, template: template })
+})
+
+// Delete template by ID
+app.delete('/api/templates/:id', (req, res) => {
+  const id = parseInt(req.params.id)
+  if (isNaN(id)) return res.status(400).json({ ok: false, error: 'Invalid id' })
+
+  const data = readData()
+  const idx = (data.templates || []).findIndex(t => t.id === id)
+  if (idx < 0) return res.status(404).json({ ok: false, error: 'Template not found' })
+
+  const template = data.templates[idx]
+
+  // Delete file from disk
+  const filePath = path.join(TEMPLATES_DIR, template.filename)
+  try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath) } catch (_) {}
+
+  // Remove from DB
+  data.templates.splice(idx, 1)
+
+  // Clear template reference from cards using this template ID
+  const templateIdStr = String(id)
+  let changed = false
+  data.cards.forEach(c => {
+    if (c.template === templateIdStr) { c.template = ''; changed = true }
+  })
+  writeData(data)
+  res.json({ ok: true })
+})
+
+// Get raw template content
+app.get('/api/templates/:id/raw', (req, res) => {
+  const id = parseInt(req.params.id)
+  if (isNaN(id)) return res.status(400).json({ ok: false, error: 'Invalid id' })
+
+  const data = readData()
+  const template = (data.templates || []).find(t => t.id === id)
+  if (!template) return res.status(404).json({ ok: false, error: 'Template not found' })
+
+  const filePath = path.join(TEMPLATES_DIR, template.filename)
+  if (!fs.existsSync(filePath)) return res.status(404).json({ ok: false, error: 'Template file not found' })
+
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8')
+    res.json({ ok: true, content: content, mime_type: template.mime_type, name: template.name })
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'Failed to read template' })
   }
 })
 
-// Preview template with card data
-app.get('/api/templates/:filename/preview', (req, res) => {
-  const filename = req.params.filename
-  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-    return res.status(400).send('Invalid filename')
-  }
-  const filePath = path.join(TEMPLATES_DIR, filename)
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send('Template not found')
-  }
-  try {
-    let html = fs.readFileSync(filePath, 'utf-8')
-    const cardId = parseInt(req.query.cardId)
-    const data = readData()
-    const card = data.cards.find(c => c.id === cardId)
-    if (card) {
-      const fields = ['name', 'company', 'title', 'phone', 'email', 'address', 'department', 'avatar', 'bio']
-      fields.forEach(f => {
-        html = html.replace(new RegExp('\\{\\{' + f + '\\}\\}', 'g'), card[f] || '')
-      })
-    } else {
-      // No card selected: replace with placeholder hints
-      const fields = ['name', 'company', 'title', 'phone', 'email', 'address', 'department', 'avatar', 'bio']
-      fields.forEach(f => {
-        html = html.replace(new RegExp('\\{\\{' + f + '\\}\\}', 'g'), '[' + f + ']')
-      })
-    }
+// Render template with card data (full pipeline: whitelist → sanitize → wrap → cache)
+app.get('/api/templates/:id/render', (req, res) => {
+  const id = parseInt(req.params.id)
+  const cardId = parseInt(req.query.cardId)
+  if (isNaN(id)) return res.status(400).send('Invalid template id')
+
+  const cacheKey = templateCache.getCacheKey(id, cardId || 0)
+
+  // Check cache
+  const cached = templateCache.get(cacheKey)
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT')
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.send(html)
+    return res.send(cached)
+  }
+
+  const data = readData()
+  const template = (data.templates || []).find(t => t.id === id)
+  if (!template) return res.status(404).send('Template not found')
+
+  const filePath = path.join(TEMPLATES_DIR, template.filename)
+  if (!fs.existsSync(filePath)) return res.status(404).send('Template file not found')
+
+  try {
+    let content = fs.readFileSync(filePath, 'utf-8')
+
+    // Build render data from card
+    let card = null
+    if (cardId) {
+      card = data.cards.find(c => c.id === cardId)
+    }
+
+    // Get company info (first active entry)
+    const companyInfo = (data.companyInfos || []).find(ci => ci.status !== false) || {}
+
+    const renderData = {
+      user: card ? {
+        name: card.name || '',
+        phone: card.phone || '',
+        title: card.title || '',
+        department: card.department || '',
+        email: card.email || '',
+        address: card.address || '',
+        avatar: card.avatar || '',
+        bio: card.bio || ''
+      } : { name: '', phone: '', title: '', department: '', email: '', address: '', avatar: '', bio: '' },
+      company: {
+        name: card ? card.company : (companyInfo.name || ''),
+        logo: companyInfo.logo || ''
+      },
+      qr_code: card ? (card.qr_code || '') : ''
+    }
+
+    // Step 1: Replace placeholders (whitelist engine)
+    let result
+    if (template.mime_type === 'text/plain') {
+      // For TXT: replace placeholders without escaping (wrapTxtAsHtml handles all escaping)
+      result = templateEngine.wrapTxtAsHtml(templateEngine.renderTemplateRaw(content, renderData))
+    } else {
+      // For HTML: replace placeholders with escaping, then sanitize (defense-in-depth)
+      result = sanitizer.sanitize(templateEngine.renderTemplate(content, renderData))
+    }
+
+    // Step 3: Wrap in full HTML document
+    result = templateEngine.wrapHtmlDocument(result)
+
+    // Cache the result
+    templateCache.set(cacheKey, result)
+
+    res.setHeader('X-Cache', 'MISS')
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.send(result)
   } catch (e) {
-    res.status(500).send('Preview error')
+    res.status(500).send('Render error')
   }
 })
 

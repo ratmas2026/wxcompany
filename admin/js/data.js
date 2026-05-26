@@ -798,7 +798,7 @@ const DataStore = {
     return res.json()
   },
 
-  // --- Card Templates ---
+  // --- Card Templates (V2) ---
   async getTemplates() {
     const res = await authFetch(API_BASE + '/templates')
     return res.json()
@@ -811,13 +811,18 @@ const DataStore = {
     return res.json()
   },
 
-  async deleteTemplate(filename) {
-    const res = await authFetch(API_BASE + '/templates/' + encodeURIComponent(filename), { method: 'DELETE' })
+  async deleteTemplate(id) {
+    const res = await authFetch(API_BASE + '/templates/' + id, { method: 'DELETE' })
     return res.json()
   },
 
-  async previewTemplate(filename, cardId) {
-    const res = await authFetch(API_BASE + '/templates/' + encodeURIComponent(filename) + '/preview?cardId=' + cardId)
+  async getTemplateRaw(id) {
+    const res = await authFetch(API_BASE + '/templates/' + id + '/raw')
+    return res.json()
+  },
+
+  async getTemplateRender(id, cardId) {
+    const res = await authFetch(API_BASE + '/templates/' + id + '/render?cardId=' + (cardId || 0))
     return res.text()
   }
 

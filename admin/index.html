@@ -20,6 +20,13 @@
   let currentPage = 1
   let searchQuery = ''
   let cards = []
+  let templates = []
+
+  // Load templates for name lookup in the template column
+  try {
+    const tRes = await DataStore.getTemplates()
+    templates = (tRes && tRes.templates) || []
+  } catch (e) { /* ignore */ }
 
   function render() {
     cards = DataStore.getCards()
@@ -72,7 +79,7 @@
           </div>
         </td>
         <td style="text-align:center">
-          <span style="font-size:12px;color:${c.template ? 'var(--primary)' : 'var(--outline)'}">${c.template ? c.template.replace('.html', '') : '-'}</span>
+          <span style="font-size:12px;color:${c.template ? 'var(--primary)' : 'var(--outline)'}">${c.template ? (templates.find(t => String(t.id) === String(c.template)) || {}).name || '#' + c.template : '-'}</span>
         </td>
         <td style="text-align:center">
           <label class="switch">

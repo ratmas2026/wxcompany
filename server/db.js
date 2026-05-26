@@ -90,6 +90,12 @@ CREATE TABLE IF NOT EXISTS company_infos (
   created_at TEXT, updated_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS templates (
+  id INTEGER PRIMARY KEY,
+  name TEXT, filename TEXT, mime_type TEXT,
+  size INTEGER, created_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS config (
   key TEXT PRIMARY KEY,
   value TEXT
@@ -110,7 +116,7 @@ function jsonParse(v) {
 var KNOWN_TABLES = [
   'cards', 'messages', 'positions', 'videos', 'splash_images',
   'company_profiles', 'company_performances', 'business_modules',
-  'honors', 'projects', 'sites', 'company_infos', 'config'
+  'honors', 'projects', 'sites', 'company_infos', 'config', 'templates'
 ]
 function validateTable(name) {
   if (!KNOWN_TABLES.includes(name)) {
@@ -436,6 +442,15 @@ function readData() {
     };
   });
 
+  // Templates
+  var templates = queryAll('templates', function(t) {
+    return {
+      id: t.id, name: t.name || '', filename: t.filename || '',
+      mime_type: t.mime_type || 'text/html', size: t.size || 0,
+      created_at: t.created_at || ''
+    };
+  });
+
   // Configs
   var configs = {};
   try {
@@ -451,7 +466,8 @@ function readData() {
   var defaultNextId = {
     cards: 1, messages: 1, positions: 1, videos: 1,
     honors: 1, projects: 1, sites: 1, splashImages: 4,
-    companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1
+    companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1,
+    templates: 1
   };
   var nextId = configs.nextId || defaultNextId;
 
@@ -473,6 +489,7 @@ function readData() {
     projects: projects,
     sites: sites,
     companyInfos: companyInfos,
+    templates: templates,
     companyProfileConfig: { sections: configs.companyProfileConfig || [] },
     companyPerformanceConfig: { sections: configs.companyPerformanceConfig || [] },
     casePageConfig: { sections: configs.casePageConfig || [] },
@@ -606,6 +623,13 @@ function _writeDataImpl(data) {
     function(ci) { return [ci.id, ci.name||'', ci.legalPerson||'', ci.phone||'', ci.address||'',
       ci.longitude||null, ci.latitude||null, ci.website||'', ci.description||'',
       ci.sortOrder||0, ci.status?1:0, ci.createdAt||'', ci.updatedAt||'']; }
+  );
+
+  // Templates
+  syncTable('templates',
+    ['id','name','filename','mime_type','size','created_at'],
+    data.templates,
+    function(t) { return [t.id, t.name||'', t.filename||'', t.mime_type||'text/html', t.size||0, t.created_at||'']; }
   );
 
   // Configs

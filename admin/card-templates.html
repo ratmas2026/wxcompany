@@ -10,7 +10,7 @@
 </head>
 <body>
 <div id="app"></div>
-<input type="file" id="templateFileInput" accept=".html" style="display:none">
+<input type="file" id="templateFileInput" accept=".html,.htm,.txt" style="display:none">
 
 <script>
 (async function() {
@@ -36,33 +36,54 @@
 
   function formatDate(iso) {
     if (!iso) return ''
-    return iso.split('T')[0] + ' ' + iso.slice(11, 16)
+    return iso.split('T')[0]
+  }
+
+  function getTypeBadge(mimeType) {
+    if (mimeType === 'text/plain') return '<span class="badge badge-info">TXT</span>'
+    return '<span class="badge badge-neutral">HTML</span>'
   }
 
   function render() {
     let bodyHTML
+
     if (templates.length === 0) {
-      bodyHTML = '<div class="template-empty"><div class="empty-icon">&#x1F4C4;</div><p>暂无模板</p><p style="font-size:12px;color:var(--outline);margin-top:4px">点击右上角上传 HTML 模板文件</p></div>'
+      bodyHTML = `
+        <div class="upload-zone" id="uploadZone" style="margin-top:0">
+          <div class="upload-icon">&#128196;</div>
+          <p style="font-size:16px;font-weight:600;color:var(--on-surface);margin-bottom:6px">拖拽 HTML 或 TXT 文件到此处</p>
+          <p style="font-size:12px;color:var(--outline)">或点击选择文件 · 支持 .html / .txt · 最大 500KB</p>
+        </div>`
     } else {
-      const gridItems = templates.map(t => `
+      const gridItems = templates.map(function(t) {
+        return `
         <div class="template-card">
+          <div class="template-card-header">
+            ${getTypeBadge(t.mime_type)}
+            <span class="template-card-name">${Admin._escapeHTML(t.name)}</span>
+          </div>
           <div class="template-card-preview">
-            <iframe src="${API_BASE}/templates/${encodeURIComponent(t.filename)}/preview?cardId=${cards[0] ? cards[0].id : 0}" loading="lazy"></iframe>
+            <iframe sandbox="allow-scripts" srcdoc="" data-id="${t.id}" loading="lazy"></iframe>
           </div>
-          <div class="template-card-info">
-            <div>
-              <div class="template-card-name">${Admin._escapeHTML(t.name)}</div>
-              <div class="template-card-meta">${formatSize(t.size)} · ${formatDate(t.uploadedAt)}</div>
-            </div>
-            <div class="template-card-actions">
-              <button class="btn btn-sm btn-outline" onclick="previewTemplate('${Admin._escapeHTML(t.filename)}')">预览</button>
-              <button class="btn btn-sm btn-outline" onclick="downloadTemplate('${Admin._escapeHTML(t.filename)}')">下载</button>
-              <button class="btn btn-sm btn-outline" style="color:var(--error);border-color:var(--error)" onclick="deleteTemplate('${Admin._escapeHTML(t.filename)}')">删除</button>
-            </div>
+          <div class="template-card-meta-row">
+            <span>${formatSize(t.size)}</span>
+            <span>${formatDate(t.created_at)}</span>
           </div>
+          <div class="template-card-actions">
+            <button class="btn btn-sm btn-outline" onclick="previewTemplate(${t.id})">预览</button>
+            <button class="btn btn-sm btn-outline" onclick="viewSource(${t.id})">源码</button>
+            <button class="btn btn-sm btn-outline" onclick="downloadTemplate(${t.id})">下载</button>
+            <button class="btn btn-sm btn-outline" style="color:var(--error);border-color:var(--error)" onclick="deleteTemplate(${t.id})">删除</button>
+          </div>
+        </div>`
+      }).join('')
+
+      bodyHTML = `
+        <div class="upload-zone upload-zone--compact" id="uploadZone">
+          <span class="upload-icon" style="font-size:24px">&#128196;</span>
+          <span style="font-size:13px;color:var(--on-surface-variant)">拖拽文件到此处上传 · 支持 .html / .txt · 最大 500KB</span>
         </div>
-      `).join('')
-      bodyHTML = '<div class="template-grid">' + gridItems + '</div>'
+        <div class="template-grid">${gridItems}</div>`
     }
 
     Admin.setPageContent(`
@@ -72,26 +93,64 @@
           <button class="btn btn-primary" id="uploadBtn">+ 上传模板</button>
         </div>
       </div>
-      <div class="form-hint" style="margin-bottom:16px">上传 HTML 模板文件，使用 {{name}}、{{company}}、{{title}} 等占位符，预览时自动替换为名片数据</div>
       ${bodyHTML}
     `)
 
-    document.getElementById('uploadBtn').addEventListener('click', function() {
-      document.getElementById('templateFileInput').click()
+    // Upload button
+    var uploadBtn = document.getElementById('uploadBtn')
+    if (uploadBtn) {
+      uploadBtn.addEventListener('click', function() {
+        document.getElementById('templateFileInput').click()
+      })
+    }
+
+    // Upload zone
+    var zone = document.getElementById('uploadZone')
+    if (zone) {
+      zone.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON') return
+        document.getElementById('templateFileInput').click()
+      })
+      zone.addEventListener('dragover', function(e) {
+        e.preventDefault()
+        zone.classList.add('upload-zone--active')
+      })
+      zone.addEventListener('dragleave', function() {
+        zone.classList.remove('upload-zone--active')
+      })
+      zone.addEventListener('drop', function(e) {
+        e.preventDefault()
+        zone.classList.remove('upload-zone--active')
+        var file = e.dataTransfer.files[0]
+        if (file) handleUpload(file)
+      })
+    }
+
+    // Lazy-load preview iframes
+    var previewIframes = document.querySelectorAll('.template-card-preview iframe')
+    previewIframes.forEach(function(iframe) {
+      var id = iframe.getAttribute('data-id')
+      if (id && cards.length > 0) {
+        DataStore.getTemplateRender(id, cards[0].id).then(function(html) {
+          iframe.srcdoc = html
+        }).catch(function() {})
+      }
     })
   }
 
   // Upload handler
-  document.getElementById('templateFileInput').addEventListener('change', async function(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    if (!file.name.endsWith('.html')) {
-      Admin.showToast('仅支持 .html 文件', 'error')
-      e.target.value = ''
+  async function handleUpload(file) {
+    var ext = file.name.split('.').pop().toLowerCase()
+    if (ext !== 'html' && ext !== 'htm' && ext !== 'txt') {
+      Admin.showToast('仅支持 .html / .txt 文件', 'error')
+      return
+    }
+    if (file.size > 500 * 1024) {
+      Admin.showToast('文件大小不能超过 500KB', 'error')
       return
     }
     try {
-      const data = await DataStore.uploadTemplate(file)
+      var data = await DataStore.uploadTemplate(file)
       if (data && data.ok) {
         Admin.showToast('模板上传成功', 'success')
         Admin.track('template_upload', { filename: file.name })
@@ -103,17 +162,27 @@
     } catch (err) {
       Admin.showToast('上传失败，请重试', 'error')
     }
+  }
+
+  document.getElementById('templateFileInput').addEventListener('change', function(e) {
+    var file = e.target.files[0]
+    if (!file) return
+    handleUpload(file)
     e.target.value = ''
   })
 
-  // Preview
-  window.previewTemplate = function(filename) {
+  // Preview in sandbox iframe
+  window.previewTemplate = async function(id) {
     if (cards.length === 0) {
       Admin.showToast('暂无名片数据，请先创建名片', 'error')
       return
     }
-    const options = cards.map(c => '<option value="' + c.id + '">' + Admin._escapeHTML(c.name) + ' - ' + Admin._escapeHTML(c.title || '') + '</option>').join('')
-    const overlay = document.createElement('div')
+    var firstCardId = cards[0].id
+    var options = cards.map(function(c) {
+      return '<option value="' + c.id + '">' + Admin._escapeHTML(c.name) + ' - ' + Admin._escapeHTML(c.title || '') + '</option>'
+    }).join('')
+
+    var overlay = document.createElement('div')
     overlay.className = 'template-preview-overlay'
     overlay.id = 'previewOverlay'
     overlay.innerHTML = `
@@ -124,38 +193,103 @@
           <button class="btn btn-sm btn-secondary" onclick="closePreview()">关闭</button>
         </div>
         <div class="template-preview-body">
-          <iframe id="previewFrame" src="${API_BASE}/templates/${encodeURIComponent(filename)}/preview?cardId=${cards[0].id}"></iframe>
+          <iframe id="previewFrame" sandbox="allow-scripts" srcdoc=""></iframe>
         </div>
-      </div>
-    `
+      </div>`
     overlay.addEventListener('click', function(e) {
       if (e.target === overlay) closePreview()
     })
     document.body.appendChild(overlay)
 
-    document.getElementById('previewCardSelect').addEventListener('change', function() {
-      document.getElementById('previewFrame').src = API_BASE + '/templates/' + encodeURIComponent(filename) + '/preview?cardId=' + this.value
+    // Load initial render
+    try {
+      var html = await DataStore.getTemplateRender(id, firstCardId)
+      document.getElementById('previewFrame').srcdoc = html
+    } catch (e) {
+      document.getElementById('previewFrame').srcdoc = '<p>加载失败</p>'
+    }
+
+    // Card selector change
+    document.getElementById('previewCardSelect').addEventListener('change', async function() {
+      try {
+        var html = await DataStore.getTemplateRender(id, parseInt(this.value))
+        document.getElementById('previewFrame').srcdoc = html
+      } catch (e) {
+        document.getElementById('previewFrame').srcdoc = '<p>加载失败</p>'
+      }
     })
   }
 
   window.closePreview = function() {
-    const overlay = document.getElementById('previewOverlay')
+    var overlay = document.getElementById('previewOverlay')
     if (overlay) overlay.remove()
   }
 
-  // Download
-  window.downloadTemplate = function(filename) {
-    window.open(API_BASE + '/templates/' + encodeURIComponent(filename) + '/preview?cardId=' + (cards[0] ? cards[0].id : 0), '_blank')
+  // View source code
+  window.viewSource = async function(id) {
+    try {
+      var data = await DataStore.getTemplateRaw(id)
+      if (data && data.ok) {
+        var overlay = document.createElement('div')
+        overlay.className = 'template-preview-overlay'
+        overlay.id = 'sourceOverlay'
+        overlay.innerHTML = `
+          <div class="template-preview-modal" style="max-width:640px">
+            <div class="template-preview-header">
+              <h3>源码预览 - ${Admin._escapeHTML(data.name)}</h3>
+              <span class="badge badge-${data.mime_type === 'text/plain' ? 'info' : 'neutral'}">${data.mime_type === 'text/plain' ? 'TXT' : 'HTML'}</span>
+              <button class="btn btn-sm btn-secondary" onclick="closeSource()">关闭</button>
+            </div>
+            <div class="code-preview-body">
+              <pre><code>${Admin._escapeHTML(data.content)}</code></pre>
+            </div>
+          </div>`
+        overlay.addEventListener('click', function(e) {
+          if (e.target === overlay) closeSource()
+        })
+        document.body.appendChild(overlay)
+      }
+    } catch (e) {
+      Admin.showToast('获取源码失败', 'error')
+    }
   }
 
-  // Delete
-  window.deleteTemplate = function(filename) {
-    Admin.confirmDelete('确定删除模板「' + filename.replace('.html', '') + '」？关联此模板的名片将恢复为无模板状态。', async function() {
+  window.closeSource = function() {
+    var overlay = document.getElementById('sourceOverlay')
+    if (overlay) overlay.remove()
+  }
+
+  // Download template
+  window.downloadTemplate = async function(id) {
+    try {
+      var data = await DataStore.getTemplateRaw(id)
+      if (data && data.ok) {
+        var ext = data.mime_type === 'text/plain' ? '.txt' : '.html'
+        var blob = new Blob([data.content], { type: data.mime_type + ';charset=utf-8' })
+        var url = URL.createObjectURL(blob)
+        var a = document.createElement('a')
+        a.href = url
+        a.download = data.name + ext
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+    } catch (e) {
+      Admin.showToast('下载失败', 'error')
+    }
+  }
+
+  // Delete template
+  window.deleteTemplate = function(id) {
+    var tpl = templates.find(function(t) { return t.id === id })
+    var name = tpl ? tpl.name : 'Template ' + id
+    Admin.confirmDelete('确定删除模板「' + name + '」？关联此模板的名片将恢复为无模板状态。', async function() {
       try {
-        const data = await DataStore.deleteTemplate(filename)
+        var data = await DataStore.deleteTemplate(id)
         if (data && data.ok) {
           Admin.showToast('模板已删除', 'success')
-          Admin.track('template_delete', { filename: filename })
+          Admin.track('template_delete', { id: id })
           await loadData()
           render()
         } else {

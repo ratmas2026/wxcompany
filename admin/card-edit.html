@@ -121,7 +121,7 @@
               <label class="form-label">名片模板</label>
               <select class="form-select" id="cardTemplate">
                 <option value="">无模板</option>
-                ${templates.map(t => `<option value="${Admin._escapeHTML(t.filename)}" ${card.template === t.filename ? 'selected' : ''}>${Admin._escapeHTML(t.name)}</option>`).join('')}
+                ${templates.map(t => `<option value="${t.id}" ${String(card.template) === String(t.id) ? 'selected' : ''}>${Admin._escapeHTML(t.name)}</option>`).join('')}
               </select>
             </div>
           </div>
