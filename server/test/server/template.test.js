@@ -139,6 +139,13 @@ describe('sanitize', () => {
     expect(result).toContain('OK')
   })
 
+  it('preserves Tailwind CDN src with query params', async () => {
+    const result = await sanitizer.sanitize('<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><div>OK</div>')
+    expect(result).toContain('<script')
+    expect(result).toContain('src="https://cdn.tailwindcss.com?plugins=forms,container-queries"')
+    expect(result).toContain('OK')
+  })
+
   it('preserves <link>, <meta>, <title> in full documents', async () => {
     const result = await sanitizer.sanitize('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Test</title><link rel="stylesheet" href="/style.css"></head><body><p>Hi</p></body></html>')
     expect(result).toContain('<html')
