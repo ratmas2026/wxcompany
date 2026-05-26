@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>名片预览</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+<style data-purpose="typography">
+    body {
+        font-family: 'Orbitron', sans-serif;
+        background-color: #000000;
+        color: #ff4d4d;
+        margin: 0;
+        overflow: hidden;
+    }
+    .scanline-text {
+        position: relative;
+        display: inline-block;
+        color: #ff4d4d;
+        -webkit-text-stroke: 0.5px rgba(0, 0, 0, 0.5);
+        text-shadow: 0 0 2px #ff0000, 0 0 5px rgba(255, 0, 0, 0.8), 0 0 10px rgba(255, 0, 0, 0.4);
+    }
+    .scanline-text::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.15),
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 2px
+        );
+        pointer-events: none;
+    }
+    .glow-red {
+        color: #ff4d4d;
+        -webkit-text-stroke: 0.2px rgba(0, 0, 0, 0.3);
+        text-shadow: 0 0 2px #ff0000, 0 0 5px rgba(255, 0, 0, 0.8), 0 0 10px rgba(255, 0, 0, 0.4);
+    }
+</style>
+<style data-purpose="background-effects">
+    .honeycomb {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.4);
+        stroke-width: 0.5;
+    }
+    .canvas-component {
+        cursor: move;
+        transition: outline 0.2s, background-color 0.2s;
+        user-select: none;
+    }
+    .canvas-component:active {
+        cursor: grabbing;
+    }
+    .canvas-component:hover {
+        outline: 1px dashed rgba(255, 77, 77, 0.5);
+    }
+</style>
+<style data-purpose="animations">
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .animate-spin-slow {
+        animation: spin 10s linear infinite;
+    }
+</style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+<main class="relative w-full max-w-[1000px] aspect-[16/9] bg-black border-[2px] border-white/20 shadow-2xl overflow-hidden rounded-2xl box-border" id="business-card"><img alt="Background Pattern" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDf2a-B8ow88TvpCrxzG1AkiQWraOVXASKgaHXS3y8nBGIAQe-0oZhDBJC1karM8mSEQjku8tiaeGCu1gM1-lFYWal9_AccIQPdUvjl68rnKS7Sv8qSB94wsMpbJdE_EnDThAhEKZ4NNBROC_TH-r_CJEnPqi1CTZXGSL3KdeOi-UwZye4ThnsBd0qi7sOeV4S8cfTo7eBt2B8W989vMWu6qyeW9_qzWCvtZQLKJmSjbn55d-_8c8Bhqe-oypfxCmDPcU0pN6mxJrW1" style="position: absolute; top: 50%; left: 0; width: 100%; transform: translateY(-50%); z-index: 5; pointer-events: none; opacity: 0.5; object-fit: cover;">
+<div class="absolute inset-0 pointer-events-none z-10" data-purpose="background-layer">
+<div class="absolute inset-[16px] border border-white/50 rounded-lg"></div>
+<div class="absolute inset-[16px]"><div class="absolute left-1/4 h-full w-[1px] bg-white/50"></div><div class="absolute left-1/2 h-full w-[1px] bg-white/50"></div><div class="absolute left-3/4 h-full w-[1px] bg-white/50"></div><div class="absolute top-1/3 w-full h-[1px] bg-white/50"></div><div class="absolute top-2/3 w-full h-[1px] bg-white/50"></div></div>
+<div class="absolute left-12 top-1/6 -translate-y-1/2 w-16 h-16 opacity-20">
+<svg class="honeycomb" viewBox="0 0 100 100">
+<path d="M10,25 L30,25 L40,42 L30,59 L10,59 L0,42 Z"></path>
+<path d="M40,25 L60,25 L70,42 L60,59 L40,59 L30,42 Z"></path>
+</svg>
+</div>
+<div class="absolute right-[16px] top-1/3 w-1/4 h-1/3 flex items-center justify-center">
+<div class="w-16 h-16 border border-white/50 rotate-45 bg-[#2a2a2a]"></div>
+</div>
+</div>
+<div class="absolute inset-[16px] z-20" data-purpose="component-canvas">
+<!-- Company Name -->
+<div class="canvas-component absolute top-0 left-0 w-full h-1/3 flex items-center justify-center bg-black/40 backdrop-blur-[2px]" data-purpose="comp-header">
+<h1 class="scanline-text font-black uppercase tracking-widest text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap" id="preview-company">浙江省智能建造有限公司</h1>
+</div>
+<!-- Name and Title -->
+<div class="canvas-component absolute top-1/3 left-1/4 w-1/2 h-1/3 flex flex-col items-center justify-center text-center px-4 bg-black/60 backdrop-blur-sm" data-purpose="comp-name-title">
+<h2 class="scanline-text font-extrabold tracking-wider uppercase text-4xl md:text-6xl" id="preview-name">RATMAS</h2>
+<p class="mt-2 glow-red font-medium tracking-[0.2em] uppercase text-[#ff4d4d] text-base md:text-xl text-xl md:text-3xl" id="preview-title">SCAVENGER</p>
+</div>
+<!-- Address -->
+<div class="canvas-component absolute top-2/3 left-0 h-1/3 flex bg-black/40 backdrop-blur-[2px] items-start px-8 pt-8 w-1/3" data-purpose="comp-address">
+<div class="text-[#ff4d4d]">
+<h3 class="font-bold tracking-widest uppercase glow-red mb-2 text-2xl">Address</h3>
+<p class="font-semibold leading-relaxed tracking-wide opacity-90 glow-red text-lg" id="preview-address">浙江省杭州市西湖区紫萱路155号</p>
+</div>
+</div>
+<!-- Contact -->
+<div class="canvas-component absolute top-2/3 w-1/2 h-1/3 flex bg-black/40 backdrop-blur-[2px] items-start px-8 pt-8" data-purpose="comp-contact" style="left: 50%;">
+<div class="text-[#ff4d4d]">
+<h3 class="font-bold tracking-widest uppercase glow-red mb-2 text-2xl">Contact</h3>
+<p class="font-semibold leading-relaxed tracking-wide opacity-90 glow-red text-lg" id="preview-phone">13511266299</p>
+<p class="font-semibold leading-relaxed tracking-wide opacity-90 glow-red text-lg" id="preview-email">arcthelad2004@163.com</p>
+</div>
+</div>
+<!-- Rotating Circle -->
+<div class="canvas-component absolute bottom-8 right-8 w-24 h-24 flex items-center justify-center" data-purpose="comp-status-indicator">
+<div class="text-[#ff4d4d] w-full h-full">
+<svg class="w-full h-full animate-spin-slow" viewBox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="22.5" stroke="#ff3e3e" stroke-dasharray="5 7.5" stroke-width="4"></circle>
+</svg>
+</div>
+</div>
+</div>
+</main>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Data injection from localStorage ---
+        try {
+            const raw = localStorage.getItem('preview_card');
+            if (raw) {
+                const card = JSON.parse(raw);
+                document.getElementById('preview-company').textContent = card.company || '';
+                document.getElementById('preview-name').textContent = card.name || '';
+                document.getElementById('preview-title').textContent = card.title || '';
+                document.getElementById('preview-address').textContent = card.address || '';
+                document.getElementById('preview-phone').textContent = card.phone || '';
+                document.getElementById('preview-email').textContent = card.email || '';
+                localStorage.removeItem('preview_card');
+            }
+        } catch(e) {}
+
+        // --- Draggable components ---
+        const container = document.getElementById('business-card');
+        const draggables = document.querySelectorAll('.canvas-component');
+
+        draggables.forEach(el => {
+            let isDragging = false;
+            let startX, startY;
+            let initialLeft, initialTop;
+
+            el.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isDragging = true;
+                el.style.zIndex = "100";
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = el.offsetLeft;
+                initialTop = el.offsetTop;
+
+                const onMouseMove = (moveEvent) => {
+                    if (!isDragging) return;
+                    const dx = moveEvent.clientX - startX;
+                    const dy = moveEvent.clientY - startY;
+                    el.style.left = `${initialLeft + dx}px`;
+                    el.style.top = `${initialTop + dy}px`;
+                    el.classList.remove('top-0', 'top-1/3', 'top-2/3', 'left-0', 'left-1/4', 'left-1/2', 'bottom-8', 'right-8');
+                };
+
+                const onMouseUp = () => {
+                    isDragging = false;
+                    el.style.zIndex = "30";
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+        });
+    });
+</script>
+</body>
+</html>
