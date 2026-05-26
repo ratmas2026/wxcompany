@@ -138,10 +138,9 @@ describe('DB layer (queryAll / readData / writeData)', () => {
       casePageConfig: { sections: [] },
       businessModulePageConfig: { sections: [] },
       cardPageConfig: { sections: [] },
-      cardTemplates: [],
       nextId: { cards: 1, messages: 1, positions: 1, videos: 1, honors: 1,
         projects: 1, sites: 1, splashImages: 4, companyProfiles: 1,
-        companyPerformances: 1, businessModules: 1, companyInfos: 1, cardTemplates: 1 },
+        companyPerformances: 1, businessModules: 1, companyInfos: 1 },
       ...overrides
     }
   }
@@ -203,7 +202,6 @@ describe('DB layer (queryAll / readData / writeData)', () => {
       expect(data).toHaveProperty('projects')
       expect(data).toHaveProperty('sites')
       expect(data).toHaveProperty('companyInfos')
-      expect(data).toHaveProperty('cardTemplates')
       expect(data).toHaveProperty('nextId')
       expect(Array.isArray(data.cards)).toBe(true)
     })
@@ -241,18 +239,17 @@ describe('DB layer (queryAll / readData / writeData)', () => {
     it('returns default nextId from hardcoded defaults', () => {
       writeData(emptyPayload({ nextId: { cards: 1, messages: 1, positions: 1, videos: 1,
         honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1,
-        companyPerformances: 1, businessModules: 1, companyInfos: 1, cardTemplates: 1 } }))
+        companyPerformances: 1, businessModules: 1, companyInfos: 1 } }))
       const data = readData()
       expect(data.nextId).toHaveProperty('cards')
       expect(data.nextId).toHaveProperty('messages')
-      expect(data.nextId).toHaveProperty('cardTemplates')
     })
 
     it('reads nextId from writeData payload', () => {
       writeData(emptyPayload({
         nextId: { cards: 99, messages: 1, positions: 1, videos: 1,
           honors: 1, projects: 1, sites: 1, splashImages: 4, companyProfiles: 1,
-          companyPerformances: 1, businessModules: 1, companyInfos: 1, cardTemplates: 1 }
+          companyPerformances: 1, businessModules: 1, companyInfos: 1 }
       }))
       const data = readData()
       expect(data.nextId.cards).toBe(99)
@@ -267,25 +264,6 @@ describe('DB layer (queryAll / readData / writeData)', () => {
       expect(data.companyProfileConfig.sections).toEqual(['a', 'b'])
       expect(data.cardPageConfig.sections).toEqual(['x'])
       expect(data.casePageConfig.sections).toEqual([])
-    })
-
-    it('parses json fields in card_templates (colors, fields)', () => {
-      writeData(emptyPayload({
-        cardTemplates: [{
-          id: 1, name: 'T1', background: '#fff', logoUrl: '/logo.png',
-          colors: { primary: '#111', secondary: '#222' },
-          fields: ['name', 'phone'],
-          createdAt: '2024-01-01'
-        }]
-      }))
-      const data = readData()
-      const t = data.cardTemplates[0]
-      expect(t.name).toBe('T1')
-      expect(t.background).toBe('#fff')
-      expect(t.logoUrl).toBe('/logo.png')
-      expect(t.colors).toEqual({ primary: '#111', secondary: '#222' })
-      expect(t.fields).toEqual(['name', 'phone'])
-      expect(t.createdAt).toBe('2024-01-01')
     })
 
     it('parses json fields in business_modules (sections, cards)', () => {

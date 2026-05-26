@@ -41,12 +41,11 @@ function emptyPayload(overrides = {}) {
     casePageConfig: { sections: [] },
     businessModulePageConfig: { sections: [] },
     cardPageConfig: { sections: [] },
-    cardTemplates: [],
     nextId: {
       cards: 1, messages: 1, positions: 1, videos: 1,
       honors: 1, projects: 1, sites: 1, splashImages: 4,
       companyProfiles: 1, companyPerformances: 1, businessModules: 1,
-      companyInfos: 1, cardTemplates: 1
+      companyInfos: 1
     },
     ...overrides
   }
@@ -549,88 +548,6 @@ describe('PUT /api/card-page-config', () => {
       .put('/api/card-page-config')
       .send({ sections: ['x'] })
     expect(res.status).toBe(401)
-  })
-})
-
-// -----------------------------------------------------------------
-// Card Templates
-// -----------------------------------------------------------------
-
-describe('GET /api/card-templates', () => {
-  it('returns empty templates array', async () => {
-    const res = await request(app).get('/api/card-templates')
-    expect(res.status).toBe(200)
-    expect(res.body).toEqual([])
-  })
-})
-
-describe('POST /api/card-templates', () => {
-  it('creates a template with valid auth', async () => {
-    const res = await request(app)
-      .post('/api/card-templates')
-      .set(adminHeaders())
-      .send({ name: 'Template 1' })
-    expect(res.status).toBe(200)
-    expect(res.body.name).toBe('Template 1')
-    expect(res.body.background).toBe('#030909')
-    expect(res.body.colors).toEqual({ primary: '#ed3731', secondary: '#717777' })
-  })
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app)
-      .post('/api/card-templates')
-      .send({ name: 'NoAuth' })
-    expect(res.status).toBe(401)
-  })
-})
-
-describe('PUT /api/card-templates/:id', () => {
-  it('updates a template', async () => {
-    writeData(emptyPayload({
-      cardTemplates: [
-        { id: 1, name: 'T1', background: '#fff', logoUrl: '',
-          colors: { primary: '#000', secondary: '#333' },
-          fields: ['name'], createdAt: '2024' }
-      ]
-    }))
-    const res = await request(app)
-      .put('/api/card-templates/1')
-      .set(adminHeaders())
-      .send({ name: 'Updated Template' })
-    expect(res.status).toBe(200)
-    expect(res.body.name).toBe('Updated Template')
-  })
-
-  it('returns 404 for non-existent template', async () => {
-    const res = await request(app)
-      .put('/api/card-templates/999')
-      .set(adminHeaders())
-      .send({ name: 'Ghost' })
-    expect(res.status).toBe(404)
-  })
-})
-
-describe('DELETE /api/card-templates/:id', () => {
-  it('deletes a template', async () => {
-    writeData(emptyPayload({
-      cardTemplates: [
-        { id: 1, name: 'T1', background: '#fff', logoUrl: '',
-          colors: { primary: '#000', secondary: '#333' },
-          fields: ['name'], createdAt: '2024' }
-      ]
-    }))
-    const res = await request(app)
-      .delete('/api/card-templates/1')
-      .set(adminHeaders())
-    expect(res.status).toBe(200)
-    expect(res.body.ok).toBe(true)
-  })
-
-  it('returns 404 for non-existent template', async () => {
-    const res = await request(app)
-      .delete('/api/card-templates/999')
-      .set(adminHeaders())
-    expect(res.status).toBe(404)
   })
 })
 

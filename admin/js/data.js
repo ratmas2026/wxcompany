@@ -53,10 +53,8 @@ const DataStore = {
       const cardPageConfig = await res17.json()
       const res18 = await authFetch(API_BASE + '/company-infos')
       const companyInfos = await res18.json()
-      const res19 = await authFetch(API_BASE + '/card-templates')
-      const cardTemplates = await res19.json()
 
-      localStorage.setItem(this._storageKey, JSON.stringify({ cards, messages, positions, videos, splashImages, companyProfiles, companyProfileConfig, companyPerformances, companyPerformanceConfig, casePageConfig, cardPageConfig, honors, projects, businessModules, businessModulePageConfig, companyInfos, cardTemplates }))
+      localStorage.setItem(this._storageKey, JSON.stringify({ cards, messages, positions, videos, splashImages, companyProfiles, companyProfileConfig, companyPerformances, companyPerformanceConfig, casePageConfig, cardPageConfig, honors, projects, businessModules, businessModulePageConfig, companyInfos }))
       this._ready = true
       return true
     } catch (e) {
@@ -693,40 +691,6 @@ const DataStore = {
     cache.companyInfos = (cache.companyInfos || []).filter(ci => ci.id !== id)
     this._setCache(cache)
     await this._sync('companyInfos', 'DELETE', '/company-infos/' + id)
-  },
-
-  // Card Templates
-  getCardTemplates() { return this._getCache().cardTemplates || [] },
-
-  async saveCardTemplate(tpl) {
-    const cache = this._getCache()
-    if (!cache.cardTemplates) cache.cardTemplates = []
-    if (tpl.id) {
-      const idx = cache.cardTemplates.findIndex(t => t.id === tpl.id)
-      if (idx >= 0) {
-        await this._sync('cardTemplates', 'PUT', '/card-templates/' + tpl.id, tpl)
-        cache.cardTemplates[idx] = tpl
-        this._setCache(cache)
-      }
-    } else {
-      try {
-        const res = await authFetch(API_BASE + '/card-templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tpl) })
-        const saved = await res.json()
-        cache.cardTemplates.push(saved)
-        this._setCache(cache)
-      } catch (e) {
-        tpl.id = Date.now()
-        cache.cardTemplates.push(tpl)
-        this._setCache(cache)
-      }
-    }
-  },
-
-  async deleteCardTemplate(id) {
-    const cache = this._getCache()
-    cache.cardTemplates = (cache.cardTemplates || []).filter(t => t.id !== id)
-    this._setCache(cache)
-    await this._sync('cardTemplates', 'DELETE', '/card-templates/' + id)
   },
 
 }

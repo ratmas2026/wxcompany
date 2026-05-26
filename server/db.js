@@ -94,16 +94,6 @@ CREATE TABLE IF NOT EXISTS config (
   key TEXT PRIMARY KEY,
   value TEXT
 );
-
-CREATE TABLE IF NOT EXISTS card_templates (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  background TEXT DEFAULT '#030909',
-  logo_url TEXT DEFAULT '',
-  colors TEXT DEFAULT '{"primary":"#ed3731","secondary":"#717777"}',
-  fields TEXT DEFAULT '[]',
-  created_at TEXT
-);
 `;
 
 function jsonVal(v) {
@@ -114,6 +104,19 @@ function jsonVal(v) {
 function jsonParse(v) {
   if (!v) return null;
   try { return JSON.parse(v); } catch (e) { return null; }
+}
+
+// Whitelist of known table names — prevents SQL injection in dynamic table references
+var KNOWN_TABLES = [
+  'cards', 'messages', 'positions', 'videos', 'splash_images',
+  'company_profiles', 'company_performances', 'business_modules',
+  'honors', 'projects', 'sites', 'company_infos', 'config'
+]
+function validateTable(name) {
+  if (!KNOWN_TABLES.includes(name)) {
+    throw new Error('Unknown table: ' + name)
+  }
+  return name
 }
 
 function initDatabase() {
@@ -280,6 +283,7 @@ function migrateFromJSON() {
 // -- readData() replacement: assemble full data object from DB --
 function queryAll(table, mapFn) {
   try {
+    validateTable(table);
     var result = db.exec('SELECT * FROM ' + table);
     if (result.length === 0) return [];
     var columns = result[0].columns;
@@ -335,17 +339,6 @@ function readData() {
   // Splash Images
   var splashImages = queryAll('splash_images', function(s) {
     return { id: s.id, url: s.url || '', sort: s.sort, updatedAt: s.updated_at || '' };
-  });
-
-  // Card Templates
-  var cardTemplates = queryAll('card_templates', function(t) {
-    return {
-      id: t.id, name: t.name || '', background: t.background || '#030909',
-      logoUrl: t.logo_url || '',
-      colors: jsonParse(t.colors) || { primary: '#ed3731', secondary: '#717777' },
-      fields: jsonParse(t.fields) || [],
-      createdAt: t.created_at || ''
-    };
   });
 
   // Company Profiles
@@ -455,8 +448,7 @@ function readData() {
   var defaultNextId = {
     cards: 1, messages: 1, positions: 1, videos: 1,
     honors: 1, projects: 1, sites: 1, splashImages: 4,
-    companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1,
-    cardTemplates: 1
+    companyProfiles: 1, companyPerformances: 1, businessModules: 1, companyInfos: 1
   };
   var nextId = configs.nextId || defaultNextId;
 
@@ -483,14 +475,31 @@ function readData() {
     casePageConfig: { sections: configs.casePageConfig || [] },
     businessModulePageConfig: { sections: configs.businessModulePageConfig || [] },
     cardPageConfig: { sections: configs.cardPageConfig || [] },
-    cardTemplates: cardTemplates,
     nextId: nextId
   };
 }
 
 // -- writeData() replacement: sync all tables from data object --
+var _writeLocked = false
 function writeData(data) {
+  if (_writeLocked) throw new Error('Re-entrant writeData detected')
+  _writeLocked = true
+  try {
+    db.run('BEGIN')
+    _writeDataImpl(data)
+    db.run('COMMIT')
+    save()
+  } catch (e) {
+    try { db.run('ROLLBACK') } catch (_) {}
+    throw e
+  } finally {
+    _writeLocked = false
+  }
+}
+
+function _writeDataImpl(data) {
   function syncTable(table, columns, dataArr, mapFn) {
+    validateTable(table)
     db.run('DELETE FROM ' + table);
     if (!dataArr || dataArr.length === 0) return;
     var placeholders = columns.map(function() { return '?'; }).join(',');
@@ -596,14 +605,6 @@ function writeData(data) {
       ci.sortOrder||0, ci.status?1:0, ci.createdAt||'', ci.updatedAt||'']; }
   );
 
-  // Card Templates
-  syncTable('card_templates',
-    ['id','name','background','logo_url','colors','fields','created_at'],
-    data.cardTemplates,
-    function(t) { return [t.id, t.name||'', t.background||'#030909', t.logoUrl||'',
-      jsonVal(t.colors), jsonVal(t.fields), t.createdAt||'']; }
-  );
-
   // Configs
   db.run('DELETE FROM config');
   var insCfg = db.prepare('INSERT INTO config (key,value) VALUES (?,?)');
@@ -614,8 +615,6 @@ function writeData(data) {
   insCfg.run(['cardPageConfig', jsonVal((data.cardPageConfig || {}).sections || [])]);
   insCfg.run(['nextId', jsonVal(data.nextId || {})]);
   insCfg.free();
-
-  save();
 }
 
 function getDb() {

@@ -53,7 +53,6 @@ const Admin = {
       { page: 'projects', icon: '&#x1F3D7;', label: '企业项目' },
 
       { page: 'display-custom', icon: '&#x1F39B;', label: '展示自定义' },
-      { page: 'card-template', icon: '&#x1F4C4;', label: '名片模板' },
       { page: 'message', icon: '&#x1F4E9;', label: '留言管理' }
     ]
 

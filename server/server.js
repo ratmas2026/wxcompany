@@ -1114,7 +1114,7 @@ app.put('/api/business-modules/:mid/cards/:cid', (req, res) => {
   if (!mod.cards) mod.cards = []
   const cidx = mod.cards.findIndex(c => c.id === cid)
   if (cidx < 0) return res.status(404).json({ error: 'Card not found' })
-  mod.cards[cidx] = { ...mod.cards[cidx], ...pick(req.body, 'name', 'title', 'phone', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'sortOrder', 'templateId', 'extra'), id: mod.cards[cidx].id }
+  mod.cards[cidx] = { ...mod.cards[cidx], ...pick(req.body, 'name', 'title', 'phone', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'sortOrder', 'extra'), id: mod.cards[cidx].id }
   writeData(data)
   res.json(mod.cards[cidx])
 })
@@ -1342,7 +1342,7 @@ app.put('/api/cards/:id', (req, res) => {
   const data = readData()
   const idx = data.cards.findIndex(c => c.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.cards[idx] = { ...data.cards[idx], ...pick(req.body, 'name', 'phone', 'title', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'templateId'), id: data.cards[idx].id }
+  data.cards[idx] = { ...data.cards[idx], ...pick(req.body, 'name', 'phone', 'title', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status'), id: data.cards[idx].id }
   writeData(data)
   res.json(data.cards[idx])
 })
@@ -1474,56 +1474,6 @@ app.post('/api/inquiry', (req, res) => {
   data.messages.push(msg)
   writeData(data)
   res.json({ ok: true, id: msg.id })
-})
-
-// Card Templates
-app.get('/api/card-templates', (req, res) => {
-  const data = readData()
-  res.json(data.cardTemplates || [])
-})
-
-app.get('/api/card-templates/:id', (req, res) => {
-  const data = readData()
-  const tpl = (data.cardTemplates || []).find(t => t.id === parseInt(req.params.id))
-  if (!tpl) return res.status(404).json({ error: 'Not found' })
-  res.json(tpl)
-})
-
-app.post('/api/card-templates', (req, res) => {
-  const data = readData()
-  const tpl = {
-    id: data.nextId.cardTemplates++,
-    name: req.body.name || '',
-    background: req.body.background || '#030909',
-    logoUrl: req.body.logoUrl || '',
-    colors: req.body.colors || { primary: '#ed3731', secondary: '#717777' },
-    fields: req.body.fields || [],
-    createdAt: new Date().toLocaleString('zh-CN', { hour12: false })
-  }
-  if (!data.cardTemplates) data.cardTemplates = []
-  data.cardTemplates.push(tpl)
-  writeData(data)
-  res.json(tpl)
-})
-
-app.put('/api/card-templates/:id', (req, res) => {
-  const data = readData()
-  const templates = data.cardTemplates || []
-  const idx = templates.findIndex(t => t.id === parseInt(req.params.id))
-  if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  templates[idx] = { ...templates[idx], ...pick(req.body, 'name', 'background', 'logoUrl', 'colors', 'fields', 'status'), id: templates[idx].id }
-  writeData(data)
-  res.json(templates[idx])
-})
-
-app.delete('/api/card-templates/:id', (req, res) => {
-  const data = readData()
-  const templates = data.cardTemplates || []
-  const idx = templates.findIndex(t => t.id === parseInt(req.params.id))
-  if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  templates.splice(idx, 1)
-  writeData(data)
-  res.json({ ok: true })
 })
 
 // Data reset
