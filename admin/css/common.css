@@ -160,7 +160,7 @@ a:hover { text-decoration: underline; }
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
 }
 .topbar-icon {
   width: 36px;
@@ -351,6 +351,23 @@ a:hover { text-decoration: underline; }
   background: var(--primary);
   flex-shrink: 0;
 }
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-container) 25%, var(--surface-container-high) 50%, var(--surface-container) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-line { height: 14px; margin-bottom: 10px; }
+.skeleton-line:last-child { width: 60%; margin-bottom: 0; }
+.skeleton-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+.skeleton-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--surface-container); }
+.skeleton-body { flex: 1; }
 
 /* ========== Profile Page ========== */
 .profile-avatar-section {

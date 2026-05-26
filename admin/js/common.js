@@ -312,7 +312,7 @@ const Admin = {
   async _loadNotifyList() {
     const list = document.getElementById('notifyList')
     if (!list) return
-    list.innerHTML = '<div class="notify-empty">加载中...</div>'
+    list.innerHTML = '<div class="skeleton-item"><div class="skeleton skeleton-avatar"></div><div class="skeleton-body"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div></div><div class="skeleton-item"><div class="skeleton skeleton-avatar"></div><div class="skeleton-body"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div></div><div class="skeleton-item"><div class="skeleton skeleton-avatar"></div><div class="skeleton-body"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div></div>'
     try {
       const res = await authFetch(API_BASE + '/notifications?limit=5')
       if (!res.ok) throw new Error('HTTP ' + res.status)
