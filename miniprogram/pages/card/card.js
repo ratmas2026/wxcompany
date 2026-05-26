@@ -4,6 +4,7 @@ const app = getApp()
 
 Page({
   data: {
+    animationStage: 'scanning',
     isDataReady: false,
     cardData: {},
     companyInfo: {},
@@ -30,11 +31,30 @@ Page({
   onLoad(options) {
     this._cardId = options.cardId ? parseInt(options.cardId) : null
     this._configLoaded = true
+    this._animationPlayed = false
     if (wx.canIUse && wx.canIUse('addPhoneContact')) {
       this.setData({ canAddContact: true })
     }
+    this._startScanAnimation()
     this.fetchCardConfig()
     this.fetchData()
+  },
+
+  _startScanAnimation() {
+    if (this._animationPlayed) return
+    this._animationPlayed = true
+    this.setData({ animationStage: 'scanning' })
+    this._scanTimer = setTimeout(() => {
+      this.setData({ animationStage: 'revealing' })
+      this._revealTimer = setTimeout(() => {
+        this.setData({ animationStage: 'done' })
+      }, 450)
+    }, 1200)
+  },
+
+  onUnload() {
+    if (this._scanTimer) clearTimeout(this._scanTimer)
+    if (this._revealTimer) clearTimeout(this._revealTimer)
   },
 
   onShow() {

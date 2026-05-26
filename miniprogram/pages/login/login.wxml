@@ -1,56 +1,76 @@
 <view class="login-page">
-  <!-- Title -->
-  <view class="login-header">
-    <text class="header-title">手机号码登录</text>
+  <!-- 背景柔光层 -->
+  <view class="bg-glow bg-glow--top"></view>
+  <view class="bg-glow bg-glow--bottom"></view>
+
+  <!-- 品牌区 -->
+  <view class="brand-area">
+    <view class="brand-logo">🔷</view>
+    <text class="brand-slogan">数字身份，一见即识</text>
   </view>
 
-  <!-- SMS Login Form (Primary) -->
-  <view class="login-form">
-    <form bindsubmit="onPhoneLogin">
-      <!-- Phone Number -->
-      <view class="input-wrap">
-        <input
-          class="form-input"
-          name="phone"
-          type="number"
-          placeholder="请输入11位手机号"
-          maxlength="11"
-          placeholder-class="input-placeholder"
-          bindinput="onPhoneInput"
-          cursor-spacing="100"
-          focus="{{autoFocus}}"
-        />
-      </view>
+  <!-- 毛玻璃登录卡片 -->
+  <view class="login-card">
+    <view class="card-header">
+      <text class="card-title">欢迎回来</text>
+      <text class="card-subtitle">登录你的数字身份</text>
+    </view>
 
-      <!-- Verification Code -->
-      <view class="code-row">
-        <view class="code-input-wrap">
+    <view class="login-form">
+      <form bindsubmit="onPhoneLogin">
+        <!-- 手机号 -->
+        <view class="input-wrap {{inputFocused.phone ? 'input-wrap--focused' : ''}}">
           <input
             class="form-input"
-            name="code"
+            name="phone"
             type="number"
-            placeholder="6位验证码"
-            maxlength="6"
+            placeholder="手机号码"
+            maxlength="11"
             placeholder-class="input-placeholder"
+            bindinput="onPhoneInput"
+            bindfocus="onInputFocus"
+            bindblur="onInputBlur"
+            data-field="phone"
             cursor-spacing="100"
+            focus="{{autoFocus}}"
           />
         </view>
-        <button
-          class="code-btn {{countdown > 0 || sendingCode ? 'code-btn--disabled' : ''}}"
-          bindtap="onSendCode"
-          disabled="{{countdown > 0 || sendingCode}}"
-          loading="{{sendingCode}}"
-        >
-          {{countdown > 0 ? countdown + 's后重发' : '获取验证码'}}
-        </button>
-      </view>
 
-      <!-- Login Button -->
-      <button class="login-btn" form-type="submit" loading="{{loggingIn}}" disabled="{{loggingIn}}">登录</button>
-    </form>
+        <!-- 验证码 -->
+        <view class="code-row">
+          <view class="code-input-wrap {{inputFocused.code ? 'input-wrap--focused' : ''}}">
+            <input
+              class="form-input"
+              name="code"
+              type="number"
+              placeholder="验证码"
+              maxlength="6"
+              placeholder-class="input-placeholder"
+              bindfocus="onInputFocus"
+              bindblur="onInputBlur"
+              data-field="code"
+              cursor-spacing="100"
+            />
+          </view>
+          <button
+            class="code-btn {{countdown > 0 || sendingCode ? 'code-btn--disabled' : ''}}"
+            bindtap="onSendCode"
+            disabled="{{countdown > 0 || sendingCode}}"
+            loading="{{sendingCode}}"
+          >
+            {{countdown > 0 ? countdown + 's' : '获取验证码'}}
+          </button>
+        </view>
+
+        <!-- 登录按钮 -->
+        <button class="login-btn" form-type="submit" loading="{{loggingIn}}" disabled="{{loggingIn}}">
+          登 录
+        </button>
+      </form>
+    </view>
   </view>
 
-  <!-- Agreement -->
+  <!-- 用户协议 -->
   <view class="agreement-row">
     <view class="agree-circle {{agreed ? 'agree-circle--checked' : ''}}" bindtap="onToggleAgree">
       <text wx:if="{{agreed}}" class="agree-check">✓</text>
@@ -60,5 +80,4 @@
     <text>与</text>
     <text class="agree-link" bindtap="onViewPrivacy">《隐私政策》</text>
   </view>
-
 </view>

@@ -49,6 +49,11 @@ Page({
   },
 
   goHome() {
-    wx.reLaunch({ url: '/pages/company/company' })
+    const app = getApp()
+    if (app.globalData.isLogin) {
+      wx.reLaunch({ url: '/pages/company/company' })
+    } else {
+      wx.reLaunch({ url: '/pages/login/login' })
+    }
   }
 })

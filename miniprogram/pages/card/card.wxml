@@ -13,11 +13,27 @@
   <view wx:else class="profile-card-text" style="font-family:{{tb.fontFamily}};font-size:{{tb.fontSizeRpx}};text-align:{{tb.textAlign}}">{{tb.text || ''}}</view>
 </template>
 
+<!-- 扫描加载动画层 -->
+<view class="scan-overlay {{animationStage === 'revealing' ? 'scan-overlay--reveal' : ''}}" wx:if="{{animationStage !== 'done'}}">
+  <view class="scan-bg">
+    <view class="scan-glow-orb"></view>
+  </view>
+  <view class="scan-card-silhouette">
+    <view class="sil-avatar"></view>
+    <view class="sil-line sil-line--name"></view>
+    <view class="sil-line sil-line--title"></view>
+  </view>
+  <view class="scan-line" wx:if="{{animationStage === 'scanning'}}"></view>
+  <view class="scan-hint" wx:if="{{animationStage === 'scanning'}}">
+    <text>数字身份识别中</text>
+  </view>
+</view>
+
 <scroll-view scroll-y type="custom" class="page-container" enable-flex>
   <top-bar title="名片" icon="📇" showBack="{{false}}" />
 
-  <!-- 骨架屏：数据加载中 -->
-  <block wx:if="{{!isDataReady}}">
+  <!-- 骨架屏：扫描动画结束后数据仍未就绪时显示 -->
+  <block wx:if="{{!isDataReady && animationStage === 'done'}}">
     <view class="skeleton-hero">
       <view class="skeleton-line skeleton-line-short"></view>
       <view class="skeleton-line"></view>
@@ -35,62 +51,74 @@
   <view class="card-section">
     <view class="business-card signature-gradient">
       <view class="card-bg-blur"></view>
-      <view class="card-avatar">
-        <image lazy-load="{{true}}"class="avatar-img" src="{{cardData.avatar || '/images/avatar-executive.jpg'}}" mode="aspectFill" />
+      <view class="card-module card-module--avatar {{animationStage === 'done' ? 'module--visible' : ''}}">
+        <view class="card-avatar">
+          <image lazy-load="{{true}}"class="avatar-img" src="{{cardData.avatar || '/images/avatar-executive.jpg'}}" mode="aspectFill" />
+        </view>
       </view>
-      <view class="card-info">
-        <text class="card-name">{{cardData.name}}</text>
-        <text class="card-title">{{cardData.title}}</text>
-        <view class="card-badge" wx:if="{{cardData.department || companyInfo.name}}">
-          <text>{{cardData.department || companyInfo.name || ''}}</text>
+      <view class="card-module card-module--info {{animationStage === 'done' ? 'module--visible' : ''}}">
+        <view class="card-info">
+          <text class="card-name">{{cardData.name}}</text>
+          <text class="card-title">{{cardData.title}}</text>
+          <view class="card-badge" wx:if="{{cardData.department || companyInfo.name}}">
+            <text>{{cardData.department || companyInfo.name || ''}}</text>
+          </view>
         </view>
       </view>
       <!-- 自己的名片：标签 + 文本 + 发名片按钮 -->
       <block wx:if="{{isOwnCard}}">
-        <view class="card-contact-vertical" wx:if="{{cardData.phone || cardData.email}}">
-          <view class="contact-info-row" wx:if="{{cardData.phone}}">
-            <text class="contact-label">手机</text>
-            <text class="contact-value">{{cardData.phone}}</text>
-          </view>
-          <view class="contact-info-row" wx:if="{{cardData.email}}">
-            <text class="contact-label">邮箱</text>
-            <text class="contact-value">{{cardData.email}}</text>
+        <view class="card-module card-module--contact {{animationStage === 'done' ? 'module--visible' : ''}}">
+          <view class="card-contact-vertical" wx:if="{{cardData.phone || cardData.email}}">
+            <view class="contact-info-row" wx:if="{{cardData.phone}}">
+              <text class="contact-label">手机</text>
+              <text class="contact-value">{{cardData.phone}}</text>
+            </view>
+            <view class="contact-info-row" wx:if="{{cardData.email}}">
+              <text class="contact-label">邮箱</text>
+              <text class="contact-value">{{cardData.email}}</text>
+            </view>
           </view>
         </view>
       </block>
 
       <!-- 他人的名片：标签 + 可点击操作 -->
       <block wx:else>
-        <view class="card-contact-vertical" wx:if="{{cardData.phone || cardData.email}}">
-          <view class="contact-info-row" wx:if="{{cardData.phone}}" bindtap="callPhone">
-            <text class="contact-label">手机</text>
-            <text class="contact-value">{{cardData.phone}}</text>
-          </view>
-          <view class="contact-info-row" wx:if="{{cardData.email}}" bindtap="sendEmail">
-            <text class="contact-label">邮箱</text>
-            <text class="contact-value">{{cardData.email}}</text>
+        <view class="card-module card-module--contact {{animationStage === 'done' ? 'module--visible' : ''}}">
+          <view class="card-contact-vertical" wx:if="{{cardData.phone || cardData.email}}">
+            <view class="contact-info-row" wx:if="{{cardData.phone}}" bindtap="callPhone">
+              <text class="contact-label">手机</text>
+              <text class="contact-value">{{cardData.phone}}</text>
+            </view>
+            <view class="contact-info-row" wx:if="{{cardData.email}}" bindtap="sendEmail">
+              <text class="contact-label">邮箱</text>
+              <text class="contact-value">{{cardData.email}}</text>
+            </view>
           </view>
         </view>
       </block>
-      <view class="card-location" bindtap="openMap" wx:if="{{matchedCI.name || cardData.company || matchedCI.address || cardData.address || companyInfo.address}}">
-        <text>📍</text>
-        <view class="location-info">
-          <text class="location-company">{{matchedCI.name || cardData.company}}</text>
-          <text class="location-addr">{{matchedCI.address || cardData.address || companyInfo.address || ''}}</text>
+      <view class="card-module card-module--location {{animationStage === 'done' ? 'module--visible' : ''}}">
+        <view class="card-location" bindtap="openMap" wx:if="{{matchedCI.name || cardData.company || matchedCI.address || cardData.address || companyInfo.address}}">
+          <text>📍</text>
+          <view class="location-info">
+            <text class="location-company">{{matchedCI.name || cardData.company}}</text>
+            <text class="location-addr">{{matchedCI.address || cardData.address || companyInfo.address || ''}}</text>
+          </view>
+          <text class="location-arrow">›</text>
         </view>
-        <text class="location-arrow">›</text>
       </view>
-      <view class="recipient-actions" wx:if="{{!isOwnCard && cardData.phone}}">
-        <button class="action-btn action-call" bindtap="callPhone">
-          <text>📞</text>
-          <text>拨打电话</text>
-        </button>
-        <button class="action-btn action-save" bindtap="saveContact" wx:if="{{canAddContact}}">
-          <text>📇</text>
-          <text>保存联系人</text>
-        </button>
+      <view class="card-module card-module--actions {{animationStage === 'done' ? 'module--visible' : ''}}">
+        <view class="recipient-actions" wx:if="{{!isOwnCard && cardData.phone}}">
+          <button class="action-btn action-call" bindtap="callPhone">
+            <text>📞</text>
+            <text>拨打电话</text>
+          </button>
+          <button class="action-btn action-save" bindtap="saveContact" wx:if="{{canAddContact}}">
+            <text>📇</text>
+            <text>保存联系人</text>
+          </button>
+        </view>
+        <button wx:if="{{isOwnCard}}" class="share-card-btn" open-type="share">发名片</button>
       </view>
-      <button wx:if="{{isOwnCard}}" class="share-card-btn" open-type="share">发名片</button>
     </view>
   </view>
 

@@ -7,7 +7,8 @@ Page({
     phone: '',
     sendingCode: false,
     loggingIn: false,
-    autoFocus: false
+    autoFocus: false,
+    inputFocused: { phone: false, code: false }
   },
 
   onReady() {
@@ -21,6 +22,16 @@ Page({
 
   onPhoneInput(e) {
     this.setData({ phone: e.detail.value })
+  },
+
+  onInputFocus(e) {
+    const field = e.currentTarget.dataset.field
+    if (field) this.setData({ ['inputFocused.' + field]: true })
+  },
+
+  onInputBlur(e) {
+    const field = e.currentTarget.dataset.field
+    if (field) this.setData({ ['inputFocused.' + field]: false })
   },
 
   onToggleAgree() {
