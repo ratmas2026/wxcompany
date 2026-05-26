@@ -171,6 +171,11 @@ router.get('/:id/render', async (req, res) => {
       result = templateEngine.wrapHtmlDocument(result)
     }
 
+    // Ensure DOCTYPE is always present (DOMPurify may strip it)
+    if (!/^\s*<!DOCTYPE\s/i.test(result)) {
+      result = '<!DOCTYPE html>\n' + result
+    }
+
     templateCache.set(cacheKey, result)
 
     res.setHeader('X-Cache', 'MISS')

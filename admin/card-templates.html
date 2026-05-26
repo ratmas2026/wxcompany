@@ -71,6 +71,7 @@
           </div>
           <div class="template-card-actions">
             <button class="btn btn-sm btn-outline" onclick="previewTemplate(${t.id})">预览</button>
+            <button class="btn btn-sm btn-outline" onclick="openInNewTab(${t.id})">新窗口</button>
             <button class="btn btn-sm btn-outline" onclick="viewSource(${t.id})">源码</button>
             <button class="btn btn-sm btn-outline" onclick="downloadTemplate(${t.id})">下载</button>
             <button class="btn btn-sm btn-outline" style="color:var(--error);border-color:var(--error)" onclick="deleteTemplate(${t.id})">删除</button>
@@ -190,6 +191,7 @@
         <div class="template-preview-header">
           <h3>模板预览</h3>
           <select id="previewCardSelect">${options}</select>
+          <button class="btn btn-sm btn-outline" id="newWindowBtn">新窗口打开</button>
           <button class="btn btn-sm btn-secondary" onclick="closePreview()">关闭</button>
         </div>
         <div class="template-preview-body">
@@ -218,6 +220,19 @@
         document.getElementById('previewFrame').srcdoc = '<p>加载失败</p>'
       }
     })
+
+    // New window button
+    document.getElementById('newWindowBtn').addEventListener('click', function() {
+      var sel = document.getElementById('previewCardSelect')
+      var cardId = sel ? parseInt(sel.value) : firstCardId
+      window.open('/api/templates/' + id + '/render?cardId=' + cardId, '_blank')
+    })
+  }
+
+  // Open template render in new browser tab (bypasses iframe sandbox, works with Tailwind CDN)
+  window.openInNewTab = function(id) {
+    var cardId = cards.length > 0 ? cards[0].id : 0
+    window.open('/api/templates/' + id + '/render?cardId=' + cardId, '_blank')
   }
 
   window.closePreview = function() {
