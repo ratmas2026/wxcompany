@@ -41,8 +41,10 @@ async function _init() {
       var savedSrc = _savedScriptSrc.get(node)
       if (savedSrc) {
         _savedScriptSrc.delete(node)
-        // Allow Tailwind CDN (with or without query params)
-        if (/^https:\/\/cdn\.tailwindcss\.com/.test(savedSrc)) {
+        // Allow Tailwind CDN (with or without query params) — original CDN URL
+        // Also allow self-hosted Tailwind runtime — local path set by cdn-rewriter
+        if (/^https:\/\/cdn\.tailwindcss\.com/.test(savedSrc) ||
+            /^\/api\/templates-runtime\/tailwind\.js/.test(savedSrc)) {
           node.setAttribute('src', savedSrc)
         }
       }

@@ -25,6 +25,12 @@ app.use('/uploads', express.static(UPLOADS_DIR, {
   }
 }))
 
+// Serve Tailwind CDN runtime (self-hosted for China accessibility)
+app.use('/api/templates-runtime', express.static(path.join(__dirname, 'templates-runtime'), {
+  maxAge: '30d',
+  setHeaders(res) { res.setHeader('Content-Type', 'application/javascript; charset=utf-8') }
+}))
+
 // Multer error handling
 app.use(multerErrorHandler)
 
