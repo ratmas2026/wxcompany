@@ -2,10 +2,6 @@
 let DOMPurify = null
 let _jsdomWindow = null
 
-// DOMPurify strips src from <script> tags when the URL contains query params.
-// Save src before sanitization so we can restore allowed CDN sources after.
-var _savedScriptSrc = new WeakMap()
-
 async function _init() {
   if (DOMPurify) return
   if (_jsdomWindow) {
@@ -19,13 +15,6 @@ async function _init() {
   _jsdomWindow = new JSDOM('').window
   DOMPurify = createDOMPurify(_jsdomWindow)
 
-  // Save script src before DOMPurify strips it
-  DOMPurify.addHook('beforeSanitizeElements', function(node) {
-    if (node.nodeName === 'SCRIPT' && node.hasAttribute('src')) {
-      _savedScriptSrc.set(node, node.getAttribute('src'))
-    }
-  })
-
   DOMPurify.addHook('uponSanitizeElement', function(node, data) {
     // Remove inline event handlers (e.g., onclick="...")
     if (node.attributes) {
@@ -33,19 +22,6 @@ async function _init() {
         var name = node.attributes[i].name
         if (/^on/i.test(name)) {
           node.removeAttribute(name)
-        }
-      }
-    }
-    // Restore external script src for known-safe CDN origins
-    if (data.tagName === 'script') {
-      var savedSrc = _savedScriptSrc.get(node)
-      if (savedSrc) {
-        _savedScriptSrc.delete(node)
-        // Allow Tailwind CDN (with or without query params) — original CDN URL
-        // Also allow self-hosted Tailwind runtime — local path set by cdn-rewriter
-        if (/^https:\/\/cdn\.tailwindcss\.com/.test(savedSrc) ||
-            /^\/api\/templates-runtime\/tailwind\.js/.test(savedSrc)) {
-          node.setAttribute('src', savedSrc)
         }
       }
     }

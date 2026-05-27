@@ -6,7 +6,7 @@ const { readData, writeData } = require('../utils')
 const sanitizer = require('../sanitizer')
 const templateEngine = require('../template-engine')
 const templateCache = require('../template-cache')
-const { rewriteCdnUrls } = require('../cdn-rewriter')
+const { preprocessTemplate } = require('../tailwind-compiler')
 const { uploadTemplate } = require('../upload')
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates')
@@ -36,8 +36,8 @@ router.post('/', uploadTemplate.single('file'), async (req, res) => {
 
     const isHtml = ext === '.html' || ext === '.htm'
     if (isHtml) {
+      content = await preprocessTemplate(content)
       content = await sanitizer.sanitize(content)
-      content = rewriteCdnUrls(content)
       try { fs.writeFileSync(req.file.path, content, 'utf-8') } catch (_) {}
     }
 
