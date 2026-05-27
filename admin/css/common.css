@@ -1120,3 +1120,13 @@ input[type="checkbox"] {
 .template-card-header .badge {
   flex-shrink: 0;
 }
+
+/* Slow spin animation for card status indicator circle */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+  transform-origin: center center;
+}
