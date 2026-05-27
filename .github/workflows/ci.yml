@@ -1,0 +1,73 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test-server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  test-admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run test:admin
+
+  test-miniprogram:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run test:miniprogram
+
+  deploy:
+    needs: [test-server, test-admin, test-miniprogram]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Aliyun
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 121.199.31.53
+          username: root
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          script: |
+            cd /opt/wxcompany
+            git pull origin master
+            cd server
+            npm install --production
+            pm2 restart wxcompany --update-env
+            sleep 2
+            curl -sf http://localhost:3456/api | grep -q '"ok":true' && echo "DEPLOY OK" || echo "DEPLOY FAILED"
