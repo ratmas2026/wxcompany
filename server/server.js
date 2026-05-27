@@ -69,14 +69,16 @@ app.use('/api/templates', require('./routes/templates'))            // /api/temp
 const { generateCode, createToken, createUserToken, validateToken, getTokenType, TOKEN_TTL } = require('./auth')
 module.exports = { app, generateCode, createToken, createUserToken, validateToken, getTokenType, TOKEN_TTL }
 
-// Start server
-db.initDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`)
-    console.log(`Admin panel: http://localhost:${PORT}/index.html`)
-    console.log(`API base:    http://localhost:${PORT}/api`)
+// Start server (skip in tests — supertest manages its own listen)
+if (!process.env.VITEST) {
+  db.initDatabase().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`)
+      console.log(`Admin panel: http://localhost:${PORT}/index.html`)
+      console.log(`API base:    http://localhost:${PORT}/api`)
+    })
+  }).catch(err => {
+    console.error('Failed to initialize database:', err)
+    process.exit(1)
   })
-}).catch(err => {
-  console.error('Failed to initialize database:', err)
-  process.exit(1)
-})
+}
