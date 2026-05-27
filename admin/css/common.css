@@ -1011,10 +1011,10 @@ input[type="checkbox"] {
 }
 .template-card-preview iframe {
   width: 640px;
-  height: 360px;
+  height: 396px;
   border: none;
   pointer-events: none;
-  transform: scale(0.556);
+  transform: scale(0.5);
   transform-origin: top left;
 }
 .template-card-meta-row {
