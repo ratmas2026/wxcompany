@@ -1043,7 +1043,7 @@ input[type="checkbox"] {
   background: var(--surface-container-lowest);
   border-radius: var(--radius-xl);
   width: 90%;
-  max-width: 420px;
+  max-width: 900px;
   max-height: 90vh;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
