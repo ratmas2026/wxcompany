@@ -68,7 +68,7 @@ async function sanitize(html) {
       'type', 'crossorigin', 'charset', 'content', 'name', 'property', 'media', 'as', 'lang',
       'border', 'cellpadding', 'cellspacing', 'colspan', 'rowspan',
       'viewBox', 'xmlns', 'd', 'cx', 'cy', 'r', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
-      'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
+      'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'stroke-dashoffset',
       'transform', 'opacity'
     ],
     ALLOW_DATA_ATTR: true,
