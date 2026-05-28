@@ -120,6 +120,8 @@ router.get('/:id/render', async (req, res) => {
 
   const cacheKey = templateCache.getCacheKey(id, cardId || 0)
 
+  res.setHeader('Cache-Control', 'no-cache')
+
   const cached = templateCache.get(cacheKey)
   if (cached) {
     res.setHeader('X-Cache', 'HIT')
