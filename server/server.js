@@ -14,8 +14,10 @@ app.use(cors())
 app.use(compression())
 app.use(express.json({ limit: '10mb' }))
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '..', 'admin')))
+// Serve static files — admin no-cache for instant update after deploy
+app.use(express.static(path.join(__dirname, '..', 'admin'), {
+  setHeaders(res) { res.setHeader('Cache-Control', 'no-cache') }
+}))
 app.use('/uploads', express.static(UPLOADS_DIR, {
   maxAge: '7d',
   setHeaders(res, filePath) {
