@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData, pick, parseId } = require('../utils')
+const { readData, writeData, pick, parseId, syncCompanyPerformances, saveConfigs } = require('../utils')
 
 router.get('/performance', (req, res) => {
   const data = readData()
@@ -46,7 +46,8 @@ router.post('/performance', (req, res) => {
     createdAt: req.body.createdAt || new Date().toISOString().split('T')[0]
   }
   data.companyPerformances.unshift(profile)
-  writeData(data)
+  syncCompanyPerformances(data.companyPerformances)
+  saveConfigs(data)
   res.json(profile)
 })
 
@@ -62,7 +63,8 @@ router.put('/performance/:id', (req, res) => {
     try { body.detail = JSON.parse(body.detail) } catch (e) { body.detail = { title: '', body: '', images: [], video: '', detailEntry: true } }
   }
   data.companyPerformances[idx] = { ...data.companyPerformances[idx], ...body, id: data.companyPerformances[idx].id }
-  writeData(data)
+  syncCompanyPerformances(data.companyPerformances)
+  saveConfigs(data)
   res.json(data.companyPerformances[idx])
 })
 
@@ -74,7 +76,8 @@ router.delete('/performance/:id', (req, res) => {
   (config.sections || []).forEach(sec => {
     sec.selectedIds = (sec.selectedIds || []).filter(sid => sid !== id)
   })
-  writeData(data)
+  syncCompanyPerformances(data.companyPerformances)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 
@@ -119,7 +122,8 @@ router.get('/performance-config', (req, res) => {
   })
   if (migrated) {
     config.sections = sections
-    writeData(data)
+    syncCompanyPerformances(data.companyPerformances)
+  saveConfigs(data)
   }
   res.json(config)
 })
@@ -127,7 +131,8 @@ router.get('/performance-config', (req, res) => {
 router.put('/performance-config', (req, res) => {
   const data = readData()
   data.companyPerformanceConfig = { ...(data.companyPerformanceConfig || {}), ...req.body }
-  writeData(data)
+  syncCompanyPerformances(data.companyPerformances)
+  saveConfigs(data)
   res.json(data.companyPerformanceConfig)
 })
 
@@ -140,7 +145,8 @@ router.post('/performance/reorder', (req, res) => {
     const p = profiles.find(p => p.id === id)
     if (p) p.sortOrder = sortOrder
   })
-  writeData(data)
+  syncCompanyPerformances(data.companyPerformances)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 
@@ -186,7 +192,8 @@ router.post('/performance/migrate', (req, res) => {
     }
   })
   migrated = data.companyPerformances.length
-  writeData(data)
+  syncCompanyPerformances(data.companyPerformances)
+  saveConfigs(data)
   res.json({ ok: true, migrated })
 })
 

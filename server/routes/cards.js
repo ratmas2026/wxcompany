@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData, pick, parseId } = require('../utils')
+const { readData, writeData, pick, parseId, syncCards, saveConfigs } = require('../utils')
 const templateCache = require('../template-cache')
 
 router.get('/cards', (req, res) => {
@@ -32,7 +32,8 @@ router.post('/cards', (req, res) => {
   card.createdAt = card.createdAt || new Date().toISOString().split('T')[0]
   card.status = card.status !== undefined ? card.status : true
   data.cards.unshift(card)
-  writeData(data)
+  syncCards(data.cards)
+  saveConfigs(data)
   res.json(card)
 })
 
@@ -41,7 +42,8 @@ router.put('/cards/:id', (req, res) => {
   const idx = data.cards.findIndex(c => c.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
   data.cards[idx] = { ...data.cards[idx], ...pick(req.body, 'name', 'phone', 'title', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'template'), id: data.cards[idx].id }
-  writeData(data)
+  syncCards(data.cards)
+  saveConfigs(data)
   templateCache.invalidateUser(req.params.id)
   res.json(data.cards[idx])
 })
@@ -49,7 +51,8 @@ router.put('/cards/:id', (req, res) => {
 router.delete('/cards/:id', (req, res) => {
   const data = readData()
   data.cards = data.cards.filter(c => c.id !== parseInt(req.params.id))
-  writeData(data)
+  syncCards(data.cards)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 
@@ -58,7 +61,8 @@ router.patch('/cards/:id/toggle', (req, res) => {
   const card = data.cards.find(c => c.id === parseInt(req.params.id))
   if (!card) return res.status(404).json({ error: 'Not found' })
   card.status = !card.status
-  writeData(data)
+  syncCards(data.cards)
+  saveConfigs(data)
   res.json(card)
 })
 
@@ -67,7 +71,8 @@ router.post('/cards/batch-delete', (req, res) => {
   const { ids } = req.body
   if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be an array' })
   data.cards = data.cards.filter(c => !ids.includes(c.id))
-  writeData(data)
+  syncCards(data.cards)
+  saveConfigs(data)
   res.json({ ok: true, deleted: ids.length })
 })
 

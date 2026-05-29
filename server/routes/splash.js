@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData } = require('../utils')
+const { readData, writeData, syncSplashImages, saveConfigs } = require('../utils')
 
 router.get('/', (req, res) => {
   const data = readData()
@@ -8,7 +8,8 @@ router.get('/', (req, res) => {
     data.splashImages = [{id:1,url:'',sort:1},{id:2,url:'',sort:2},{id:3,url:'',sort:3}]
     data.nextId = data.nextId || {}
     data.nextId.splashImages = 4
-    writeData(data)
+    syncSplashImages(data.splashImages)
+  saveConfigs(data)
   }
   res.json(data.splashImages)
 })
@@ -20,7 +21,8 @@ router.put('/:id', (req, res) => {
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
   const { pick } = require('../utils')
   data.splashImages[idx] = { ...data.splashImages[idx], ...pick(req.body, 'url', 'sort'), id: data.splashImages[idx].id, updatedAt: new Date().toISOString() }
-  writeData(data)
+  syncSplashImages(data.splashImages)
+  saveConfigs(data)
   res.json(data.splashImages[idx])
 })
 

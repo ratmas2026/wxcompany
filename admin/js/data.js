@@ -777,11 +777,29 @@ const DataStore = {
   },
 
   // --- Password & Sessions ---
-  async changePassword(oldPassword, newPassword) {
+  async changePassword(code, verifyTarget, newPassword) {
     const res = await authFetch(API_BASE + '/user/password', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ oldPassword, newPassword })
+      body: JSON.stringify({ code, verifyTarget, newPassword })
+    })
+    return res.json()
+  },
+
+  async sendVerifyCode(type) {
+    const res = await authFetch(API_BASE + '/user/send-verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type })
+    })
+    return res.json()
+  },
+
+  async verifyCode(type, code) {
+    const res = await authFetch(API_BASE + '/user/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, code })
     })
     return res.json()
   },

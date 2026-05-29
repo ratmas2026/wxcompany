@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData, pick } = require('../utils')
+const { readData, writeData, pick, syncPositions, saveConfigs } = require('../utils')
 
 router.get('/', (req, res) => {
   const data = readData()
@@ -13,7 +13,8 @@ router.post('/', (req, res) => {
   pos.id = data.nextId.positions++
   pos.count = pos.count || 0
   data.positions.push(pos)
-  writeData(data)
+  syncPositions(data.positions)
+  saveConfigs(data)
   res.json(pos)
 })
 
@@ -22,7 +23,8 @@ router.put('/:id', (req, res) => {
   const idx = data.positions.findIndex(p => p.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
   data.positions[idx] = { ...data.positions[idx], ...pick(req.body, 'title', 'department', 'location', 'requirement', 'sortOrder', 'status', 'createdAt'), id: data.positions[idx].id }
-  writeData(data)
+  syncPositions(data.positions)
+  saveConfigs(data)
   res.json(data.positions[idx])
 })
 
@@ -31,7 +33,8 @@ router.post('/batch-delete', (req, res) => {
   const { ids } = req.body
   if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be an array' })
   data.positions = data.positions.filter(p => !ids.includes(p.id))
-  writeData(data)
+  syncPositions(data.positions)
+  saveConfigs(data)
   res.json({ ok: true, deleted: ids.length })
 })
 

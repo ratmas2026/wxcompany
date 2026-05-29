@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData, pick } = require('../utils')
+const { readData, writeData, pick, syncHonors, saveConfigs } = require('../utils')
 
 router.get('/', (req, res) => {
   const data = readData()
@@ -26,7 +26,8 @@ router.post('/', (req, res) => {
     createdAt: req.body.createdAt || new Date().toISOString().split('T')[0]
   }
   data.honors.push(item)
-  writeData(data)
+  syncHonors(data.honors)
+  saveConfigs(data)
   res.json(item)
 })
 
@@ -35,14 +36,16 @@ router.put('/:id', (req, res) => {
   const idx = (data.honors || []).findIndex(h => h.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
   data.honors[idx] = { ...data.honors[idx], ...pick(req.body, 'image', 'name', 'description', 'sortOrder', 'status', 'createdAt'), id: data.honors[idx].id }
-  writeData(data)
+  syncHonors(data.honors)
+  saveConfigs(data)
   res.json(data.honors[idx])
 })
 
 router.delete('/:id', (req, res) => {
   const data = readData()
   data.honors = (data.honors || []).filter(h => h.id !== parseInt(req.params.id))
-  writeData(data)
+  syncHonors(data.honors)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 

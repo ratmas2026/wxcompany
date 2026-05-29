@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData } = require('../utils')
+const { readData, writeData, syncMessages, saveConfigs } = require('../utils')
 
 router.post('/', (req, res) => {
   const data = readData()
@@ -17,7 +17,8 @@ router.post('/', (req, res) => {
     createdAt: new Date().toLocaleString('zh-CN', { hour12: false })
   }
   data.messages.push(msg)
-  writeData(data)
+  syncMessages(data.messages)
+  saveConfigs(data)
   res.json({ ok: true, id: msg.id })
 })
 

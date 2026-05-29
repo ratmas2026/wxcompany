@@ -1,4 +1,10 @@
-const db = require('./db')
+const {
+  readData: _readData, writeData: _writeData,
+  syncCards, syncMessages, syncPositions, syncVideos,
+  syncSplashImages, syncCompanyProfiles, syncCompanyPerformances,
+  syncBusinessModules, syncHonors, syncProjects, syncSites,
+  syncCompanyInfos, syncTemplates, saveConfigs
+} = require('./db')
 
 // Helper: extract only allowed fields from an object (mass-assignment protection)
 function pick(obj, ...keys) {
@@ -14,11 +20,17 @@ function parseId(val) {
 }
 
 function readData() {
-  return db.readData()
+  return _readData()
 }
 
 function writeData(data) {
-  db.writeData(data)
+  _writeData(data)
 }
 
-module.exports = { pick, parseId, readData, writeData }
+module.exports = {
+  pick, parseId, readData, writeData,
+  syncCards, syncMessages, syncPositions, syncVideos,
+  syncSplashImages, syncCompanyProfiles, syncCompanyPerformances,
+  syncBusinessModules, syncHonors, syncProjects, syncSites,
+  syncCompanyInfos, syncTemplates, saveConfigs
+}

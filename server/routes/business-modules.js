@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData, pick } = require('../utils')
+const { readData, writeData, pick, syncBusinessModules, saveConfigs } = require('../utils')
 
 router.get('/', (req, res) => {
   const data = readData()
@@ -56,7 +56,8 @@ router.get('/page-config', (req, res) => {
   })
   if (migrated) {
     config.sections = sections
-    writeData(data)
+    syncBusinessModules(data.businessModules)
+  saveConfigs(data)
   }
   res.json(config)
 })
@@ -64,7 +65,8 @@ router.get('/page-config', (req, res) => {
 router.put('/page-config', (req, res) => {
   const data = readData()
   data.businessModulePageConfig = { ...(data.businessModulePageConfig || {}), ...req.body }
-  writeData(data)
+  syncBusinessModules(data.businessModules)
+  saveConfigs(data)
   res.json(data.businessModulePageConfig)
 })
 
@@ -83,7 +85,8 @@ router.get('/:id', (req, res) => {
     })
   }
   if (migrated) {
-    writeData(data)
+    syncBusinessModules(data.businessModules)
+  saveConfigs(data)
   }
   res.json(mod)
 })
@@ -104,7 +107,8 @@ router.post('/', (req, res) => {
     createdAt: req.body.createdAt || new Date().toISOString().split('T')[0]
   }
   data.businessModules.push(mod)
-  writeData(data)
+  syncBusinessModules(data.businessModules)
+  saveConfigs(data)
   res.json(mod)
 })
 
@@ -116,7 +120,8 @@ router.put('/:id', (req, res) => {
   const idx = data.businessModules.findIndex(m => m.id === id)
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
   data.businessModules[idx] = { ...data.businessModules[idx], ...pick(req.body, 'name', 'coverImage', 'coverAspectRatio', 'layoutType', 'sortOrder', 'status', 'sections', 'cards'), id: data.businessModules[idx].id }
-  writeData(data)
+  syncBusinessModules(data.businessModules)
+  saveConfigs(data)
   res.json(data.businessModules[idx])
 })
 
@@ -128,7 +133,8 @@ router.delete('/:id', (req, res) => {
   (pageConfig.sections || []).forEach(sec => {
     sec.selectedIds = (sec.selectedIds || []).filter(sid => sid !== id)
   })
-  writeData(data)
+  syncBusinessModules(data.businessModules)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 
@@ -151,7 +157,8 @@ router.post('/:mid/cards', (req, res) => {
     createdAt: req.body.createdAt || new Date().toISOString().split('T')[0]
   }
   mod.cards.push(card)
-  writeData(data)
+  syncBusinessModules(data.businessModules)
+  saveConfigs(data)
   res.json(card)
 })
 
@@ -168,7 +175,8 @@ router.put('/:mid/cards/:cid', (req, res) => {
   const cidx = mod.cards.findIndex(c => c.id === cid)
   if (cidx < 0) return res.status(404).json({ error: 'Card not found' })
   mod.cards[cidx] = { ...mod.cards[cidx], ...pick(req.body, 'name', 'title', 'phone', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'sortOrder', 'extra'), id: mod.cards[cidx].id }
-  writeData(data)
+  syncBusinessModules(data.businessModules)
+  saveConfigs(data)
   res.json(mod.cards[cidx])
 })
 
@@ -195,7 +203,8 @@ router.delete('/:mid/cards/:cid', (req, res) => {
   if (!mod) return res.status(404).json({ error: 'Module not found' })
   if (!mod.cards) mod.cards = []
   mod.cards = mod.cards.filter(c => c.id !== cid)
-  writeData(data)
+  syncBusinessModules(data.businessModules)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 

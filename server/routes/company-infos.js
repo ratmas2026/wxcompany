@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData, pick } = require('../utils')
+const { readData, writeData, pick, syncCompanyInfos, saveConfigs } = require('../utils')
 
 router.get('/', (req, res) => {
   const data = readData()
@@ -39,7 +39,8 @@ router.post('/', (req, res) => {
     updatedAt: new Date().toISOString()
   }
   data.companyInfos.push(item)
-  writeData(data)
+  syncCompanyInfos(data.companyInfos)
+  saveConfigs(data)
   res.json(item)
 })
 
@@ -48,14 +49,16 @@ router.put('/:id', (req, res) => {
   const idx = (data.companyInfos || []).findIndex(ci => ci.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
   data.companyInfos[idx] = { ...data.companyInfos[idx], ...pick(req.body, 'name', 'legalPerson', 'phone', 'address', 'longitude', 'latitude', 'website', 'description', 'sortOrder', 'status'), id: data.companyInfos[idx].id, updatedAt: new Date().toISOString() }
-  writeData(data)
+  syncCompanyInfos(data.companyInfos)
+  saveConfigs(data)
   res.json(data.companyInfos[idx])
 })
 
 router.delete('/:id', (req, res) => {
   const data = readData()
   data.companyInfos = (data.companyInfos || []).filter(ci => ci.id !== parseInt(req.params.id))
-  writeData(data)
+  syncCompanyInfos(data.companyInfos)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 

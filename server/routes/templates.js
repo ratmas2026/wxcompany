@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const fs = require('fs')
 const path = require('path')
-const { readData, writeData } = require('../utils')
+const { readData, writeData, syncTemplates, syncCards, saveConfigs } = require('../utils')
 const sanitizer = require('../sanitizer')
 const templateEngine = require('../template-engine')
 const templateCache = require('../template-cache')
@@ -55,7 +55,9 @@ router.post('/', uploadTemplate.single('file'), async (req, res) => {
       created_at: new Date().toISOString()
     }
     data.templates.push(template)
-    writeData(data)
+    syncTemplates(data.templates)
+    syncCards(data.cards)
+    saveConfigs(data)
 
     res.json({ ok: true, template: template })
   } catch (e) {
@@ -88,7 +90,9 @@ router.delete('/:id', (req, res) => {
   data.cards.forEach(c => {
     if (c.template === templateIdStr || c.template === template.filename) { c.template = ''; changed = true }
   })
-  writeData(data)
+  syncTemplates(data.templates)
+  syncCards(data.cards)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 

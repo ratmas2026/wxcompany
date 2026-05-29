@@ -535,122 +535,137 @@ function writeData(data) {
   }
 }
 
-function _writeDataImpl(data) {
-  function syncTable(table, columns, dataArr, mapFn) {
-    validateTable(table)
-    db.run('DELETE FROM ' + table);
-    if (!dataArr || dataArr.length === 0) return;
-    var placeholders = columns.map(function() { return '?'; }).join(',');
-    var stmt = db.prepare('INSERT INTO ' + table + ' (' + columns.join(',') + ') VALUES (' + placeholders + ')');
-    dataArr.forEach(function(item) {
-      stmt.run(mapFn(item));
-    });
-    stmt.free();
-  }
+// Module-level syncTable — reusable by both incremental functions and _writeDataImpl
+function syncTable(table, columns, dataArr, mapFn) {
+  validateTable(table)
+  db.run('DELETE FROM ' + table);
+  if (!dataArr || dataArr.length === 0) return;
+  var placeholders = columns.map(function() { return '?'; }).join(',');
+  var stmt = db.prepare('INSERT INTO ' + table + ' (' + columns.join(',') + ') VALUES (' + placeholders + ')');
+  dataArr.forEach(function(item) {
+    stmt.run(mapFn(item));
+  });
+  stmt.free();
+}
 
-  // Cards
+// -- Incremental write functions (one per table) --
+
+function syncCards(cards) {
   syncTable('cards',
     ['id','name','phone','title','department','company','email','address','avatar','bio','status','created_at','template'],
-    data.cards,
+    cards,
     function(c) { return [c.id, c.name||'', c.phone||'', c.title||'', c.department||'', c.company||'',
       c.email||'', c.address||'', c.avatar||'', c.bio||'', c.status?1:0, c.createdAt||'', c.template||'']; }
   );
+}
 
-  // Messages
+function syncMessages(messages) {
   syncTable('messages',
     ['id','name','company','phone','title','areas','message','status','remark','created_at'],
-    data.messages,
+    messages,
     function(m) { return [m.id, m.name||'', m.company||'', m.phone||'', m.title||'',
       m.areas||'', m.message||'', m.status||'new', m.remark||'', m.createdAt||'']; }
   );
+}
 
-  // Positions
+function syncPositions(positions) {
   syncTable('positions',
     ['id','name','sort','desc','count','department'],
-    data.positions,
+    positions,
     function(p) { return [p.id, p.name||'', p.sort||0, p.desc||'', p.count||0, p.department||'']; }
   );
+}
 
-  // Videos
+function syncVideos(videos) {
   syncTable('videos',
     ['id','title','cover','url','category','status','duration','views','created_at','description'],
-    data.videos,
+    videos,
     function(v) { return [v.id, v.title||'', v.cover||'', v.url||'', v.category||'',
       v.status||'draft', v.duration||'', v.views||0, v.createdAt||'', v.description||'']; }
   );
+}
 
-  // Splash Images
+function syncSplashImages(images) {
   syncTable('splash_images',
     ['id','url','sort','updated_at'],
-    data.splashImages,
+    images,
     function(s) { return [s.id, s.url||'', s.sort||0, s.updatedAt||'']; }
   );
+}
 
-  // Company Profiles
+function syncCompanyProfiles(profiles) {
   syncTable('company_profiles',
     ['id','title','sort_order','cover','detail','created_at'],
-    data.companyProfiles,
+    profiles,
     function(p) { return [p.id, p.title||'', p.sortOrder||0, jsonVal(p.cover), jsonVal(p.detail), p.createdAt||'']; }
   );
+}
 
-  // Company Performances
+function syncCompanyPerformances(performances) {
   syncTable('company_performances',
     ['id','title','sort_order','cover','detail','created_at'],
-    data.companyPerformances,
+    performances,
     function(p) { return [p.id, p.title||'', p.sortOrder||0, jsonVal(p.cover), jsonVal(p.detail), p.createdAt||'']; }
   );
+}
 
-  // Business Modules
+function syncBusinessModules(modules) {
   syncTable('business_modules',
     ['id','name','cover_image','cover_aspect_ratio','layout_type','sort_order','status','sections','cards','created_at'],
-    data.businessModules,
+    modules,
     function(m) { return [m.id, m.name||'', m.coverImage||'', m.coverAspectRatio||'16:9',
       m.layoutType||'carousel', m.sortOrder||0, m.status?1:0,
       jsonVal(m.sections), jsonVal(m.cards), m.createdAt||'']; }
   );
+}
 
-  // Honors
+function syncHonors(honors) {
   syncTable('honors',
     ['id','name','desc','date','image','created_at'],
-    data.honors,
+    honors,
     function(h) { return [h.id, h.name||'', h.desc||'', h.date||'', h.image||'', h.createdAt||'']; }
   );
+}
 
-  // Projects
+function syncProjects(projects) {
   syncTable('projects',
     ['id','name','location','year','desc','tags','image','images','address','scale','period','investment','highlights','detail','detail_images','results'],
-    data.projects,
+    projects,
     function(p) { return [p.id, p.name||'', p.location||'', p.year||'', p.desc||'',
       jsonVal(p.tags), p.image||'', jsonVal(p.images),
       p.address||'', p.scale||'', p.period||'', p.investment||'',
       jsonVal(p.highlights), p.detail||'', jsonVal(p.detailImages), jsonVal(p.results)]; }
   );
+}
 
-  // Sites
+function syncSites(sites) {
   syncTable('sites',
     ['id','project_name','stage','stage_value','location','desc','image','created_at','updated_at'],
-    data.sites,
+    sites,
     function(s) { return [s.id, s.projectName||'', s.stage||'', s.stageValue||'',
       s.location||'', s.desc||'', s.image||'', s.createdAt||'', s.updatedAt||'']; }
   );
+}
 
-  // Company Infos (new multi-row table)
+function syncCompanyInfos(infos) {
   syncTable('company_infos',
     ['id','name','legal_person','phone','address','longitude','latitude','website','description','sort_order','status','created_at','updated_at'],
-    data.companyInfos,
+    infos,
     function(ci) { return [ci.id, ci.name||'', ci.legalPerson||'', ci.phone||'', ci.address||'',
       ci.longitude||null, ci.latitude||null, ci.website||'', ci.description||'',
       ci.sortOrder||0, ci.status?1:0, ci.createdAt||'', ci.updatedAt||'']; }
   );
+}
 
-  // Templates
+function syncTemplates(templates) {
   syncTable('templates',
     ['id','name','filename','mime_type','size','created_at'],
-    data.templates,
+    templates,
     function(t) { return [t.id, t.name||'', t.filename||'', t.mime_type||'text/html', t.size||0, t.created_at||'']; }
   );
+}
 
-  // Configs
+function saveConfigs(data) {
   db.run('DELETE FROM config');
   var insCfg = db.prepare('INSERT INTO config (key,value) VALUES (?,?)');
   insCfg.run(['companyProfileConfig', jsonVal((data.companyProfileConfig || {}).sections || [])]);
@@ -662,8 +677,37 @@ function _writeDataImpl(data) {
   insCfg.free();
 }
 
+// -- Batch writeData (backward compatible, delegates to incremental functions) --
+function _writeDataImpl(data) {
+  syncCards(data.cards);
+  syncMessages(data.messages);
+  syncPositions(data.positions);
+  syncVideos(data.videos);
+  syncSplashImages(data.splashImages);
+  syncCompanyProfiles(data.companyProfiles);
+  syncCompanyPerformances(data.companyPerformances);
+  syncBusinessModules(data.businessModules);
+  syncHonors(data.honors);
+  syncProjects(data.projects);
+  syncSites(data.sites);
+  syncCompanyInfos(data.companyInfos);
+  syncTemplates(data.templates);
+  saveConfigs(data);
+}
+
+// _writeDataImpl now delegates to incremental functions above
+
 function getDb() {
   return db;
 }
 
-module.exports = { initDatabase, readData, writeData, getDb, save, queryAll };
+module.exports = {
+  initDatabase, readData, writeData, getDb, save, queryAll,
+  // Incremental write functions
+  syncTable,
+  syncCards, syncMessages, syncPositions, syncVideos,
+  syncSplashImages, syncCompanyProfiles, syncCompanyPerformances,
+  syncBusinessModules, syncHonors, syncProjects, syncSites,
+  syncCompanyInfos, syncTemplates,
+  saveConfigs
+};

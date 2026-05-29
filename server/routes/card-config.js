@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData } = require('../utils')
+const { readData, writeData, saveConfigs } = require('../utils')
 
 router.get('/card-page-config', (req, res) => {
   const data = readData()
@@ -21,7 +21,7 @@ router.get('/card-page-config', (req, res) => {
   sections.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
   if (migrated) {
     config.sections = sections
-    writeData(data)
+    saveConfigs(data)
   }
   res.json(config)
 })
@@ -29,7 +29,7 @@ router.get('/card-page-config', (req, res) => {
 router.put('/card-page-config', (req, res) => {
   const data = readData()
   data.cardPageConfig = { ...(data.cardPageConfig || {}), ...req.body }
-  writeData(data)
+  saveConfigs(data)
   res.json(data.cardPageConfig)
 })
 

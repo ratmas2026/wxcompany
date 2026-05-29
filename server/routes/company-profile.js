@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData, pick, parseId } = require('../utils')
+const { readData, writeData, pick, parseId, syncCompanyProfiles, saveConfigs } = require('../utils')
 
 // GET /api/company/profile
 router.get('/profile', (req, res) => {
@@ -47,7 +47,8 @@ router.post('/profile', (req, res) => {
     createdAt: req.body.createdAt || new Date().toISOString().split('T')[0]
   }
   data.companyProfiles.unshift(profile)
-  writeData(data)
+  syncCompanyProfiles(data.companyProfiles)
+  saveConfigs(data)
   res.json(profile)
 })
 
@@ -63,7 +64,8 @@ router.put('/profile/:id', (req, res) => {
     try { body.detail = JSON.parse(body.detail) } catch (e) { body.detail = { title: '', body: '', images: [], video: '', detailEntry: true } }
   }
   data.companyProfiles[idx] = { ...data.companyProfiles[idx], ...body, id: data.companyProfiles[idx].id }
-  writeData(data)
+  syncCompanyProfiles(data.companyProfiles)
+  saveConfigs(data)
   res.json(data.companyProfiles[idx])
 })
 
@@ -75,7 +77,8 @@ router.delete('/profile/:id', (req, res) => {
   (config.sections || []).forEach(sec => {
     sec.selectedIds = (sec.selectedIds || []).filter(sid => sid !== id)
   })
-  writeData(data)
+  syncCompanyProfiles(data.companyProfiles)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 
@@ -121,7 +124,8 @@ router.get('/profile-config', (req, res) => {
   })
   if (migrated) {
     config.sections = sections
-    writeData(data)
+    syncCompanyProfiles(data.companyProfiles)
+  saveConfigs(data)
   }
   res.json(config)
 })
@@ -129,7 +133,8 @@ router.get('/profile-config', (req, res) => {
 router.put('/profile-config', (req, res) => {
   const data = readData()
   data.companyProfileConfig = { ...(data.companyProfileConfig || {}), ...req.body }
-  writeData(data)
+  syncCompanyProfiles(data.companyProfiles)
+  saveConfigs(data)
   res.json(data.companyProfileConfig)
 })
 
@@ -143,7 +148,8 @@ router.post('/profile/reorder', (req, res) => {
     const p = profiles.find(p => p.id === id)
     if (p) p.sortOrder = sortOrder
   })
-  writeData(data)
+  syncCompanyProfiles(data.companyProfiles)
+  saveConfigs(data)
   res.json({ ok: true })
 })
 
@@ -190,7 +196,8 @@ router.post('/profile/migrate', (req, res) => {
     }
   })
   migrated = data.companyProfiles.length
-  writeData(data)
+  syncCompanyProfiles(data.companyProfiles)
+  saveConfigs(data)
   res.json({ ok: true, migrated })
 })
 
