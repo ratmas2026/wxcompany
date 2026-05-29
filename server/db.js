@@ -100,6 +100,18 @@ CREATE TABLE IF NOT EXISTS config (
   key TEXT PRIMARY KEY,
   value TEXT
 );
+
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  password_hash TEXT,
+  phone TEXT,
+  phone_verified INTEGER DEFAULT 0,
+  email TEXT,
+  email_verified INTEGER DEFAULT 0,
+  created_at TEXT,
+  updated_at TEXT
+);
 `;
 
 function jsonVal(v) {
@@ -116,7 +128,7 @@ function jsonParse(v) {
 var KNOWN_TABLES = [
   'cards', 'messages', 'positions', 'videos', 'splash_images',
   'company_profiles', 'company_performances', 'business_modules',
-  'honors', 'projects', 'sites', 'company_infos', 'config', 'templates'
+  'honors', 'projects', 'sites', 'company_infos', 'config', 'templates', 'users'
 ]
 function validateTable(name) {
   if (!KNOWN_TABLES.includes(name)) {

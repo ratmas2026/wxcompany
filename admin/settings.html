@@ -71,28 +71,39 @@
   }
 
   function renderBindingsSection(bindings) {
-    const items = [
-      { key: 'phone', label: '手机号', value: (bindings && bindings.phone) || '', supported: true },
-      { key: 'email', label: '邮箱', value: (bindings && bindings.email) || '', supported: true },
-      { key: 'wechat', label: '微信', value: (bindings && bindings.wechat) || '', supported: false }
-    ]
-    const rows = items.map(b => {
-      let statusHTML
-      if (!b.supported) {
-        statusHTML = '<span class="bind-status bind-status--unsupported">暂不支持</span>'
-      } else if (b.value) {
-        statusHTML = '<span class="bind-status bind-status--bound">已绑定</span> ' + Admin._escapeHTML(b.value)
-      } else {
-        statusHTML = '<span class="bind-status bind-status--unbound">未绑定</span>'
+    const phone = (bindings && bindings.phone) || ''
+    const email = (bindings && bindings.email) || ''
+
+    function bindingRow(label, value, key) {
+      if (value) {
+        return `<tr>
+          <td style="font-weight:600">${label}</td>
+          <td><span class="bind-status bind-status--bound">已绑定</span> ${Admin._escapeHTML(value)}</td>
+        </tr>`
       }
-      return `<tr><td style="font-weight:600">${b.label}</td><td>${statusHTML}</td></tr>`
-    }).join('')
+      return `<tr>
+        <td style="font-weight:600">${label}</td>
+        <td>
+          <div class="bind-form" id="bind-${key}">
+            <input class="form-input form-input--sm" type="${key === 'email' ? 'email' : 'tel'}" id="${key}Input" placeholder="${key === 'email' ? '请输入邮箱' : '请输入手机号'}" maxlength="${key === 'email' ? '64' : '11'}">
+            <button class="btn btn-sm btn-outline" id="${key}SendBtn" onclick="sendBindCode('${key}')">获取验证码</button>
+            <input class="form-input form-input--sm" type="text" id="${key}Code" placeholder="验证码" maxlength="6" style="width:100px">
+            <button class="btn btn-sm btn-primary" id="${key}VerifyBtn" onclick="verifyBind('${key}')">确认绑定</button>
+          </div>
+        </td>
+      </tr>`
+    }
+
     return `
-      <div class="card" style="max-width:520px">
+      <div class="card" style="max-width:560px">
         <div class="settings-section-title">绑定状态</div>
         <div class="table-wrap">
           <table class="settings-table">
-            <tbody>${rows}</tbody>
+            <tbody>
+              ${bindingRow('手机号', phone, 'phone')}
+              ${bindingRow('邮箱', email, 'email')}
+              <tr><td style="font-weight:600">微信</td><td><span class="bind-status bind-status--unsupported">暂不支持</span></td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -166,6 +177,76 @@
     } finally {
       btn.disabled = false
       btn.textContent = '修改密码'
+    }
+  }
+
+  var bindTimers = {}
+
+  window.sendBindCode = async function(type) {
+    var input = document.getElementById(type + 'Input')
+    var btn = document.getElementById(type + 'SendBtn')
+    var value = input ? input.value.trim() : ''
+    if (!value) { Admin.showToast('请输入' + (type === 'phone' ? '手机号' : '邮箱'), 'error'); return }
+    if (type === 'phone' && !/^1\d{10}$/.test(value)) { Admin.showToast('请输入正确的11位手机号', 'error'); return }
+    if (type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { Admin.showToast('请输入正确的邮箱地址', 'error'); return }
+
+    btn.disabled = true
+    var sec = 60
+    btn.textContent = sec + 's'
+    if (bindTimers[type]) clearInterval(bindTimers[type])
+    bindTimers[type] = setInterval(function() {
+      sec--
+      if (sec <= 0) {
+        clearInterval(bindTimers[type])
+        btn.disabled = false
+        btn.textContent = '获取验证码'
+      } else {
+        btn.textContent = sec + 's'
+      }
+    }, 1000)
+
+    try {
+      var data = await DataStore.sendBindCode(type, value)
+      if (data && data.ok) {
+        Admin.showToast('验证码已发送', 'success')
+      } else {
+        Admin.showToast((data && data.error) || '发送失败', 'error')
+        clearInterval(bindTimers[type])
+        btn.disabled = false
+        btn.textContent = '获取验证码'
+      }
+    } catch (e) {
+      Admin.showToast('网络错误', 'error')
+      clearInterval(bindTimers[type])
+      btn.disabled = false
+      btn.textContent = '获取验证码'
+    }
+  }
+
+  window.verifyBind = async function(type) {
+    var input = document.getElementById(type + 'Input')
+    var codeInput = document.getElementById(type + 'Code')
+    var btn = document.getElementById(type + 'VerifyBtn')
+    var value = input ? input.value.trim() : ''
+    var code = codeInput ? codeInput.value.trim() : ''
+    if (!value || !code) { Admin.showToast('请填写完整信息', 'error'); return }
+
+    btn.disabled = true
+    btn.textContent = '验证中...'
+    try {
+      var data = await DataStore.verifyBind(type, value, code)
+      if (data && data.ok) {
+        Admin.showToast((type === 'phone' ? '手机号' : '邮箱') + '绑定成功', 'success')
+        Admin.track('bind_' + type)
+        loadBindings()
+      } else {
+        Admin.showToast((data && data.error) || '验证失败', 'error')
+      }
+    } catch (e) {
+      Admin.showToast('网络错误', 'error')
+    } finally {
+      btn.disabled = false
+      btn.textContent = '确认绑定'
     }
   }
 

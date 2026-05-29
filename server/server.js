@@ -60,6 +60,7 @@ app.use('/api/videos', require('./routes/videos'))                  // /api/vide
 app.use('/api/inquiry', require('./routes/inquiry'))                // /api/inquiry
 app.use('/api/reset', require('./routes/reset'))                    // /api/reset
 app.use('/api/templates', require('./routes/templates'))            // /api/templates, /api/templates/:id/raw, etc.
+app.use('/api', require('./routes/user'))                          // /api/user/password, /api/user/bind-phone, /api/user/bindings, etc.
 
 // Re-export for test compatibility
 const { generateCode, createToken, createUserToken, validateToken, getTokenType, TOKEN_TTL } = require('./auth')

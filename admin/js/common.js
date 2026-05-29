@@ -118,8 +118,8 @@ const Admin = {
             <span class="topbar-name">${name}</span>
             <span class="topbar-arrow">&#x25BC;</span>
             <div class="user-dropdown" id="userDropdown">
-              <span class="user-dropdown-item disabled"><span class="dropdown-icon">&#x1F464;</span>个人中心</span>
-              <span class="user-dropdown-item disabled"><span class="dropdown-icon">&#x2699;</span>账号设置</span>
+              <a href="profile.html" class="user-dropdown-item"><span class="dropdown-icon">&#x1F464;</span>个人中心</a>
+              <a href="settings.html" class="user-dropdown-item"><span class="dropdown-icon">&#x2699;</span>账号设置</a>
               <div class="user-dropdown-divider"></div>
               <div class="user-dropdown-item user-dropdown-item--danger" onclick="Admin.logout();event.stopPropagation()"><span class="dropdown-icon">&#x1F6AA;</span>退出登录</div>
             </div>

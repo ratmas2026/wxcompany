@@ -802,6 +802,26 @@ const DataStore = {
     return res.json()
   },
 
+  async sendBindCode(type, value) {
+    const endpoint = type === 'phone' ? '/user/bind-phone' : '/user/bind-email'
+    const res = await authFetch(API_BASE + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(type === 'phone' ? { phone: value } : { email: value })
+    })
+    return res.json()
+  },
+
+  async verifyBind(type, value, code) {
+    const endpoint = type === 'phone' ? '/user/bind-phone/verify' : '/user/bind-email/verify'
+    const res = await authFetch(API_BASE + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(type === 'phone' ? { phone: value, code } : { email: value, code })
+    })
+    return res.json()
+  },
+
   // --- Notifications ---
   async getNotifications(limit = 5) {
     const res = await authFetch(API_BASE + '/notifications?limit=' + limit)

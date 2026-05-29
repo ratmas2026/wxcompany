@@ -1130,3 +1130,16 @@ input[type="checkbox"] {
   animation: spin-slow 8s linear infinite;
   transform-origin: center center;
 }
+
+/* Bind form inline layout */
+.bind-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.form-input--sm {
+  width: 140px;
+  padding: 6px 10px;
+  font-size: 13px;
+}

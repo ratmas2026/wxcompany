@@ -1,7 +1,9 @@
 const express = require('express')
+const crypto = require('crypto')
 const router = express.Router()
 const { readData, writeData, pick } = require('../utils')
 const { codeStore, generateCode, cleanExpiredCodes, sendSMS, MAX_CODE_STORE_SIZE, createToken, createUserToken, validateToken, ADMIN_USER, ADMIN_PASS, SMS_ACCESS_KEY_ID, SMS_ACCESS_KEY_SECRET } = require('../auth')
+const { getDb } = require('../db')
 
 // Login (后台 username/password)
 router.post('/login', (req, res) => {
@@ -32,7 +34,23 @@ router.post('/login', (req, res) => {
   }
 
   // 后台 username/password 登录
-  if (username !== ADMIN_USER || password !== ADMIN_PASS) {
+  if (username !== ADMIN_USER) {
+    return res.status(401).json({ ok: false, error: '用户名或密码错误' })
+  }
+
+  // Check DB password hash first, fallback to env var
+  let passwordValid = false
+  try {
+    const db = getDb()
+    const result = db.exec('SELECT password_hash FROM users WHERE username = ?', [ADMIN_USER])
+    if (result.length > 0 && result[0].values.length > 0 && result[0].values[0][0]) {
+      const stored = result[0].values[0][0]
+      const [salt, hash] = stored.split(':')
+      passwordValid = crypto.createHmac('sha256', salt).update(password).digest('hex') === hash
+    }
+  } catch (e) { /* table might not exist yet, fall through */ }
+
+  if (!passwordValid && password !== ADMIN_PASS) {
     return res.status(401).json({ ok: false, error: '用户名或密码错误' })
   }
   const token = createToken()
