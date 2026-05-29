@@ -59,7 +59,10 @@ async function sanitize(html) {
       'pre', 'code', 'blockquote',
       'section', 'header', 'footer', 'main', 'article', 'nav',
       'style',
-      'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'g', 'defs', 'clipPath'
+      'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'g', 'defs', 'clipPath',
+      'pattern', 'use', 'filter', 'linearGradient', 'radialGradient', 'stop',
+      'feGaussianBlur', 'feDropShadow', 'feOffset', 'feMerge', 'feMergeNode',
+      'mask', 'text', 'tspan', 'marker', 'image'
     ],
     ALLOWED_ATTR: [
       'class', 'id', 'style',
@@ -69,7 +72,13 @@ async function sanitize(html) {
       'border', 'cellpadding', 'cellspacing', 'colspan', 'rowspan',
       'viewBox', 'xmlns', 'd', 'cx', 'cy', 'r', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
       'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'stroke-dashoffset',
-      'transform', 'opacity'
+      'transform', 'opacity',
+      'href', 'fill-rule', 'clip-rule', 'clip-path', 'mask', 'filter',
+      'patternUnits', 'patternTransform', 'preserveAspectRatio',
+      'gradientUnits', 'gradientTransform', 'offset', 'stop-color', 'stop-opacity',
+      'marker-start', 'marker-mid', 'marker-end',
+      'text-anchor', 'dominant-baseline', 'font-family', 'font-size',
+      'stroke-opacity', 'fill-opacity', 'stroke-miterlimit'
     ],
     ALLOW_DATA_ATTR: true,
     FORBID_TAGS: [
