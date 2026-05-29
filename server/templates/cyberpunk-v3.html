@@ -4,7 +4,7 @@
   .status-circle{animation:spin-slow 8s linear infinite;transform-origin:center center}
   .neon-text{font-family:'Orbitron',system-ui,sans-serif;color:#ff4d4d;text-shadow:0 0 2px #f00,0 0 5px rgba(255,0,0,.8),0 0 10px rgba(255,0,0,.4);-webkit-text-stroke:0.2px rgba(0,0,0,.3)}
   .neon-flicker{animation:flicker 3s linear infinite}
-  .honeycomb-line{fill:none;stroke:rgba(255,77,77,.4);stroke-width:1}
+  .honeycomb-line{fill:none;stroke:rgba(255,77,77,.6);stroke-width:1}
   .scanline-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,rgba(0,0,0,.08),rgba(0,0,0,.08) 1px,transparent 1px,transparent 2px);pointer-events:none;z-index:50}
 </style>
 <div style="position:relative;width:100%;max-width:1000px;aspect-ratio:16/9;margin:0 auto;background:linear-gradient(180deg,#0d0000 0%,#0a0a0a 30%,#080808 60%,#0d0000 100%);color:#e0e0e0;font-family:'Orbitron',system-ui,sans-serif;overflow:hidden;border-radius:12px;border:2px solid rgba(255,255,255,.1)">
@@ -22,7 +22,7 @@
   <div style="position:absolute;inset:16px;border:1px solid rgba(255,255,255,.25);border-radius:8px;pointer-events:none;z-index:1"></div>
 
   <!-- BACKGROUND: Honeycomb decoration (left side) -->
-  <div style="position:absolute;left:3%;top:8%;width:140px;height:160px;opacity:.25;z-index:1;pointer-events:none">
+  <div style="position:absolute;left:3%;top:8%;width:140px;height:160px;z-index:1;pointer-events:none">
     <svg viewBox="0 0 120 160" style="width:100%;height:100%">
       <!-- Row 1 -->
       <path class="honeycomb-line" d="M10,25 L30,25 L40,42 L30,59 L10,59 L0,42 Z"></path>
@@ -42,7 +42,7 @@
 
   <!-- SECTION 1: Company Name (top 0-33%) -->
   <div style="position:absolute;top:0;left:0;width:100%;height:33.333%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:rgba(0,0,0,.5)">
-    <div class="neon-text" style="font-size:clamp(32px,5vw,60px);font-weight:900;letter-spacing:.15em;text-transform:uppercase;text-align:center;padding:0 40px">{{company.name}}</div>
+    <div class="neon-text" style="font-size:clamp(26px,4vw,52px);font-weight:900;letter-spacing:.15em;text-transform:uppercase;text-align:center;padding:0 40px;white-space:nowrap">{{company.name}}</div>
   </div>
 
   <!-- SECTION 2: Name & Title (middle 33-66%) -->
