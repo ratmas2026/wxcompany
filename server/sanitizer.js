@@ -80,6 +80,7 @@ async function sanitize(html) {
       'text-anchor', 'dominant-baseline', 'font-family', 'font-size',
       'stroke-opacity', 'fill-opacity', 'stroke-miterlimit'
     ],
+    ADD_ATTR: ['d'],
     ALLOW_DATA_ATTR: true,
     FORBID_TAGS: [
       'noscript',
