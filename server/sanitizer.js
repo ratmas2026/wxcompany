@@ -26,6 +26,14 @@ async function _init() {
       }
     }
   })
+
+  DOMPurify.addHook('uponSanitizeAttribute', function(node, data) {
+    // DOMPurify strips SVG path/d attribute even when whitelisted — force keep
+    if (data.attrName === 'd') {
+      data.keepAttr = true
+      data.forceKeepAttr = true
+    }
+  })
 }
 var _initPromise = null
 function ensureInit() {
