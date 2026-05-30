@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone_verified INTEGER DEFAULT 0,
   email TEXT,
   email_verified INTEGER DEFAULT 0,
+  nickname TEXT DEFAULT '',
   created_at TEXT,
   updated_at TEXT
 );
@@ -159,6 +160,8 @@ function initDatabase() {
 
     // Migration: add template column to cards
     try { db.run('ALTER TABLE cards ADD COLUMN template TEXT DEFAULT \'\''); } catch (e) { /* already exists */ }
+    // Migration: add nickname column to users
+    try { db.run('ALTER TABLE users ADD COLUMN nickname TEXT DEFAULT \'\''); } catch (e) { /* already exists */ }
 
     save();  // Persist DDL changes (new tables/columns) to disk
 

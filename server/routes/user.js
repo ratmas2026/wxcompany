@@ -253,15 +253,39 @@ router.get('/user/bindings', (req, res) => {
 // GET /api/user/profile — 获取用户信息
 router.get('/user/profile', (req, res) => {
   const user = getUserRow()
+  const nickname = (user && user.nickname) || ADMIN_USER
   res.json({
     ok: true,
-    nickName: ADMIN_USER,
-    phone: (user && user.phone_verified && user.phone) || '',
-    email: (user && user.email_verified && user.email) || '',
+    user: {
+      nickName: nickname,
+      phone: (user && user.phone_verified && user.phone) || '',
+      email: (user && user.email_verified && user.email) || '',
+      avatar: (user && user.avatar) || ''
+    },
     hasPassword: !!(user && user.password_hash),
     phoneMasked: (user && user.phone_verified && user.phone) ? maskPhone(user.phone) : '',
     emailMasked: (user && user.email_verified && user.email) ? maskEmail(user.email) : ''
   })
+})
+
+// PATCH /api/user/profile — 更新用户信息
+router.patch('/user/profile', (req, res) => {
+  const { field, value } = req.body
+  const { ADMIN_USER } = require('../auth')
+  if (!field || value === undefined) return res.status(400).json({ ok: false, error: '缺少参数' })
+
+  const db = getDb()
+  if (field === 'nickName') {
+    if (!value || value.length < 1 || value.length > 50) return res.status(400).json({ ok: false, error: '昵称长度为1-50个字符' })
+    db.run('UPDATE users SET nickname = ?, updated_at = ? WHERE username = ?',
+      [value, new Date().toISOString(), ADMIN_USER])
+    save()
+    return res.json({ ok: true })
+  }
+  if (field === 'phone' || field === 'email') {
+    return res.status(400).json({ ok: false, error: '请通过账号设置页面绑定' + (field === 'phone' ? '手机号' : '邮箱') })
+  }
+  return res.status(400).json({ ok: false, error: '不允许的字段' })
 })
 
 module.exports = router
