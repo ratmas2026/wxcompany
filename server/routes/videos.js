@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { readData, writeData, pick, syncVideos, saveConfigs } = require('../utils')
+const { required, allowed } = require('../validate')
 
 router.get('/', (req, res) => {
   const data = readData()
@@ -9,7 +10,9 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const data = readData()
-  const video = req.body
+  const video = allowed(req.body, 'url', 'title', 'description', 'sortOrder', 'status', 'createdAt')
+  const err = required(video, ['url', 'title'])
+  if (err) return res.status(400).json({ error: err })
   video.id = data.nextId.videos++
   video.createdAt = video.createdAt || new Date().toISOString().split('T')[0]
   video.views = video.views || 0

@@ -288,7 +288,7 @@ describe('POST /api/inquiry', () => {
     const res = await request(app)
       .post('/api/inquiry')
       .set(adminHeaders())
-      .send({ name: 'Min' })
+      .send({ name: 'Min', phone: '13912345678', message: 'test' })
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(true)
   })

@@ -132,7 +132,7 @@ router.get('/profile-config', (req, res) => {
 
 router.put('/profile-config', (req, res) => {
   const data = readData()
-  data.companyProfileConfig = { ...(data.companyProfileConfig || {}), ...req.body }
+  data.companyProfileConfig = { ...(data.companyProfileConfig || {}), ...pick(req.body, 'sections') }
   syncCompanyProfiles(data.companyProfiles)
   saveConfigs(data)
   res.json(data.companyProfileConfig)

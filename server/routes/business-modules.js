@@ -64,7 +64,7 @@ router.get('/page-config', (req, res) => {
 
 router.put('/page-config', (req, res) => {
   const data = readData()
-  data.businessModulePageConfig = { ...(data.businessModulePageConfig || {}), ...req.body }
+  data.businessModulePageConfig = { ...(data.businessModulePageConfig || {}), ...pick(req.body, 'sections') }
   syncBusinessModules(data.businessModules)
   saveConfigs(data)
   res.json(data.businessModulePageConfig)

@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { readData, writeData, pick, parseId, syncCards, saveConfigs } = require('../utils')
+const { required, allowed } = require('../validate')
 const templateCache = require('../template-cache')
 
 router.get('/cards', (req, res) => {
@@ -27,7 +28,9 @@ router.get('/cards/:id', (req, res) => {
 
 router.post('/cards', (req, res) => {
   const data = readData()
-  const card = req.body
+  const card = allowed(req.body, 'name', 'phone', 'title', 'department', 'company', 'email', 'address', 'avatar', 'bio', 'status', 'template')
+  const err = required(card, ['name', 'phone'])
+  if (err) return res.status(400).json({ error: err })
   card.id = data.nextId.cards++
   card.createdAt = card.createdAt || new Date().toISOString().split('T')[0]
   card.status = card.status !== undefined ? card.status : true

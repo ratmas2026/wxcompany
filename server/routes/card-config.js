@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData, saveConfigs } = require('../utils')
+const { readData, writeData, pick, saveConfigs } = require('../utils')
 
 router.get('/card-page-config', (req, res) => {
   const data = readData()
@@ -28,7 +28,7 @@ router.get('/card-page-config', (req, res) => {
 
 router.put('/card-page-config', (req, res) => {
   const data = readData()
-  data.cardPageConfig = { ...(data.cardPageConfig || {}), ...req.body }
+  data.cardPageConfig = { ...(data.cardPageConfig || {}), ...pick(req.body, 'sections') }
   saveConfigs(data)
   res.json(data.cardPageConfig)
 })

@@ -130,7 +130,7 @@ router.get('/performance-config', (req, res) => {
 
 router.put('/performance-config', (req, res) => {
   const data = readData()
-  data.companyPerformanceConfig = { ...(data.companyPerformanceConfig || {}), ...req.body }
+  data.companyPerformanceConfig = { ...(data.companyPerformanceConfig || {}), ...pick(req.body, 'sections') }
   syncCompanyPerformances(data.companyPerformances)
   saveConfigs(data)
   res.json(data.companyPerformanceConfig)

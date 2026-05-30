@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { readData, writeData, saveConfigs } = require('../utils')
+const { readData, writeData, pick, saveConfigs } = require('../utils')
 
 router.get('/case-page-config', (req, res) => {
   const data = readData()
@@ -28,7 +28,7 @@ router.get('/case-page-config', (req, res) => {
 
 router.put('/case-page-config', (req, res) => {
   const data = readData()
-  data.casePageConfig = { ...(data.casePageConfig || {}), ...req.body }
+  data.casePageConfig = { ...(data.casePageConfig || {}), ...pick(req.body, 'sections') }
   saveConfigs(data)
   res.json(data.casePageConfig)
 })

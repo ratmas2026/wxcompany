@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { readData, writeData, pick, syncPositions, saveConfigs } = require('../utils')
+const { required, allowed } = require('../validate')
 
 router.get('/', (req, res) => {
   const data = readData()
@@ -9,7 +10,9 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const data = readData()
-  const pos = req.body
+  const pos = allowed(req.body, 'name', 'sort', 'desc', 'count', 'department')
+  const err = required(pos, ['name'])
+  if (err) return res.status(400).json({ error: err })
   pos.id = data.nextId.positions++
   pos.count = pos.count || 0
   data.positions.push(pos)
@@ -22,7 +25,7 @@ router.put('/:id', (req, res) => {
   const data = readData()
   const idx = data.positions.findIndex(p => p.id === parseInt(req.params.id))
   if (idx < 0) return res.status(404).json({ error: 'Not found' })
-  data.positions[idx] = { ...data.positions[idx], ...pick(req.body, 'title', 'department', 'location', 'requirement', 'sortOrder', 'status', 'createdAt'), id: data.positions[idx].id }
+  data.positions[idx] = { ...data.positions[idx], ...pick(req.body, 'name', 'sort', 'desc', 'count', 'department'), id: data.positions[idx].id }
   syncPositions(data.positions)
   saveConfigs(data)
   res.json(data.positions[idx])
