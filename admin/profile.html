@@ -102,9 +102,9 @@
       ctx.drawImage(img, sx, sy, size, size, 0, 0, 200, 200)
       canvas.toBlob(async function(blob) {
         try {
-          const data = await DataStore.uploadAvatar(blob)
-          if (data && data.ok && data.url) {
-            user.avatar = data.url
+          const url = await DataStore.uploadAvatar(blob)
+          if (url) {
+            user.avatar = url
             if (Admin.currentUser) Admin.currentUser.avatar = data.url
             sessionStorage.setItem('admin_user', JSON.stringify(user))
             Admin.showToast('头像已更新', 'success')
