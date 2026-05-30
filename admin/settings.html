@@ -295,15 +295,18 @@
 
   // ---- Change phone/email form (after verification) ----
   function renderBind() {
-    var label = state.verifyType === 'phone' ? '更换手机' : '更换邮箱'
+    var isNew = !bindings[state.verifyType]
+    var label = (isNew ? '绑定' : '更换') + (state.verifyType === 'phone' ? '手机' : '邮箱')
     var inputType = state.verifyType === 'phone' ? 'tel' : 'email'
-    var placeholder = state.verifyType === 'phone' ? '请输入新手机号' : '请输入新邮箱'
+    var placeholder = (isNew ? '请输入' : '请输入新') + (state.verifyType === 'phone' ? '手机号' : '邮箱')
+    var valueLabel = isNew ? (state.verifyType === 'phone' ? '手机号' : '邮箱') : (state.verifyType === 'phone' ? '新手机号' : '新邮箱')
+    var submitLabel = isNew ? '确认绑定' : '确认更换'
 
     return breadcrumb(['账号安全', label]) +
       '<div class="step-header"><div class="step-title">' + label + '</div></div>' +
       '<div class="card" style="max-width:480px">' +
         '<div class="form-group">' +
-          '<label class="form-label">' + (state.verifyType === 'phone' ? '新手机号' : '新邮箱') + '</label>' +
+          '<label class="form-label">' + valueLabel + '</label>' +
           '<input class="form-input" type="' + inputType + '" id="newBindValue" placeholder="' + placeholder + '" maxlength="' + (state.verifyType === 'phone' ? '11' : '64') + '">' +
         '</div>' +
         '<div class="form-group">' +
@@ -313,7 +316,7 @@
             '<button class="btn btn-outline" id="newBindSendBtn" onclick="sendNewBindCode()" style="flex-shrink:0">获取验证码</button>' +
           '</div>' +
         '</div>' +
-        '<button class="btn btn-primary" style="width:100%;justify-content:center" id="newBindSubmit" onclick="submitNewBind()">确认更换</button>' +
+        '<button class="btn btn-primary" style="width:100%;justify-content:center" id="newBindSubmit" onclick="submitNewBind()">' + submitLabel + '</button>' +
       '</div>'
   }
 
@@ -374,7 +377,7 @@
       Admin.showToast('网络错误', 'error')
     } finally {
       btn.disabled = false
-      btn.textContent = '确认更换'
+      btn.textContent = bindings[state.verifyType] ? '确认更换' : '确认绑定'
     }
   }
 
@@ -469,6 +472,26 @@
   }
 
   await loadBindings()
+
+  // Deep-link from profile page
+  var hash = window.location.hash
+  if (hash === '#bindPhone' || hash === '#bindEmail') {
+    var type = hash === '#bindPhone' ? 'phone' : 'email'
+    state.flow = type === 'phone' ? 'changePhone' : 'changeEmail'
+    state.verifyType = type
+    var hasAnyBinding = !!(bindings.phone || bindings.email)
+    if (hasAnyBinding) {
+      var usePhone = !!bindings.phone
+      state.verifyType = usePhone ? 'phone' : 'email'
+      state.verifyTarget = usePhone ? bindings.phone : bindings.email
+      state.maskedTarget = usePhone ? (bindings.phoneMasked || bindings.phone) : (bindings.emailMasked || bindings.email)
+      state.step = 'verify'
+    } else {
+      state.step = 'bind'
+    }
+    window.location.hash = ''
+  }
+
   render()
 })()
 </script>

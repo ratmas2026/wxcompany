@@ -27,34 +27,53 @@
       ? `<img src="${user.avatar}" class="profile-avatar-img" alt="" id="avatarImg">`
       : `<div class="profile-avatar-placeholder">${(user.nickName || 'A')[0]}</div>`
 
+    // nickName: inline editable. phone/email: read-only + deep-link to settings
+    const linkFields = { phone: 'bindPhone', email: 'bindEmail' }
+
+    function renderFieldRow(f) {
+      const val = user[f.key] || ''
+      const err = fieldErrors[f.key] || ''
+
+      // Editable fields (nickName)
+      if (f.key === 'nickName') {
+        if (editingField === f.key) {
+          return `
+            <div class="profile-field-row">
+              <span class="profile-field-label">${f.label}</span>
+              <input class="profile-field-input" id="edit-${f.key}" value="${Admin._escapeHTML(val)}" placeholder="请输入${f.label}">
+              <button class="profile-field-btn" onclick="saveField('${f.key}')">✓</button>
+              <button class="profile-field-btn" style="background:var(--surface-container);color:var(--on-surface-variant);margin-left:6px" onclick="cancelEdit()">✕</button>
+            </div>
+            ${err ? '<div class="profile-field-error">' + err + '</div>' : ''}
+          `
+        }
+        return `
+          <div class="profile-field-row">
+            <span class="profile-field-label">${f.label}</span>
+            <span class="profile-field-value">${val || '未设置'}</span>
+            <button class="profile-field-btn" style="background:transparent;color:var(--primary);border:1px solid var(--outline-variant)" onclick="startEdit('${f.key}')">编辑</button>
+          </div>
+        `
+      }
+
+      // phone/email: read-only with deep-link to settings
+      const hash = linkFields[f.key]
+      return `
+        <div class="profile-field-row">
+          <span class="profile-field-label">${f.label}</span>
+          <span class="profile-field-value" style="${val ? '' : 'color:var(--outline)'}">${val || '未设置'}</span>
+          <a href="settings.html#${hash}" class="profile-field-btn" style="text-decoration:none;background:transparent;color:var(--primary);border:1px solid var(--outline-variant)">${val ? '去设置' : '去绑定'}</a>
+        </div>
+      `
+    }
+
     const fields = [
       { key: 'nickName', label: '昵称' },
       { key: 'phone', label: '手机号' },
       { key: 'email', label: '邮箱' }
     ]
 
-    const rowsHTML = fields.map(f => {
-      const val = user[f.key] || ''
-      const err = fieldErrors[f.key] || ''
-      if (editingField === f.key) {
-        return `
-          <div class="profile-field-row">
-            <span class="profile-field-label">${f.label}</span>
-            <input class="profile-field-input" id="edit-${f.key}" value="${Admin._escapeHTML(val)}" placeholder="请输入${f.label}">
-            <button class="profile-field-btn" onclick="saveField('${f.key}')">✓</button>
-            <button class="profile-field-btn" style="background:var(--surface-container);color:var(--on-surface-variant);margin-left:6px" onclick="cancelEdit()">✕</button>
-          </div>
-          ${err ? '<div class="profile-field-error">' + err + '</div>' : ''}
-        `
-      }
-      return `
-        <div class="profile-field-row">
-          <span class="profile-field-label">${f.label}</span>
-          <span class="profile-field-value">${val || '未设置'}</span>
-          <button class="profile-field-btn" style="background:transparent;color:var(--primary);border:1px solid var(--outline-variant)" onclick="startEdit('${f.key}')">编辑</button>
-        </div>
-      `
-    }).join('')
+    const rowsHTML = fields.map(renderFieldRow).join('')
 
     Admin.setPageContent(`
       <div class="page-header">
