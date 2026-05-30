@@ -169,20 +169,56 @@ describe('POST /api/cards', () => {
     const res = await request(app)
       .post('/api/cards')
       .set(adminHeaders())
-      .send({ name: 'NewCard', phone: '12345' })
+      .send({ name: 'NewCard', phone: '13912345678' })
     expect(res.status).toBe(200)
     expect(res.body.name).toBe('NewCard')
     expect(res.body.id).toBe(1)
+    expect(res.body.status).toBe(true)
 
     // Verify via GET
     const getRes = await request(app).get('/api/cards')
     expect(getRes.body).toHaveLength(1)
   })
 
+  it('rejects name shorter than 2 chars', async () => {
+    const res = await request(app)
+      .post('/api/cards')
+      .set(adminHeaders())
+      .send({ name: 'A', phone: '13912345678' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toContain('姓名至少2个字符')
+  })
+
+  it('rejects invalid phone format', async () => {
+    const res = await request(app)
+      .post('/api/cards')
+      .set(adminHeaders())
+      .send({ name: 'Valid Name', phone: '12345' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toContain('手机号格式不正确')
+  })
+
+  it('rejects invalid email format', async () => {
+    const res = await request(app)
+      .post('/api/cards')
+      .set(adminHeaders())
+      .send({ name: 'Valid Name', phone: '13912345678', email: 'not-an-email' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toContain('邮箱格式不正确')
+  })
+
+  it('rejects unknown fields', async () => {
+    const res = await request(app)
+      .post('/api/cards')
+      .set(adminHeaders())
+      .send({ name: 'Valid Name', phone: '13912345678', evil: 'payload' })
+    expect(res.status).toBe(400)
+  })
+
   it('returns 401 without auth token', async () => {
     const res = await request(app)
       .post('/api/cards')
-      .send({ name: 'Unauthorized' })
+      .send({ name: 'Unauthorized Author', phone: '13912345678' })
     expect(res.status).toBe(401)
   })
 
@@ -190,7 +226,7 @@ describe('POST /api/cards', () => {
     const res = await request(app)
       .post('/api/cards')
       .set('Authorization', 'Bearer invalid-token-here')
-      .send({ name: 'BadToken' })
+      .send({ name: 'BadToken Author', phone: '13912345678' })
     expect(res.status).toBe(401)
   })
 })
