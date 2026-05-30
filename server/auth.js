@@ -136,6 +136,26 @@ const smsLimiter = rateLimit({
   message: { ok: false, error: '短信发送过于频繁，请稍后再试' }
 })
 
+// Template upload limiter: 10 requests per minute per IP (anti-abuse)
+const templateUploadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipInTest,
+  message: { ok: false, error: '模板上传过于频繁，请稍后再试' }
+})
+
+// Template render limiter: 60 requests per minute per IP (anti-cache-flood)
+const templateRenderLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipInTest,
+  message: { error: '请求过于频繁，请稍后再试' }
+})
+
 // --- Auth Middleware ---
 // Admin-only GET paths (contain sensitive data, require token even for GET)
 const ADMIN_GET_PREFIXES = [
@@ -192,6 +212,8 @@ module.exports = {
   globalLimiter,
   loginLimiter,
   smsLimiter,
+  templateUploadLimiter,
+  templateRenderLimiter,
   authMiddleware,
   SMS_ACCESS_KEY_ID,
   SMS_ACCESS_KEY_SECRET

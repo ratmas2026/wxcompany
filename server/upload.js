@@ -157,7 +157,7 @@ const uploadProjects = multer({ storage: projectsStorage, limits: { fileSize: 5 
 const uploadEditor = multer({ storage: editorStorage, limits: { fileSize: 50 * 1048576 }, fileFilter: imageFilter })
 const uploadBusinessModule = multer({ storage: businessModuleStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
 const uploadPerformance = multer({ storage: performanceStorage, limits: { fileSize: 5 * 1048576 }, fileFilter: imageFilter })
-const uploadTemplate = multer({ storage: templateStorage, limits: { fileSize: 500 * 1024 }, fileFilter: templateFilter })
+const uploadTemplate = multer({ storage: templateStorage, limits: { fileSize: 100 * 1024 }, fileFilter: templateFilter })
 
 // Multer error handling middleware
 function multerErrorHandler(err, req, res, next) {

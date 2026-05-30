@@ -10,6 +10,19 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 
+const COMPILE_TIMEOUT_MS = 15000
+const MAX_CLASSES = 1000
+
+function countClasses(html) {
+  const classAttrs = html.match(/\bclass\s*=\s*"([^"]*)"/gi) || []
+  let count = 0
+  for (const attr of classAttrs) {
+    const val = attr.match(/"([^"]*)"/)
+    if (val) count += (val[1].match(/\S+/g) || []).length
+  }
+  return count
+}
+
 /**
  * Generate a minimal Tailwind CSS stylesheet containing only the rules needed
  * by the classes found in the given HTML.
@@ -23,6 +36,11 @@ const os = require('os')
 async function compileCSS(html) {
   if (!html || typeof html !== 'string') return ''
 
+  if (countClasses(html) > MAX_CLASSES) {
+    console.warn('[tailwind-compiler] Template has too many classes (%d), skipping compilation', countClasses(html))
+    return ''
+  }
+
   // Strip <script> tags before scanning — inline JS (like drag-and-drop code)
   // contains class-like strings that confuse Tailwind's content scanner.
   var scanSafe = html.replace(/<script[\s\S]*?<\/script>/gi, '')
@@ -31,12 +49,17 @@ async function compileCSS(html) {
   fs.writeFileSync(tmpFile, scanSafe, 'utf-8')
 
   try {
-    const result = await postcss([
-      tailwindcss({ content: [tmpFile] }),
-      autoprefixer
-    ]).process('@tailwind base;@tailwind components;@tailwind utilities;', {
-      from: undefined
-    })
+    const result = await Promise.race([
+      postcss([
+        tailwindcss({ content: [tmpFile] }),
+        autoprefixer
+      ]).process('@tailwind base;@tailwind components;@tailwind utilities;', {
+        from: undefined
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('COMPILATION_TIMEOUT')), COMPILE_TIMEOUT_MS)
+      )
+    ])
 
     return result.css || ''
   } catch (e) {
@@ -103,4 +126,4 @@ async function preprocessTemplate(html) {
   return injectCompiledCSS(html, css)
 }
 
-module.exports = { compileCSS, hasTailwindCDN, injectCompiledCSS, preprocessTemplate }
+module.exports = { compileCSS, countClasses, hasTailwindCDN, injectCompiledCSS, preprocessTemplate, COMPILE_TIMEOUT_MS, MAX_CLASSES }

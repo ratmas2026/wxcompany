@@ -3,7 +3,7 @@ const cors = require('cors')
 const compression = require('compression')
 const path = require('path')
 const db = require('./db')
-const { globalLimiter, loginLimiter, smsLimiter, authMiddleware } = require('./auth')
+const { globalLimiter, loginLimiter, smsLimiter, templateUploadLimiter, templateRenderLimiter, authMiddleware } = require('./auth')
 const { UPLOADS_DIR, multerErrorHandler } = require('./upload')
 
 const app = express()
@@ -34,6 +34,8 @@ app.use(multerErrorHandler)
 app.use('/api', globalLimiter)
 app.use('/api/login', loginLimiter)
 app.use('/api/sms/send', smsLimiter)
+app.use('/api/templates', templateRenderLimiter)
+app.use('/api/templates', templateUploadLimiter)
 
 // Auth middleware
 app.use(authMiddleware)

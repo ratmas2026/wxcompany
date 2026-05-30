@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-const { hasTailwindCDN, injectCompiledCSS, preprocessTemplate } = require('../../tailwind-compiler.js')
+const { hasTailwindCDN, injectCompiledCSS, preprocessTemplate, compileCSS, countClasses, MAX_CLASSES } = require('../../tailwind-compiler.js')
 
 describe('hasTailwindCDN', () => {
   it('detects Tailwind CDN script tag', () => {
@@ -56,5 +56,36 @@ describe('preprocessTemplate', () => {
 
   it('returns original HTML for empty input', async () => {
     expect(await preprocessTemplate('')).toBe('')
+  })
+})
+
+describe('countClasses', () => {
+  it('counts unique CSS classes in HTML', () => {
+    expect(countClasses('<div class="bg-red-500 mt-4">test</div>')).toBe(2)
+  })
+
+  it('counts classes across multiple elements', () => {
+    expect(countClasses('<div class="a b c"></div><span class="d e"></span>')).toBe(5)
+  })
+
+  it('returns 0 for HTML with no class attributes', () => {
+    expect(countClasses('<div>hello</div>')).toBe(0)
+  })
+})
+
+describe('compileCSS DoS protection', () => {
+  it('rejects HTML with too many classes', async () => {
+    let html = ''
+    for (let i = 0; i <= MAX_CLASSES + 10; i++) {
+      html += `<div class="bg-${i}">x</div>`
+    }
+    const result = await compileCSS(html)
+    expect(result).toBe('')
+  })
+
+  it('compiles small HTML normally', async () => {
+    const html = '<div class="bg-red-500 text-white">Hello</div>'
+    const result = await compileCSS(html)
+    expect(typeof result).toBe('string')
   })
 })
