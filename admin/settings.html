@@ -111,6 +111,13 @@
         '</div>'
     }
 
+    if (!options) {
+      return breadcrumb(['账号安全']) +
+        '<div class="step-header"><div class="step-title">无法验证身份</div>' +
+        '<div class="step-desc">您尚未绑定手机号或邮箱，无法进行身份验证。<br>请先在账号安全主页绑定手机或邮箱后再修改密码。</div></div>' +
+        '<button class="btn btn-outline" onclick="navStep(\'main\')">返回账号安全</button>'
+    }
+
     return breadcrumb(['账号安全', '身份验证']) +
       '<div class="step-header"><div class="step-title">身份验证</div></div>' +
       '<div class="verify-options">' + options + '</div>' +
