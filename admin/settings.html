@@ -51,7 +51,7 @@
     render()
   }
 
-  function startFlow(flow, verifyType) {
+  window.startFlow = function(flow, verifyType) {
     state.flow = flow
     state.verifyType = verifyType
     state.verifyTarget = verifyType === 'phone' ? bindings.phone : bindings.email
